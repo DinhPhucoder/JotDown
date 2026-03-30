@@ -1,10 +1,10 @@
 -- 1. Khởi tạo Database
-CREATE DATABASE IF NOT EXISTS note_management_app;
-USE note_management_app;
+CREATE DATABASE IF NOT EXISTS notemanagement;
+USE notemanagement;
 
 -- 2. Bảng người dùng (Lưu trữ thông tin và Tùy chỉnh cá nhân)
 CREATE TABLE users (
-    id INT AUTO_INCREMENT PRIMARY KEY,
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     email VARCHAR(255) NOT NULL UNIQUE,
     display_name VARCHAR(100) NOT NULL,
     password VARCHAR(255) NOT NULL, -- Lưu hash bcrypt 
@@ -16,8 +16,8 @@ CREATE TABLE users (
 
 -- 3. Bảng ghi chú (Trung tâm của hệ thống)
 CREATE TABLE notes (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    user_id INT NOT NULL,
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    user_id INT UNSIGNED NOT NULL,
     title VARCHAR(255) NOT NULL, -- Chỉ yêu cầu title và content 
     content TEXT,
     color VARCHAR(7) DEFAULT '#ffffff', -- Màu sắc ghi chú 
@@ -31,16 +31,16 @@ CREATE TABLE notes (
 
 -- 4. Bảng hình ảnh đính kèm 
 CREATE TABLE note_images (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    note_id INT NOT NULL,
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    note_id INT UNSIGNED NOT NULL,
     image_path VARCHAR(255) NOT NULL, -- Lưu đường dẫn ảnh
     FOREIGN KEY (note_id) REFERENCES notes(id) ON DELETE CASCADE
 );
 
 -- 5. Bảng nhãn dán 
 CREATE TABLE labels (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    user_id INT NOT NULL,
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    user_id INT UNSIGNED NOT NULL,
     name VARCHAR(100) NOT NULL,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
@@ -48,8 +48,8 @@ CREATE TABLE labels (
 -- 6. Bảng trung gian Ghi chú - Nhãn 
 -- Đảm bảo khi xóa nhãn không mất ghi chú 
 CREATE TABLE note_labels (
-    note_id INT NOT NULL,
-    label_id INT NOT NULL,
+    note_id INT UNSIGNED NOT NULL,
+    label_id INT UNSIGNED NOT NULL,
     PRIMARY KEY (note_id, label_id),
     FOREIGN KEY (note_id) REFERENCES notes(id) ON DELETE CASCADE,
     FOREIGN KEY (label_id) REFERENCES labels(id) ON DELETE CASCADE
@@ -57,9 +57,9 @@ CREATE TABLE note_labels (
 
 -- 7. Bảng cộng tác/chia sẻ 
 CREATE TABLE collaborations (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    note_id INT NOT NULL,
-    share_with_user_id INT NOT NULL, -- ID người nhận 
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    note_id INT UNSIGNED NOT NULL,
+    share_with_user_id INT UNSIGNED NOT NULL, -- ID người nhận 
     permission ENUM('read', 'edit') DEFAULT 'read', -- Quyền xem/sửa 
     shared_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (note_id) REFERENCES notes(id) ON DELETE CASCADE,
