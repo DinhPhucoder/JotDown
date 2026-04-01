@@ -1,0 +1,15 @@
+# Stage 1: Build mã nguồn React/Vite
+FROM node:20-alpine as build
+WORKDIR /app
+COPY package*.json ./
+RUN npm install
+COPY . .
+RUN npm run build
+
+# Stage 2: Serve folder Build tĩnh bằng Container Nginx nội bộ
+FROM nginx:alpine
+COPY --from=build /app/dist /usr/share/nginx/html
+
+# Expose port (sẽ được Gateway Nginx reverse-proxy chỉ đường vào port 80 này)
+EXPOSE 80
+CMD ["nginx", "-g", "daemon off;"]
