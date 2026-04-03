@@ -65,23 +65,11 @@ the updated label name automatically, ensuring consistency across the system.
 
 ## 2.3 Advanced note management
 
-- To enhance security, the website should offer a mechanism to lock notes with a password. For a standard note, when this feature is
-activated,  users  must  set  a  password  specific  to  that  note.  Each  note  has  its  own  unique  password,  unrelated  to  others.  Once
-password  protection  is  enabled,  a  dialog  will  prompt  users  to  enter  the  password  before  allowing  any  action,  such  as  viewing,
-editing, or deleting the note. Users also have the option to change a note’s password or disable password protection entirely if they
-no longer wish to use this feature.
-- The  ability  to  share  notes  is  an  advanced  feature,  allowing  users  to  share  their  notes  with  others  through  their  registered  email
-accounts. When sharing, the note owner can specify sharing permissions such as read-only access or edit rights. They can also select
-one or multiple recipients. Furthermore, the owner retains full control to revoke access or modify sharing settings at any time.
-- Recipients of shared notes should have a dedicated section where all notes shared with them are displayed. This section must clearly
-indicate the sharing status of each note, specifying whether it is read-only or editable. Additionally, it should provide information
-about who shared the note, along with the timestamp of when the sharing occurred. For notes shared with edit permissions, real-
-time  collaboration  should  be  implemented  using  WebSocket  technology.  This  will  enable  multiple  users  to  edit  the  note
-simultaneously while observing each other’s changes in real time.
+- To enhance security, the website should offer a mechanism to lock notes with a password. For a standard note, when this feature is activated,  users  must  set  a  password  specific  to  that  note.  Each  note  has  its  own  unique  password,  unrelated  to  others.  Once password  protection  is  enabled,  a  dialog  will  prompt  users  to  enter  the  password  before  allowing  any  action,  such  as  viewing, editing, or deleting the note. Users also have the option to change a note’s password or disable password protection entirely if they no longer wish to use this feature.
+- The  ability  to  share  notes  is  an  advanced  feature,  allowing  users  to  share  their  notes  with  others  through  their  registered  email accounts. When sharing, the note owner can specify sharing permissions such as read-only access or edit rights. They can also select one or multiple recipients. Furthermore, the owner retains full control to revoke access or modify sharing settings at any time.
+- Recipients of shared notes should have a dedicated section where all notes shared with them are displayed. This section must clearly indicate the sharing status of each note, specifying whether it is read-only or editable. Additionally, it should provide information about who shared the note, along with the timestamp of when the sharing occurred. For notes shared with edit permissions, real-time  collaboration  should  be  implemented  using WebSocket  technology.  This  will  enable  multiple  users  to  edit  the  note simultaneously while observing each other’s changes in real time.
 - For special notes, such as those that are shared, pinned, or password-protected, the system must include a recognizable icon for
-easy identification. This icon should be displayed in both list view and grid view layouts, allowing users to quickly identify the note’s
-status without needing to open it or navigate to its details. For instance, users should immediately recognize if a note is password-
-protected or shared just by glancing at the icon.
+easy identification. This icon should be displayed in both list view and grid view layouts, allowing users to quickly identify the note’s status without needing to open it or navigate to its details. For instance, users should immediately recognize if a note is password- protected or shared just by glancing at the icon.
 
 ## 2.4 Additional Requirements
 UI and UX Considerations
