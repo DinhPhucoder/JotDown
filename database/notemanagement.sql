@@ -45,6 +45,20 @@ CREATE TABLE `note_images` (
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_general_ci;
 
 --
+-- 10. Cấu trúc bảng cho bảng `note_attachments`
+--
+
+CREATE TABLE `note_attachments` (
+    `id` int(10) UNSIGNED NOT NULL,
+    `note_id` int(10) UNSIGNED NOT NULL,
+    `file_path` varchar(255) NOT NULL,
+    `original_name` varchar(255) NOT NULL,
+    `file_type` varchar(50) DEFAULT NULL,
+    `file_size` int(10) UNSIGNED DEFAULT 0,
+    `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_general_ci;
+
+--
 -- 5. Cấu trúc bảng cho bảng `note_labels`
 --
 
@@ -133,6 +147,13 @@ ADD PRIMARY KEY (`id`),
 ADD KEY `note_id` (`note_id`);
 
 --
+-- Chỉ mục cho bảng `note_attachments`
+--
+ALTER TABLE `note_attachments`
+ADD PRIMARY KEY (`id`),
+ADD KEY `note_id` (`note_id`);
+
+--
 -- Chỉ mục cho bảng `note_labels`
 --
 ALTER TABLE `note_labels`
@@ -189,6 +210,12 @@ ALTER TABLE `note_images`
 MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
+-- AUTO_INCREMENT cho bảng `note_attachments`
+--
+ALTER TABLE `note_attachments`
+MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT cho bảng `note_shares`
 --
 ALTER TABLE `note_shares`
@@ -227,6 +254,12 @@ ADD CONSTRAINT `notes_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) 
 --
 ALTER TABLE `note_images`
 ADD CONSTRAINT `note_images_ibfk_1` FOREIGN KEY (`note_id`) REFERENCES `notes` (`id`) ON DELETE CASCADE;
+
+--
+-- Các ràng buộc cho bảng `note_attachments`
+--
+ALTER TABLE `note_attachments`
+ADD CONSTRAINT `note_attachments_ibfk_1` FOREIGN KEY (`note_id`) REFERENCES `notes` (`id`) ON DELETE CASCADE;
 
 --
 -- Các ràng buộc cho bảng `note_labels`
