@@ -67,7 +67,7 @@ CREATE TRIGGER tr_NoteLabels_AfterInsert
 AFTER INSERT ON note_labels
 FOR EACH ROW
 BEGIN
-    -- Bạn có thể thêm logic gửi thông báo hoặc cập nhật cache nhãn tại đây
+    
 END //
 
 DELIMITER ;
