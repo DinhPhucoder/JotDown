@@ -1,3 +1,5 @@
+-- Active: 1775225515643@@127.0.0.1@3306@notemanagement
+-- Active: 1775225515643@@127.0.0.1@3306@notemanagement
 --
 -- Cơ sở dữ liệu: `notemanagement`
 --
@@ -108,7 +110,7 @@ CREATE TABLE `users` (
     `id` int(10) UNSIGNED NOT NULL,
     `name` varchar(255) NOT NULL,
     `email` varchar(255) NOT NULL,
-    `password` varchar(255) NOT NULL,
+    `password_hash` varchar(255) NOT NULL,
     `avatar` varchar(255) DEFAULT NULL,
     `preferences` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`preferences`)),
     `activation_token` varchar(255) DEFAULT NULL,

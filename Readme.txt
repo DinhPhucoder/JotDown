@@ -2,7 +2,6 @@
     NOTE MANAGEMENT - DOCKER SETUP (4 CONTAINERS)
 ========================================================================
 
-YÊU CẦU: Hệ thống giả định bạn đã cài đặt Docker và docker-compose.
 KIẾN TRÚC 4 CONTAINERS BAO GỒM:
   1. Nginx Reverse Proxy (Gateway)
   2. Frontend (React/Vite)
@@ -27,8 +26,6 @@ I. MÔI TRƯỜNG PHÁT TRIỂN (DEVELOPMENT - CHẠY KHI ĐANG CODE)
 3. Truy cập vào giao diện web:
    Trang chủ: http://localhost (Các API sẽ nằm ở sub-path http://localhost/api/...)
 
-**Khi chỉnh sửa source code (Frontend/Backend), sự thay đổi sẽ hiển thị ngay lập tức không cần restart.
-
 ========================================================================
 II. MÔI TRƯỜNG NỘP CHẤM ĐIỂM (PRODUCTION/MULTI-STAGE - CHẠY KHI ĐÁNH GIÁ END-PRODUCT)
 ========================================================================
@@ -41,6 +38,17 @@ II. MÔI TRƯỜNG NỘP CHẤM ĐIỂM (PRODUCTION/MULTI-STAGE - CHẠY KHI Đ�
 
 3. Truy cập vào hệ thống tại:
    http://localhost
+
+========================================================================
+III. THÔNG TIN KẾT NỐI DATABASE MYSQL (DÀNH CHO GUI TOOLS: TABLEPLUS/DBEAVER/MYSQL WORKBENCH)
+========================================================================
+Nếu bạn muốn kết nối từ các phần mềm quản lý Database trên máy tính thật vào hệ thống đang chạy trong Docker:
+
+- Host: 127.0.0.1 (Localhost)
+- Port: 3306
+- Username: root
+- Password: root
+- Database: notes_db
 
 ========================================================================
 LƯU Ý QUAN TRỌNG VỀ DATABASE VOLUME
