@@ -5,19 +5,18 @@
 ### Cach A - Blueprint (khuyen nghi)
 1. Day code len GitHub.
 2. Trong dashboard Render, chon New > Blueprint.
-3. Chon repository nay. Render se doc file render.yaml o thu muc goc.
+3. Chon repository nay. Render se doc file render.yaml o thu muc goc va deploy bang Docker runtime.
 4. Dien day du cac bien moi truong duoc danh dau sync: false.
 5. Sau lan deploy dau tien, mo Render Shell va chay:
    php artisan migrate --force
 
 ### Cach B - Tao Web Service thu cong
-1. Tao Web Service moi tu thu muc/repo backend.
-2. Lenh build:
-   composer install --no-dev --optimize-autoloader && php artisan config:cache && php artisan route:cache && php artisan view:cache
-3. Lenh start:
-   php artisan serve --host=0.0.0.0 --port=$PORT
-4. Them day du bien moi truong production theo file backend/.env.production.example.
-5. Chay migration:
+1. Tao Web Service moi tu repository goc.
+2. Chon Runtime: Docker.
+3. Docker Context: backend.
+4. Dockerfile Path: backend/Dockerfile.
+5. Them day du bien moi truong production theo file backend/.env.production.example.
+6. Chay migration:
    php artisan migrate --force
 
 ## 2) Frontend tren Vercel
