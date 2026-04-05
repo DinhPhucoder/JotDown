@@ -7,8 +7,7 @@
 2. Trong dashboard Render, chon New > Blueprint.
 3. Chon repository nay. Render se doc file render.yaml o thu muc goc va deploy bang Docker runtime.
 4. Dien day du cac bien moi truong duoc danh dau sync: false.
-5. Sau lan deploy dau tien, mo Render Shell va chay:
-   php artisan migrate --force
+5. Migration se duoc chay tu dong bang `preDeployCommand` trong render.yaml.
 
 ### Cach B - Tao Web Service thu cong
 1. Tao Web Service moi tu repository goc.
@@ -16,8 +15,7 @@
 3. Docker Context: backend.
 4. Dockerfile Path: backend/Dockerfile.
 5. Them day du bien moi truong production theo file backend/.env.production.example.
-6. Chay migration:
-   php artisan migrate --force
+6. Migration se chay tu dong truoc khi service start.
 
 ## 2) Frontend tren Vercel
 1. Import du an frontend len Vercel.
