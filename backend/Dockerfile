@@ -1,4 +1,4 @@
-FROM php:8.2-fpm
+FROM php:8.3-fpm
 
 # Cài đặt các thư viện hệ thống cần thiết cho bản Laravel
 RUN apt-get update && apt-get install -y \
