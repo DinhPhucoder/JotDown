@@ -1,57 +1,104 @@
 ========================================================================
-    NOTE MANAGEMENT - DOCKER SETUP (4 CONTAINERS)
+    NOTE MANAGEMENT - HUONG DAN VAN HANH SAU KHI DA DEPLOY PLATFORM
 ========================================================================
 
-KIẾN TRÚC 4 CONTAINERS BAO GỒM:
-  1. Nginx Reverse Proxy (Gateway)
-  2. Frontend (React/Vite)
-  3. Backend (Laravel FPM)
-  4. Database (MySQL)
+Tai lieu nay dung cho 2 nhu cau:
+1. Khoi dong du an de tiep tuc code o local.
+2. Build va redeploy BE/FE sau moi lan cap nhat code len platform.
 
-Có 2 kịch bản chạy song song:
- - Môi trường Code (Dev): Có hot-reload (Vite).
- - Môi trường Nộp bài (Production): Chế độ Compile build tĩnh .prod để chấm điểm siêu nhanh.
+
 
 ========================================================================
-I. MÔI TRƯỜNG PHÁT TRIỂN (DEVELOPMENT - CHẠY KHI ĐANG CODE)
+II. KHOI DONG DU AN O LOCAL (DEVELOPMENT)
 ========================================================================
-1. Khởi chạy toàn bộ hệ thống (có thể tốn chút thời gian lần đầu để npm/composer tải dependencies tự động):
-   > docker-compose up --build -d
+1. Clone source code va di chuyen vao thu muc goc du an.
 
-2. Cài đặt các thư viện Backend (bắt buộc ở lần đầu chạy project):
-   > docker-compose exec backend composer install
-   > docker-compose exec backend php artisan key:generate
-   > docker-compose exec backend php artisan migrate --seed
+2. Chay toan bo he thong local bang Docker Compose:
+   > docker compose up --build -d
 
-3. Truy cập vào giao diện web:
-   Trang chủ: http://localhost (Các API sẽ nằm ở sub-path http://localhost/api/...)
+3. Cai dependency backend trong container (lan dau hoac sau khi pull thay doi lon):
+   > docker compose exec backend composer install
 
-========================================================================
-II. MÔI TRƯỜNG NỘP CHẤM ĐIỂM (PRODUCTION/MULTI-STAGE - CHẠY KHI ĐÁNH GIÁ END-PRODUCT)
-========================================================================
-1. Khởi chạy bằng file cấu hình riêng (Sẽ sử dụng Dockerfile.prod của Frontend để build mode production cho ReactJS):
-   > docker-compose -f docker-compose.prod.yml up --build -d
+4. Tao APP_KEY va migrate du lieu local:
+   > docker compose exec backend php artisan key:generate
+   > docker compose exec backend php artisan migrate --seed
 
-2. Nếu DB ở môi trường cũ chưa được migrate, chạy lệnh tương tự bước 2 ở phần I:
-   > docker-compose -f docker-compose.prod.yml exec backend composer install (nếu chưa có vendor)
-   > docker-compose -f docker-compose.prod.yml exec backend php artisan migrate --seed
+5. Truy cap he thong:
+   - Giao dien: http://localhost
+   - API qua Nginx gateway: http://localhost/api/...
 
-3. Truy cập vào hệ thống tại:
-   http://localhost
+6. Neu can dung lai khi restart may:
+   > docker compose up -d
+
+7. Neu can dung he thong:
+   > docker compose down
 
 ========================================================================
-III. THÔNG TIN KẾT NỐI DATABASE MYSQL (DÀNH CHO GUI TOOLS: TABLEPLUS/DBEAVER/MYSQL WORKBENCH)
+III. BUILD VA REDEPLOY BACKEND (RENDER)
 ========================================================================
-Nếu bạn muốn kết nối từ các phần mềm quản lý Database trên máy tính thật vào hệ thống đang chạy trong Docker:
+Backend dang deploy bang Blueprint voi file render.yaml.
 
-- Host: 127.0.0.1 (Localhost)
-- Port: 3306
-- Username: root
-- Password: root
-- Database: notes_db
+1. Day code moi len nhanh da lien ket voi Render.
+
+2. Render tu dong deploy (autoDeployTrigger: commit).
+
+3. Migration production duoc chay tu dong boi preDeployCommand:
+   php artisan migrate --force
+
+4. Vao Render de kiem tra:
+   - Service status = Live
+   - Deploy log khong co Build failed / Runtime error
+   - Health check /up tra ve 200
+
+5. Cac bien moi truong secret (APP_KEY, DB_PASSWORD, ...):
+   - Cai trong tab Environment cua service
+   - Khong commit secret vao source code
 
 ========================================================================
-LƯU Ý QUAN TRỌNG VỀ DATABASE VOLUME
+IV. BUILD VA REDEPLOY FRONTEND (VERCEL)
 ========================================================================
-Dữ liệu của Database được ánh xạ thẳng xuống thư mục `./docker/mysql_data` gốc trên máy tính thật. 
-Do vậy nếu bạn có gõ `docker-compose down` và tắt máy, thì dữ liệu những tài khoản/ghi chú đã tạo lúc đánh giá hay chạy demo vẫn còn nguyên không bị clear đâu nhé.
+1. Day code frontend len nhanh da lien ket voi Vercel.
+
+2. Vercel se tu build voi:
+   - Build command: npm run build
+   - Output directory: dist
+
+3. Dam bao bien moi truong VITE_API_BASE_URL dang tro dung URL backend production.
+
+4. Sau deploy, test lai cac man hinh co goi API.
+
+========================================================================
+V. KHI NAO CAN DOI URL HOAC ENV
+========================================================================
+1. URL backend Render thuong khong doi khi redeploy code.
+2. URL chi doi neu tao service moi, xoa tao lai service, hoac doi custom domain.
+3. Neu URL backend doi, phai cap nhat VITE_API_BASE_URL tren Vercel va redeploy frontend.
+
+========================================================================
+VI. CHECKLIST SAU MOI LAN DEPLOY
+========================================================================
+1. Backend:
+   - Live
+   - Log sach loi
+   - /up = 200
+
+2. Frontend:
+   - Deploy success
+   - Trang vao duoc
+   - Goi API thanh cong
+
+3. Database:
+   - Migration da chay
+   - Tao/sua/xoa du lieu thu duoc
+
+========================================================================
+VII. LUU Y KHI LAM NHOM
+========================================================================
+1. Chi mot nguoi phu trach file deploy: render.yaml, backend/Dockerfile, env production.
+2. Khong hardcode URL/secret/thong tin DB trong source code.
+3. Moi thay doi schema bat buoc qua migration.
+4. Dong bo version cong cu giua thanh vien:
+   - Backend PHP 8.3
+   - Node/NPM dong bo cho frontend
+5. Lam viec theo branch rieng, merge va review truoc khi day len nhanh deploy.
+6. Neu ca nhom chay cung Docker Compose local, su dung cung env template va ten service DB thong nhat.
