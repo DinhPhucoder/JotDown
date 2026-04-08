@@ -31,13 +31,14 @@ const MockNotesPreview = () => {
 
       // Floating animation
       gsap.to('.mock-note-card', {
-        y: 'random(-15, 15)',
-        rotation: 'random(-2, 2)',
+        y: 'random(-8, 8)',
+        rotation: 'random(-1.2, 1.2)',
         duration: 'random(3, 5)',
         repeat: -1,
         yoyo: true,
         ease: 'sine.inOut',
-        delay: 1.5
+        delay: 1.5,
+        repeatRefresh: true
       });
     }, containerRef);
 
@@ -45,7 +46,7 @@ const MockNotesPreview = () => {
   }, []);
 
   return (
-    <section ref={containerRef} className="container position-relative pb-5" style={{ perspective: '1000px', marginTop: '60px', zIndex: 0 }}>
+    <section ref={containerRef} className="container position-relative pb-5 mock-notes-section" style={{ perspective: '1000px', marginTop: '60px', zIndex: 0 }}>
       <div className="row justify-content-center g-4">
         {/* Pinned Note */}
         <div className="col-md-4 col-sm-6">

@@ -29,9 +29,23 @@
   box-shadow: var(--shadow-xl);
 }
 
+.mock-notes-section {
+  overflow: visible;
+  padding-bottom: 72px;
+}
+
+.features-section {
+  position: relative;
+  margin-top: 16px !important;
+}
+
 @media (max-width: 768px) {
   .hero-title {
     line-height: 1.3;
+  }
+
+  .features-section {
+    margin-top: 12px !important;
   }
 
   .hero-subtitle {

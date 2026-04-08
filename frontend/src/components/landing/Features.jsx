@@ -45,7 +45,7 @@ const Features = () => {
   }, []);
 
   return (
-    <section ref={containerRef} className="container py-5 my-5">
+    <section ref={containerRef} className="container py-5 my-5 features-section">
       <div className="text-center mb-5">
         <h2 className="mb-3 hero-title" style={{ fontSize: '3rem' }}>Jot Down có gì?</h2>
         <p className="text-secondary fs-5" style={{ maxWidth: '600px', margin: '0 auto' }}>
