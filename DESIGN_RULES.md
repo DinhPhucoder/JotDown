@@ -11,7 +11,6 @@ Tài liệu này mô tả bộ quy tắc thiết kế lấy từ landing page hi
 - Font chính cho nội dung: `Inter`.
 - Font cho heading, brand, text nhấn mạnh: `Poppins`.
 - Heading dùng weight đậm, tracking âm nhẹ để tạo cảm giác gọn và chắc.
-- Hero title có thể rất lớn, nhưng phải giữ đủ line-height để không cắt các ký tự có đuôi như `g`, `y`, `p`.
 - Body text ưu tiên rõ ràng, dễ đọc, không dùng font trang trí.
 
 ## 3. Màu sắc
@@ -20,6 +19,22 @@ Tài liệu này mô tả bộ quy tắc thiết kế lấy từ landing page hi
 - Màu primary là gradient xanh sang tím, dùng cho CTA và nhấn mạnh.
 - Text chính phải có độ tương phản cao với nền.
 - Text phụ dùng opacity thấp hơn để tạo phân cấp, không làm mờ quá mức.
+
+### Palette hex đang dùng
+- Primary: `#4f46e5`
+- Secondary: `#0f172a`
+- CTA / Accent: `#3B82F6`
+- Gradient primary: `#0b5cff` -> `#1f58ff` -> `#7c3aed`
+- Dark background gradient: `#041a3b` -> `#0c2f63` -> `#281a5f` -> `#4b1d79`
+- Light background gradient: `#f3f7ff` -> `#eef3ff` -> `#f7f3ff`
+- Dark text: `#f8fafc`
+- Light text: `#0f172a`
+- Light secondary text: `rgba(15, 23, 42, 0.8)`
+- Dark secondary text: `rgba(241, 245, 249, 0.82)`
+- Surface dark: `rgba(30, 41, 59, 0.7)`
+- Surface light: `rgba(255, 255, 255, 0.05)`
+- Border light mode panel: `rgba(76, 92, 148, 0.18)`
+- Shadow glow: `rgba(49, 105, 255, 0.45)`
 
 ## 4. Nền và bề mặt
 - Nền tổng thể không phẳng một màu, luôn có gradient hoặc lớp nền phụ để tạo chiều sâu.
