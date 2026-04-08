@@ -1,104 +1,88 @@
-========================================================================
-    NOTE MANAGEMENT - HUONG DAN VAN HANH SAU KHI DA DEPLOY PLATFORM
-========================================================================
+# NOTE MANAGEMENT - HƯỚNG DẪN VẬN HÀNH DỰ ÁN
 
-Tai lieu nay dung cho 2 nhu cau:
-1. Khoi dong du an de tiep tuc code o local.
-2. Build va redeploy BE/FE sau moi lan cap nhat code len platform.
+Tài liệu này cung cấp hướng dẫn chi tiết để thiết lập môi trường phát triển (Local) và các lưu ý quan trọng khi phát triển, deploy hệ thống.
 
+---
 
+## I. CÔNG NGHỆ SỬ DỤNG (TECH STACK)
+*   **Frontend:** ReactJS (Vite), Bootstrap 5, FontAwesome.
+*   **Backend:** Laravel 11.
+*   **Database:** MySQL 8.0.
+*   **DevOps:** Docker, Docker Compose.
 
-========================================================================
-II. KHOI DONG DU AN O LOCAL (DEVELOPMENT)
-========================================================================
-1. Clone source code va di chuyen vao thu muc goc du an.
+---
 
-2. Chay toan bo he thong local bang Docker Compose:
-   > docker compose up --build -d
+## II. HƯỚNG DẪN KHỞI ĐỘNG DỰ ÁN Ở LOCAL
+Đảm bảo máy tính đã cài đặt **Docker** và **Docker Compose**.
 
-3. Cai dependency backend trong container (lan dau hoac sau khi pull thay doi lon):
-   > docker compose exec backend composer install
+### Bước 1: Thiết lập biến môi trường (Environment)
+1.  Vào thư mục `backend/`, copy file `.env.example` thành `.env`.
+2.  Kiểm tra các thông số Database trong `.env` để khớp với `docker-compose.yml` (mặc định đã được cấu hình sẵn).
 
-4. Tao APP_KEY va migrate du lieu local:
-   > docker compose exec backend php artisan key:generate
-   > docker compose exec backend php artisan migrate --seed
+### Bước 2: Khởi động hệ thống với Docker
+Mở terminal tại thư mục gốc của dự án và chạy lệnh:
+```bash
+docker compose up --build -d
+```
+*Lưu ý: Flag `-d` dùng để chạy ngầm.*
 
-5. Truy cap he thong:
-   - Giao dien: http://localhost
-   - API qua Nginx gateway: http://localhost/api/...
+### Bước 3: Cài đặt Dependencies và Cấu hình Backend
+Chạy các lệnh sau để thiết lập Laravel bên trong container:
 
-6. Neu can dung lai khi restart may:
-   > docker compose up -d
+1.  **Cài đặt thư viện PHP:**
+    ```bash
+    docker compose exec backend composer install
+    ```
+2.  **Tạo khóa ứng dụng (App Key):**
+    ```bash
+    docker compose exec backend php artisan key:generate
+    ```
+3.  **Khởi tạo Database và dữ liệu mẫu (Seed):**
+    ```bash
+    docker compose exec backend php artisan migrate --seed
+    ```
 
-7. Neu can dung he thong:
-   > docker compose down
+### Bước 4: Truy cập ứng dụng
+*   **Giao diện người dùng (Frontend):** [http://localhost](http://localhost)
+*   **Cổng API (Nginx Gateway):** [http://localhost/api](http://localhost/api)
+*   **Mailpit (Kiểm tra Email local):** [http://localhost:8025](http://localhost:8025)
 
-========================================================================
-III. BUILD VA REDEPLOY BACKEND (RENDER)
-========================================================================
-Backend dang deploy bang Blueprint voi file render.yaml.
+---
 
-1. Day code moi len nhanh da lien ket voi Render.
+## III. NHỮNG LƯU Ý QUAN TRỌNG
 
-2. Render tu dong deploy (autoDeployTrigger: commit).
+### 1. Quản lý Database (Migration)
+*   **TUYỆT ĐỐI KHÔNG** chỉnh sửa trực tiếp cấu trúc DB trong MySQL.
+*   Mọi thay đổi cấu trúc table phải được thực hiện thông qua **Laravel Migration**.
+    ```bash
+    docker compose exec backend php artisan make:migration [tên_thành_phần]
+    ```
+*   Khi có code mới từ team, hãy chạy lại migration: `php artisan migrate`.
 
-3. Migration production duoc chay tu dong boi preDeployCommand:
-   php artisan migrate --force
+### 2. Biến môi trường & Bảo mật
+*   **Không bao giờ** commit file `.env` lên Git.
+*   Khi thêm biến environment mới, hãy cập nhật vào `.env.example` để Team Member khác biết.
+*   Các secret key trên Production (Render/Vercel) phải được cấu hình trong tab **Environment Variables** của Platform.
 
-4. Vao Render de kiem tra:
-   - Service status = Live
-   - Deploy log khong co Build failed / Runtime error
-   - Health check /up tra ve 200
+### 3. Quy trình làm việc nhóm (Git Flow)
+*   Làm việc trên các branch riêng biệt: `feature/ten-tinh-nang`, `bugfix/ten-loi`.
+*   Tạo Pull Request và Review trước khi merge vào `main`.
+*   Đảm bảo đồng bộ phiên bản công cụ: **PHP 8.3**, **Node 20+**.
 
-5. Cac bien moi truong secret (APP_KEY, DB_PASSWORD, ...):
-   - Cai trong tab Environment cua service
-   - Khong commit secret vao source code
+### 4. Lưu ý khi Deploy
+*   **Backend (Render):** Sử dụng file `render.yaml`. Migration production được chạy tự động qua `preDeployCommand`.
+*   **Frontend (Vercel):** Đảm bảo `VITE_API_BASE_URL` trên Vercel trỏ đúng về URL Backend của Render.
+*   **Database (Aiven):** Cấu hình đúng `DB_HOST`, `DB_PORT`, `DB_USERNAME`, `DB_PASSWORD` từ Aiven vào Render.
 
-========================================================================
-IV. BUILD VA REDEPLOY FRONTEND (VERCEL)
-========================================================================
-1. Day code frontend len nhanh da lien ket voi Vercel.
+---
 
-2. Vercel se tu build voi:
-   - Build command: npm run build
-   - Output directory: dist
+## IV. CÁC LỆNH THƯỜNG DÙNG
+| Lệnh | Tác dụng |
+| :--- | :--- |
+| `docker compose up -d` | Khởi động lại các container đã có |
+| `docker compose down` | Dừng và xóa toàn bộ container |
+| `docker compose ps` | Kiểm tra trạng thái các service |
+| `docker compose logs -f [service]` | Xem log realtime (backend/frontend/db) |
 
-3. Dam bao bien moi truong VITE_API_BASE_URL dang tro dung URL backend production.
-
-4. Sau deploy, test lai cac man hinh co goi API.
-
-========================================================================
-V. KHI NAO CAN DOI URL HOAC ENV
-========================================================================
-1. URL backend Render thuong khong doi khi redeploy code.
-2. URL chi doi neu tao service moi, xoa tao lai service, hoac doi custom domain.
-3. Neu URL backend doi, phai cap nhat VITE_API_BASE_URL tren Vercel va redeploy frontend.
-
-========================================================================
-VI. CHECKLIST SAU MOI LAN DEPLOY
-========================================================================
-1. Backend:
-   - Live
-   - Log sach loi
-   - /up = 200
-
-2. Frontend:
-   - Deploy success
-   - Trang vao duoc
-   - Goi API thanh cong
-
-3. Database:
-   - Migration da chay
-   - Tao/sua/xoa du lieu thu duoc
-
-========================================================================
-VII. LUU Y KHI LAM NHOM
-========================================================================
-1. Chi mot nguoi phu trach file deploy: render.yaml, backend/Dockerfile, env production.
-2. Khong hardcode URL/secret/thong tin DB trong source code.
-3. Moi thay doi schema bat buoc qua migration.
-4. Dong bo version cong cu giua thanh vien:
-   - Backend PHP 8.3
-   - Node/NPM dong bo cho frontend
-5. Lam viec theo branch rieng, merge va review truoc khi day len nhanh deploy.
-6. Neu ca nhom chay cung Docker Compose local, su dung cung env template va ten service DB thong nhat.
+---
+**Note Management Project - 2026**
