@@ -45,7 +45,7 @@ const MockNotesPreview = () => {
   }, []);
 
   return (
-    <section ref={containerRef} className="container position-relative pb-5" style={{ perspective: '1000px', marginTop: '80px', zIndex: 0 }}>
+    <section ref={containerRef} className="container position-relative pb-5" style={{ perspective: '1000px', marginTop: '60px', zIndex: 0 }}>
       <div className="row justify-content-center g-4">
         {/* Pinned Note */}
         <div className="col-md-4 col-sm-6">
