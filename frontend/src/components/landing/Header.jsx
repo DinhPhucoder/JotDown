@@ -6,7 +6,7 @@ const Header = ({ theme, toggleTheme }) => {
     <header className="navbar navbar-expand-lg border-bottom bg-body">
       <div className="container">
         <a className="navbar-brand fw-bold d-flex align-items-center" href="#">
-          <span>Jot Down</span>
+        <i class="fa-solid fa-pen-nib"></i> <span className="ps-2">Jot Down</span>
         </a>
         <div className="d-flex align-items-center gap-3">
           <button

@@ -68,10 +68,9 @@ const Hero = () => {
 
       <h1 className="hero-title hero-element">
         Jot Down <br />
-        <span className="text-primary d-inline-flex align-items-center" style={{ minHeight: '1.2em' }}>
           {typedText}
           <span className="typing-cursor"></span>
-        </span>
+        
       </h1>
 
       <p className="hero-subtitle mb-5 hero-element">
