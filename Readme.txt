@@ -1,6 +1,7 @@
 # NOTE MANAGEMENT - HƯỚNG DẪN VẬN HÀNH DỰ ÁN
 
-Tài liệu này cung cấp hướng dẫn chi tiết để thiết lập môi trường phát triển (Local) và các lưu ý quan trọng khi phát triển, deploy hệ thống.
+Tài liệu này cung cấp hướng dẫn chi tiết để thiết lập môi trường phát triển (Local) 
+và các lưu ý quan trọng khi phát triển, deploy hệ thống.
 
 ---
 
@@ -13,11 +14,11 @@ Tài liệu này cung cấp hướng dẫn chi tiết để thiết lập môi t
 ---
 
 ## II. HƯỚNG DẪN KHỞI ĐỘNG DỰ ÁN Ở LOCAL
-Đảm bảo máy tính đã cài đặt **Docker** và **Docker Compose**.
 
 ### Bước 1: Thiết lập biến môi trường (Environment)
 1.  Vào thư mục `backend/`, copy file `.env.example` thành `.env`.
-2.  Kiểm tra các thông số Database trong `.env` để khớp với `docker-compose.yml` (mặc định đã được cấu hình sẵn).
+2.  Kiểm tra các thông số Database trong `.env` để khớp với `docker-compose.yml` 
+    (mặc định đã được cấu hình sẵn).
 
 ### Bước 2: Khởi động hệ thống với Docker
 Mở terminal tại thư mục gốc của dự án và chạy lệnh:

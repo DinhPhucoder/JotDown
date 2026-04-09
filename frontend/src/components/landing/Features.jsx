@@ -49,7 +49,7 @@ const Features = () => {
       <div className="text-center mb-5">
         <h2 className="mb-3 hero-title" style={{ fontSize: '3rem' }}>Jot Down có gì?</h2>
         <p className="text-secondary fs-5" style={{ maxWidth: '600px', margin: '0 auto' }}>
-          Không chỉ là một ứng dụng ghi chú thông thường. Một công cụ năng suất hoàn chỉnh được thiết kế cho quy trình làm việc hiện đại.
+          Không chỉ là một ứng dụng ghi chú thông thường.
         </p>
       </div>
 

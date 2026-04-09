@@ -71,7 +71,7 @@ strong, .fw-bold {
 
 /* Massive Typography (Exaggerated Minimalism) */
 .hero-title {
-  font-size: clamp(3rem, 10vw, 8rem);
+  font-size: clamp(2rem, 10vw, 7rem);
   font-weight: 900;
   letter-spacing: -0.01em;
   line-height: 1.3;

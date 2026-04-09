@@ -11,16 +11,15 @@ const MockNotesPreview = () => {
 
   useEffect(() => {
     const ctx = gsap.context(() => {
-      // Parallax and spreading effect for mock notes when scrolled
+      // Stable entrance animation
       gsap.fromTo('.mock-note-card',
-        { y: 150, opacity: 0, rotationX: 45, z: -200 },
+        { y: 60, opacity: 0, scale: 0.95 },
         {
           y: 0,
           opacity: 1,
-          rotationX: 0,
-          z: 0,
-          duration: 1.5,
-          stagger: 0.15,
+          scale: 1,
+          duration: 1.2,
+          stagger: 0.2,
           ease: 'power3.out',
           scrollTrigger: {
             trigger: containerRef.current,
@@ -29,16 +28,15 @@ const MockNotesPreview = () => {
         }
       );
 
-      // Floating animation
+      // Smooth and stable floating animation
       gsap.to('.mock-note-card', {
-        y: 'random(-8, 8)',
-        rotation: 'random(-1.2, 1.2)',
-        duration: 'random(3, 5)',
+        y: -12,
+        duration: 2.5,
         repeat: -1,
         yoyo: true,
         ease: 'sine.inOut',
-        delay: 1.5,
-        repeatRefresh: true
+        stagger: 0.3,
+        delay: 1.2
       });
     }, containerRef);
 
@@ -46,11 +44,11 @@ const MockNotesPreview = () => {
   }, []);
 
   return (
-    <section ref={containerRef} className="container position-relative pb-5 mock-notes-section" style={{ perspective: '1000px', marginTop: '60px', zIndex: 0 }}>
+    <section ref={containerRef} className="container position-relative pb-5 mock-notes-section" style={{ marginTop: '60px', zIndex: 0 }}>
       <div className="row justify-content-center g-4">
         {/* Pinned Note */}
         <div className="col-md-4 col-sm-6">
-          <div className="card panel-dark border-0 h-100 p-4 mock-note-card" style={{ transformStyle: 'preserve-3d' }}>
+          <div className="card panel-dark border-0 h-100 p-4 mock-note-card">
             <div className="d-flex justify-content-between align-items-center mb-3">
               <span className="badge bg-primary text-white rounded-pill px-3 py-2">
                 <FontAwesomeIcon icon={faThumbtack} className="me-2" />
@@ -65,7 +63,7 @@ const MockNotesPreview = () => {
 
         {/* Locked Note */}
         <div className="col-md-4 col-sm-6">
-          <div className="card panel-dark border-0 h-100 p-4 mock-note-card" style={{ transformStyle: 'preserve-3d', marginTop: '30px' }}>
+          <div className="card panel-dark border-0 h-100 p-4 mock-note-card" style={{ marginTop: '30px' }}>
             <div className="d-flex justify-content-between align-items-center mb-3">
               <span className="badge bg-danger text-white rounded-pill px-3 py-2">
                 <FontAwesomeIcon icon={faLock} className="me-2" />
@@ -82,7 +80,7 @@ const MockNotesPreview = () => {
 
         {/* Shared Note */}
         <div className="col-md-4 col-sm-6">
-          <div className="card panel-dark border-0 h-100 p-4 mock-note-card" style={{ transformStyle: 'preserve-3d' }}>
+          <div className="card panel-dark border-0 h-100 p-4 mock-note-card">
             <div className="d-flex justify-content-between align-items-center mb-3">
               <span className="badge bg-info text-dark rounded-pill px-3 py-2">
                 <FontAwesomeIcon icon={faShareAlt} className="me-2" />

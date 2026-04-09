@@ -29,7 +29,6 @@ DROP TABLE IF EXISTS `users`;
 
 DROP TABLE IF EXISTS `sync_queue`;
 
-DROP TABLE IF EXISTS `password_reset_tokens`;
 
 SET FOREIGN_KEY_CHECKS = 1;
 
@@ -38,9 +37,8 @@ CREATE TABLE `users` (
     `name` varchar(255) NOT NULL,
     `email` varchar(255) NOT NULL,
     `password` varchar(255) NOT NULL,
-    `avatar` varchar(255) DEFAULT NULL,
+    `avatar` text DEFAULT NULL,
     `preferences` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
-    `activation_token` varchar(255) DEFAULT NULL,
     `email_verified_at` timestamp NULL DEFAULT NULL,
     `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
     `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
@@ -88,7 +86,7 @@ CREATE TABLE `note_shares` (
 CREATE TABLE `note_attachments` (
     `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT,
     `note_id` int(10) UNSIGNED NOT NULL,
-    `file_path` varchar(255) NOT NULL,
+    `file_url` text NOT NULL,
     `attachment_kind` enum('IMAGE', 'FILE') NOT NULL DEFAULT 'FILE',
     `original_name` varchar(255) DEFAULT NULL,
     `file_type` varchar(50) DEFAULT NULL,
@@ -174,7 +172,7 @@ INSERT INTO
     note_attachments (
         id,
         note_id,
-        file_path,
+        file_url,
         original_name
     )
 VALUES (

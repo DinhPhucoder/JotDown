@@ -1,4 +1,4 @@
--- Active: 1775224066074@@127.0.0.1@3306@notemanagement
+-- Active: 1775225515643@@127.0.0.1@3306@notes_db
 USE notemanagement;
 
 DELIMITER $$

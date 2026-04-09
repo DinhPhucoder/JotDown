@@ -45,7 +45,7 @@ CREATE TABLE `notes` (
 CREATE TABLE `note_attachments` (
     `id` int(10) UNSIGNED NOT NULL,
     `note_id` int(10) UNSIGNED NOT NULL,
-    `file_path` varchar(255) NOT NULL,
+    `file_url` text NOT NULL,
     `attachment_kind` enum('IMAGE', 'FILE') NOT NULL DEFAULT 'FILE',
     `original_name` varchar(255) DEFAULT NULL,
     `file_type` varchar(50) DEFAULT NULL,
@@ -79,15 +79,6 @@ CREATE TABLE `note_shares` (
     `deleted_at` timestamp NULL DEFAULT NULL
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_general_ci;
 
---
--- 7. Cấu trúc bảng cho bảng `password_reset_tokens`
---
-
-CREATE TABLE `password_reset_tokens` (
-    `email` varchar(255) NOT NULL,
-    `token` varchar(255) NOT NULL,
-    `created_at` timestamp NOT NULL DEFAULT current_timestamp()
-) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_general_ci;
 
 --
 -- 8. Cấu trúc bảng cho bảng `sync_queue`
@@ -111,9 +102,8 @@ CREATE TABLE `users` (
     `name` varchar(255) NOT NULL,
     `email` varchar(255) NOT NULL,
     `password_hash` varchar(255) NOT NULL,
-    `avatar` varchar(255) DEFAULT NULL,
+    `avatar` text DEFAULT NULL,
     `preferences` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`preferences`)),
-    `activation_token` varchar(255) DEFAULT NULL,
     `email_verified_at` timestamp NULL DEFAULT NULL,
     `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
     `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
@@ -159,10 +149,6 @@ ADD KEY `fk_noteshare_note` (`note_id`),
 ADD KEY `fk_noteshare_sender` (`sender_id`),
 ADD KEY `fk_noteshare_receiver` (`receiver_id`);
 
---
--- Chỉ mục cho bảng `password_reset_tokens`
---
-ALTER TABLE `password_reset_tokens` ADD PRIMARY KEY (`email`);
 
 --
 -- Chỉ mục cho bảng `sync_queue`
