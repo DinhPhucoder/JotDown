@@ -1,5 +1,3 @@
-
-
 ## Nhóm Trang Xác Thực (Authentication Pages): (Quang)
 **Đăng nhập (Login):** Email và mật khẩu. Có liên kết đến trang Đăng ký và
 Quên mật khẩu.

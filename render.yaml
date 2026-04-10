@@ -8,6 +8,10 @@ services:
     healthCheckPath: /up
     preDeployCommand: php artisan migrate --force
     autoDeployTrigger: commit
+    buildFilter:
+      paths:
+        - backend/**
+        - render.yaml
     envVars:
       - key: APP_ENV
         value: production
