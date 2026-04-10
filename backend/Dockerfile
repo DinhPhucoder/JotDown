@@ -34,5 +34,6 @@ RUN php artisan config:cache && php artisan route:cache && php artisan view:cach
 # Cap quyen ghi cho cac thu muc runtime cua Laravel
 RUN chown -R www-data:www-data storage bootstrap/cache
 
-# Chạy php-fpm mặc định
-CMD ["php-fpm"]
+# Mặc định khởi chạy HTTP server (cho Render/Production)
+# Ở Local, docker-compose sẽ ghi đè lệnh này bằng php-fpm
+CMD ["sh", "-c", "php artisan serve --host=0.0.0.0 --port=${PORT:-10000}"]
