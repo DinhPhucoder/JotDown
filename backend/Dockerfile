@@ -1,6 +1,6 @@
-FROM php:8.3-fpm
+FROM php:8.3-apache
 
-# Cài đặt các thư viện hệ thống cần thiết cho bản Laravel
+# Cài đặt các thư viện hệ thống
 RUN apt-get update && apt-get install -y \
     git \
     curl \
@@ -8,32 +8,39 @@ RUN apt-get update && apt-get install -y \
     libonig-dev \
     libxml2-dev \
     zip \
-    unzip
+    unzip \
+    libzip-dev
 
-# Xoá cache của package manager
+# Xoá cache
 RUN apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# Cài đặt PHP extensions cần thiết
-RUN docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd
+# Cài đặt PHP extensions
+RUN docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd zip
+
+# Enable Apache mod_rewrite cho Laravel
+RUN a2enmod rewrite
+
+# Cấu hình Apache DocumentRoot trỏ vào thư mục public của Laravel
+ENV APACHE_DOCUMENT_ROOT /var/www/html/public
+RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-available/*.conf
+RUN sed -ri -e 's!/var/www/!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/apache2.conf /etc/apache2/conf.d/*.conf
 
 # Copy script của Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
-# Chuyển thư mục làm việc mặc định
-WORKDIR /var/www
+# Chuyển thư mục làm việc
+WORKDIR /var/www/html
 
 # Copy source code vao container
 COPY . .
 
-# Cai dependencies cho production va toi uu autoloader
+# Cài dependencies
 RUN composer install --no-dev --optimize-autoloader --no-interaction --prefer-dist
 
-# Tao cache de giam startup time
-RUN php artisan config:cache && php artisan route:cache && php artisan view:cache
-
-# Cap quyen ghi cho cac thu muc runtime cua Laravel
+# Cấp quyền cho Laravel
 RUN chown -R www-data:www-data storage bootstrap/cache
 
-# Mặc định khởi chạy HTTP server (cho Render/Production)
-# Ở Local, docker-compose sẽ ghi đè lệnh này bằng php-fpm
-CMD ["sh", "-c", "php artisan serve --host=0.0.0.0 --port=${PORT:-10000}"]
+# Render sẽ tự cấp PORT, Apache mặc định chạy cổng 80, Render sẽ tự map
+EXPOSE 80
+
+CMD ["apache2-foreground"]
