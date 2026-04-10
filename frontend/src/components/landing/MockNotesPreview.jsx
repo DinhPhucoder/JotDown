@@ -56,7 +56,7 @@ const MockNotesPreview = () => {
               </span>
               <small className="meta-muted">Vừa xong</small>
             </div>
-            <h4 className="note-title mb-3" style={{ fontFamily: 'Poppins, sans-serif' }}>Lộ trình dự án 2026</h4>
+            <h4 className="note-title mb-3" style={{ fontFamily: "'Google Sans Flex', sans-serif" }}>Lộ trình dự án 2026</h4>
             <p className="note-text mb-0">Mục tiêu cấp cao cho ứng dụng Jot Down. Chúng tôi cần tập trung vào khả năng hoạt động ngoại tuyến...</p>
           </div>
         </div>
@@ -71,7 +71,7 @@ const MockNotesPreview = () => {
               </span>
               <small className="meta-muted">2 giờ trước</small>
             </div>
-            <h4 className="note-title mb-3" style={{ fontFamily: 'Poppins, sans-serif' }}>Tài khoản ngân hàng</h4>
+            <h4 className="note-title mb-3" style={{ fontFamily: "'Google Sans Flex', sans-serif" }}>Tài khoản ngân hàng</h4>
             <p className="note-text mb-0">
               <span style={{ filter: 'blur(4px)' }}>Chi tiết tài khoản: xxx-xxx-xxxx. Mã PIN của kho tiền là 8492.</span>
             </p>
@@ -88,7 +88,7 @@ const MockNotesPreview = () => {
               </span>
               <small className="meta-muted">Hôm qua</small>
             </div>
-            <h4 className="note-title mb-3" style={{ fontFamily: 'Poppins, sans-serif' }}>Spec hệ thống thiết kế</h4>
+            <h4 className="note-title mb-3" style={{ fontFamily: "'Google Sans Flex', sans-serif" }}>Spec hệ thống thiết kế</h4>
             <p className="note-text mb-0">Sử dụng kiểu chữ cường điệu. Đảm bảo gradient deep sea được triển khai đúng cách...</p>
 
             <div className="mt-4 pt-3 border-top border-secondary d-flex align-items-center gap-2">

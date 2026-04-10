@@ -61,7 +61,7 @@ const Features = () => {
                 style={{ width: '80px', height: '80px', fontSize: '2rem' }}>
                 <FontAwesomeIcon icon={feature.icon} />
               </div>
-              <h3 className="h4 feature-title mb-3" style={{ fontFamily: 'Poppins, sans-serif' }}>{feature.title}</h3>
+              <h3 className="h4 feature-title mb-3" style={{ fontFamily: "'Google Sans Flex', sans-serif" }}>{feature.title}</h3>
               <p className="feature-text mb-0 px-2">{feature.description}</p>
             </div>
           </div>
