@@ -74,3 +74,4 @@ Khi thấy log thông báo hoàn tất các bước (Composer, Key, Migrate), h�
 
 ---
 **Note Management Project - 2026**
+##test
