@@ -49,8 +49,3 @@ services:
       # Mount folder dữ liệu cố định tránh mất sau mỗi lần khởi động
       - ./docker/mysql_data:/var/lib/mysql
 
-  mailpit:
-    image: axllent/mailpit
-    ports:
-      - "8025:8025" # Dashboard UI
-      - "1025:1025" # SMTP server
