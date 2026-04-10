@@ -45,5 +45,7 @@ services:
         value: database
       - key: FRONTEND_URL
         sync: false
+      - key: SANCTUM_STATEFUL_DOMAINS
+        sync: false
       - key: MYSQL_ATTR_SSL_CA
         sync: false
