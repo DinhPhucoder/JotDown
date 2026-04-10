@@ -27,21 +27,14 @@ docker compose up --build -d
 ```
 *Lưu ý: Flag `-d` dùng để chạy ngầm.*
 
-### Bước 3: Cài đặt Dependencies và Cấu hình Backend
-Chạy các lệnh sau để thiết lập Laravel bên trong container:
+### Bước 3: Đợi hệ thống tự động thiết lập (Initialization)
+Dự án đã được cấu hình để tự động cài đặt thư viện, tạo App Key và chạy Migration ngay khi container khởi động. 
 
-1.  **Cài đặt thư viện PHP:**
-    ```bash
-    docker compose exec backend composer install
-    ```
-2.  **Tạo khóa ứng dụng (App Key):**
-    ```bash
-    docker compose exec backend php artisan key:generate
-    ```
-3.  **Khởi tạo Database và dữ liệu mẫu (Seed):**
-    ```bash
-    docker compose exec backend php artisan migrate --seed
-    ```
+**Lưu ý:** Ở lần đầu tiên, quá trình này mất khoảng 1-2 phút tùy tốc độ mạng. Bạn có thể theo dõi tiến trình bằng lệnh:
+```bash
+docker compose logs -f backend
+```
+Khi thấy log thông báo hoàn tất các bước (Composer, Key, Migrate), hệ thống đã sẵn sàng.
 
 ### Bước 4: Truy cập ứng dụng
 *   **Giao diện người dùng (Frontend):** [http://localhost](http://localhost)

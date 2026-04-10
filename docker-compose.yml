@@ -26,6 +26,7 @@ services:
       dockerfile: Dockerfile
     volumes:
       - ./backend:/var/www
+    command: sh -c "composer install && php artisan key:generate --force && php artisan migrate --force && php-fpm"
     environment:
       - DB_CONNECTION=mysql
       - DB_HOST=db

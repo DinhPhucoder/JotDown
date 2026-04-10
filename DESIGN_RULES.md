@@ -9,7 +9,7 @@ Tài liệu này mô tả bộ quy tắc thiết kế lấy từ landing page hi
 
 ## 2. Typography
 - Font chính cho nội dung: `Inter`.
-- Font cho heading, brand, text nhấn mạnh: `Poppins`.
+- Font cho heading, brand, text nhấn mạnh: `Google Sans Flex`.
 - Heading dùng weight đậm, tracking âm nhẹ để tạo cảm giác gọn và chắc.
 - Body text ưu tiên rõ ràng, dễ đọc, không dùng font trang trí.
 
