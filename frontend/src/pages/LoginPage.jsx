@@ -32,6 +32,15 @@ function LoginPage() {
             <Toaster position="bottom-right" richColors />
             <div className="login-overlay" />
 
+            {/* Logo Góc Trên Bên Trái */}
+            <div className="login-logo-container">
+                <img src="/logo.png" alt="Note Management Logo" className="login-logo-img" />
+                <div className="login-logo-text">
+                    <span className="text-1st">Jot</span>
+                    <span className="text-2nd">Down</span>
+                </div>
+            </div>
+
             <div className="login-card">
                 <h2 className="login-card__title">Đăng nhập</h2>
 

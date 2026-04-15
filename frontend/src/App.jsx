@@ -5,11 +5,22 @@
 // import Features from './components/landing/Features'
 // import MockNotesPreview from './components/landing/MockNotesPreview'
 // import './App.css'
-import LoginPage from './pages/LoginPage'
+import { BrowserRouter, Routes, Route } from 'react-router';
+import LoginPage from './pages/LoginPage';
+import NotFound from "./pages/NotFoundPage";
 
 function App() {
   // TẠM THỜI: Render LoginPage để xem giao diện
-  return <LoginPage />;
+  return (
+    <>
+      <BrowserRouter>
+        <Routes>
+          <Route path="/" element={<LoginPage />} />
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </BrowserRouter>
+    </>
+  )
 
   // --- LandingPage gốc (bỏ comment khi cần) ---
   // const [theme, setTheme] = useState(() => {
