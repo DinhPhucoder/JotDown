@@ -1,9 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react';
 import gsap from 'gsap';
+import { useNavigate } from 'react-router-dom';
 import MagneticButton from './MagneticButton';
 
 const Hero = () => {
   const heroRef = useRef(null);
+  const navigate = useNavigate();
   const [typedText, setTypedText] = useState("");
   const fullText = "Nghĩ gì ghi nấy...";
 
@@ -78,7 +80,7 @@ const Hero = () => {
       </p>
 
       <div className="hero-element">
-        <MagneticButton className="rounded-pill px-5 py-3 fs-5">
+        <MagneticButton className="rounded-pill px-5 py-3 fs-5" onClick={() => navigate('/login')}>
           Khám phá ngay
         </MagneticButton>
       </div>

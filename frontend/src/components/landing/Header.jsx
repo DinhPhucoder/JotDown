@@ -1,12 +1,15 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import MagneticButton from './MagneticButton';
 
 const Header = ({ theme, toggleTheme }) => {
+  const navigate = useNavigate();
+
   return (
     <header className="navbar navbar-expand-lg border-bottom bg-body">
       <div className="container">
         <a className="navbar-brand fw-bold d-flex align-items-center" href="#">
-        <i class="fa-solid fa-pen-nib"></i> <span className="ps-2">Jot Down</span>
+        <i className="fa-solid fa-pen-nib"></i> <span className="ps-2">Jot Down</span>
         </a>
         <div className="d-flex align-items-center gap-3">
           <button
@@ -21,7 +24,7 @@ const Header = ({ theme, toggleTheme }) => {
               <i className="fa-regular fa-moon fs-5"></i>
             )}
           </button>
-          <MagneticButton className="btn btn-primary p-3 fw-medium">
+          <MagneticButton className="btn btn-primary p-3 fw-medium" onClick={() => navigate('/login')}>
             Đăng nhập
           </MagneticButton>
         </div>
