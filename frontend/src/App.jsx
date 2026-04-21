@@ -4,9 +4,10 @@
 // import Hero from './components/landing/Hero'
 // import Features from './components/landing/Features'
 // import MockNotesPreview from './components/landing/MockNotesPreview'
-// import './App.css'
 import { BrowserRouter, Routes, Route } from 'react-router';
 import LoginPage from './pages/LoginPage';
+import SignupPage from './pages/SignupPage';
+import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import NotFound from "./pages/NotFoundPage";
 
 function App() {
@@ -15,7 +16,9 @@ function App() {
     <>
       <BrowserRouter>
         <Routes>
-          <Route path="/" element={<LoginPage />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/signup" element={<SignupPage />} />
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

@@ -1,109 +1,93 @@
-import { useState } from 'react';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faEye, faEyeSlash } from '@fortawesome/free-solid-svg-icons';
-import { Toaster, toast } from 'sonner';
-import bgLogin from '../assets/bg_login.jpg';
-import './LoginPage.css';
+import React, { useState } from 'react';
+import { Container, Row, Col, Form, Button, Spinner } from 'react-bootstrap';
+import { Mail, Lock, Eye, EyeOff } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
+import './Auth.css';
 
-function LoginPage() {
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
-    const [showPassword, setShowPassword] = useState(false);
-    const [remember, setRemember] = useState(false);
+const LoginPage = () => {
+  return (
+    <Container fluid className="p-0 auth-wrapper">
+      {/* Logo và brand name */}
+      <Link to="/landing" className="auth-logo">
+        <img src="/Logo_JotDown.png" alt="JotDown" />
+        <span className="brand-name">
+          <span className="brand-jot">Jot</span>
+          <span className="brand-down">Down</span>
+        </span>
+      </Link>
 
-    const handleSubmit = (e) => {
-        e.preventDefault();
+      <Row className="g-0 min-vh-100">
+        <Col lg={6} className="d-none d-lg-flex auth-branding">
+          <div className="branding-content">
+            <h2> Jot <span>Down</span> <br /> <span>Nghĩ gì</span> ghi nấy...</h2>
+            <p className="lead">Đừng để những suy nghĩ vụt mất. Ghi chép nhanh chóng, đồng bộ an toàn và quản lý tri thức của bạn một cách khoa học nhất.</p>
+          </div>
+        </Col>
 
-        if (!email.trim()) {
-            toast.warning('Vui lòng nhập email');
-            return;
-        }
-        if (!password.trim()) {
-            toast.warning('Vui lòng nhập mật khẩu');
-            return;
-        }
+        <Col lg={6} className="auth-form-container">
+          <div className="auth-card">
+            <div className="auth-header mb-5">
+              <h1 className="fw-bold">Đăng nhập</h1>
+              <p className="text-secondary">Chào mừng trở lại! Vui lòng nhập thông tin của bạn</p>
+            </div>
 
-        // TODO: Gọi API đăng nhập
-        console.log('Login:', { email, password, remember });
-    };
-
-    return (
-        <div className="login-page" style={{ backgroundImage: `url(${bgLogin})` }}>
-            <Toaster position="bottom-right" richColors />
-            <div className="login-overlay" />
-
-            {/* Logo Góc Trên Bên Trái */}
-            <div className="login-logo-container">
-                <img src="/logo.png" alt="Note Management Logo" className="login-logo-img" />
-                <div className="login-logo-text">
-                    <span className="text-1st">Jot</span>
-                    <span className="text-2nd">Down</span>
+            <Form className="auth-form">
+              <Form.Group className="mb-4" controlId="email">
+                <Form.Label>Email</Form.Label>
+                <div className="input-wrapper">
+                  <Mail className="input-icon" size={20} />
+                  <Form.Control
+                    type="email"
+                    name="email"
+                    placeholder="name@example.com"
+                  />
                 </div>
+              </Form.Group>
+
+              <Form.Group className="mb-4" controlId="password">
+                <Form.Label>Mật khẩu</Form.Label>
+                <div className="input-wrapper">
+                  <Lock className="input-icon" size={20} />
+                  <Form.Control
+                    type="password"
+                    name="password"
+                    placeholder="••••••••"
+                  />
+                  <button
+                    type="button"
+                    className="password-toggle-btn"
+                    tabIndex={-1}
+                  >
+                    < EyeOff size={18} />
+                  </button>
+                </div>
+              </Form.Group>
+
+              <div className="d-flex justify-content-end mb-4">
+                <Link to="/forgot-password" className="auth-link text-decoration-none">
+                  Quên mật khẩu?
+                </Link>
+              </div>
+
+              <Button variant="primary" type="submit" className="w-100">
+                Đăng nhập
+              </Button>
+            </Form>
+
+            <div className="auth-footer text-center mt-5">
+              <p className="text-secondary">
+                Chưa có tài khoản?{' '}
+                <Link to="/signup" className="auth-link">
+                  Tạo ngay
+                </Link>
+              </p>
             </div>
-
-            <div className="login-card">
-                <h2 className="login-card__title">Đăng nhập</h2>
-
-                <form onSubmit={handleSubmit} noValidate className="login-form">
-                    {/* Email */}
-                    <div className="login-field">
-                        <label htmlFor="login-email" className="login-field__label">Email</label>
-                        <input
-                            id="login-email"
-                            type="email"
-                            className="login-field__input"
-                            placeholder="balamia@gmail.com"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                        />
-                    </div>
-
-                    {/* Password */}
-                    <div className="login-field">
-                        <label htmlFor="login-password" className="login-field__label">Mật khẩu</label>
-                        <div className="login-field__password-wrap">
-                            <input
-                                id="login-password"
-                                type={showPassword ? 'text' : 'password'}
-                                className="login-field__input"
-                                placeholder="Nhập mật khẩu"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                            />
-                            <button
-                                type="button"
-                                className="login-field__eye"
-                                onClick={() => setShowPassword(!showPassword)}
-                                aria-label="Toggle password"
-                            >
-                                <FontAwesomeIcon icon={showPassword ? faEyeSlash : faEye} />
-                            </button>
-                        </div>
-                    </div>
-
-                    {/* Remember me + Forgot password */}
-                    <div className="login-options">
-                        <label className="login-options__remember">
-                            <input
-                                type="checkbox"
-                                checked={remember}
-                                onChange={(e) => setRemember(e.target.checked)}
-                            />
-                            <span>Ghi nhớ đăng nhập</span>
-                        </label>
-                        <a href="#" className="login-options__forgot">Quên mật khẩu?</a>
-                    </div>
-
-                    {/* Nút đăng nhập */}
-                    <button type="submit" className="login-btn">Đăng nhập</button>
-                </form>
-
-                <p className="login-card__footer">
-                    Bạn chưa có tài khoản? <a href="#" className="login-card__signup">Đăng ký</a>
-                </p>
-            </div>
-        </div>
-    );
-}
+          </div>
+        </Col>
+      </Row>
+    </Container>
+  );
+};
 
 export default LoginPage;
