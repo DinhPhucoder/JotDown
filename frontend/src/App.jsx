@@ -5,13 +5,12 @@
 // import Features from './components/landing/Features'
 // import MockNotesPreview from './components/landing/MockNotesPreview'
 import { BrowserRouter, Routes, Route } from 'react-router';
-import LoginPage from './pages/LoginPage';
-import SignupPage from './pages/SignupPage';
-import ForgotPasswordPage from './pages/ForgotPasswordPage';
+import LoginPage from './pages/Authentication Pages/LoginPage';
+import SignupPage from './pages/Authentication Pages/SignupPage';
+import ForgotPasswordPage from './pages/Authentication Pages/ForgotPasswordPage';
 import NotFound from "./pages/NotFoundPage";
 
 function App() {
-  // TẠM THỜI: Render LoginPage để xem giao diện
   return (
     <>
       <BrowserRouter>

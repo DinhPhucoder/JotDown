@@ -2,7 +2,6 @@
   --auth-primary: #4f46e5;
   --auth-primary-dark: #3730a3;
   --bg-black: #050505;
-  --card-black: #111111;
   --text-white: #f1faee;
   --text-gray: #a0a0a0;
   --input-bg: #1a1a1a;
@@ -63,7 +62,7 @@ body {
 /* Branding Side */
 .auth-branding {
   background: linear-gradient(135deg, rgba(79, 70, 229, 0.15) 0%, rgba(0, 0, 0, 1) 100%),
-    url('https://images.unsplash.com/photo-1614850523296-e8c041df43a0?q=80&w=2070&auto=format&fit=crop');
+    url('https://images.unsplash.com/photo-1517842645767-c639042777db?q=80&w=2070&auto=format&fit=crop');
   background-size: cover;
   background-position: center;
   position: relative;
@@ -102,7 +101,7 @@ body {
 
 /* Form Styling Overrides */
 .auth-form-container {
-  background-color: var(--bg-black);
+  background: linear-gradient(135deg, rgba(79, 70, 229, 0.15) 0%, rgba(0, 0, 0, 1) 100%);
   display: flex;
   flex-direction: column;
   align-items: center;
