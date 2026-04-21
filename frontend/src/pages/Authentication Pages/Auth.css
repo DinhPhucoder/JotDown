@@ -122,6 +122,12 @@ body {
   color: var(--auth-primary);
 }
 
+.form-control::placeholder {
+  color: grey;
+  font-style: italic;
+  opacity: 1;
+}
+
 /* Bootstrap Customization */
 .form-control {
   background-color: var(--input-bg) !important;

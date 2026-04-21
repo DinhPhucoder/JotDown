@@ -29,7 +29,7 @@ const LoginPage = () => {
           <div className="auth-card">
             <div className="auth-header mb-5">
               <h1 className="fw-bold">Đăng nhập</h1>
-              <p className="text-secondary">Chào mừng trở lại! Vui lòng nhập thông tin của bạn</p>
+              <p className='text-secondary'>Chào mừng trở lại! Vui lòng nhập thông tin của bạn</p>
             </div>
 
             <Form className="auth-form">
