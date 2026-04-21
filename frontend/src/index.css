@@ -1,6 +1,4 @@
 @import url('https://fonts.googleapis.com/css2?family=Google+Sans+Flex:opsz,wght@8..144,100..1000&family=Inter:wght@300;400;500;600;700&display=swap');
-@import "tailwindcss";
-
 * {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
@@ -11,6 +9,7 @@
   --color-secondary: #0f172a;
   --color-cta: #3B82F6;
   --primary-gradient: linear-gradient(135deg, #0b5cff 0%, #1f58ff 45%, #7c3aed 100%);
+  --surface-border: rgba(148, 163, 184, 0.16);
 
   /* Background gradients */
   --bg-deep-sea: linear-gradient(135deg, #041a3b 0%, #0c2f63 42%, #281a5f 70%, #4b1d79 100%);
@@ -51,6 +50,7 @@ html[data-bs-theme="light"] body {
 body {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   overflow-x: hidden;
+  min-height: 100vh;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -182,6 +182,10 @@ html[data-bs-theme="light"] .meta-muted {
 
 .bg-primary {
   background: var(--primary-gradient) !important;
+  border: 0;
+}
+
+button {
   border: 0;
 }
 
