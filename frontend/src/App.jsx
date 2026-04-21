@@ -7,6 +7,8 @@ import SignupPage from './pages/Authentication Pages/SignupPage';
 import LandingPage from './pages/LandingPage';
 import NotesPage from './pages/NotesPage';
 import NotFoundPage from './pages/NotFoundPage';
+import ProfilePage from './pages/ProfilePage';
+
 
 function App() {
   useEffect(() => {

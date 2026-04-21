@@ -44,6 +44,13 @@ html[data-bs-theme="light"] .auth-wrapper {
 }
 
 /* Chỉnh kích thước logo (width & height) */
+.auth-logo img {
+  width: 60px;
+  height: 60px;
+  object-fit: contain;
+  border-radius: 8px;
+}
+
 /* Chỉnh kích thước branding name (font-size) */
 .auth-logo .jd-brand__name {
   font-size: 1.1rem;
