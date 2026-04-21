@@ -11,18 +11,18 @@ const menuItems = [
 ];
 
 const ProfilePage = () => {
-  const [displayName, setDisplayName] = useState('ngan');
+  const [displayName, setDisplayName] = useState('Quang');
   const [bio, setBio] = useState('');
-  const avatar = 'https://cdn.discordapp.com/embed/avatars/0.png';
+  const avatar = 'favicon.svg';
 
   return (
     <div className="profile-page-container">
       {/* Sidebar menu */}
       <aside className="profile-sidebar">
-        <div style={{marginBottom: 32}}>
+        <div style={{ marginBottom: 32 }}>
           <img src={avatar} alt="avatar" className="avatar" />
-          <div className="username">ngan</div>
-          <button className="edit-btn">Edit Profiles</button>
+          <div className="username">Quang</div>
+          <button className="edit-btn">Chỉnh sửa hồ sơ</button>
         </div>
         <input type="text" placeholder="Tìm kiếm" className="search" />
         <nav>
@@ -43,16 +43,16 @@ const ProfilePage = () => {
             <div className="profile-form-card">
               <div className="form-title">Hồ Sơ Chính</div>
               <form>
-                <div style={{marginBottom: 18}}>
+                <div style={{ marginBottom: 18 }}>
                   <label>Tên hiển thị</label>
                   <input type="text" value={displayName} onChange={e => setDisplayName(e.target.value)} />
                 </div>
-                <div style={{marginBottom: 18}}>
-                  <label>Đại từ nhân xưng</label>
-                  <input type="text" placeholder="Thêm đại từ nhân xưng của bạn" />
+                <div style={{ marginBottom: 18 }}>
+                  <label>Biệt danh</label>
+                  <input type="text" placeholder="Thêm biệt danh của bạn" />
                 </div>
-                <div style={{marginBottom: 18}}>
-                  <label>Bio</label>
+                <div style={{ marginBottom: 18 }}>
+                  <label>Tiểu sử</label>
                   <textarea value={bio} onChange={e => setBio(e.target.value)} placeholder="Giới thiệu về bạn..." />
                 </div>
                 <button type="submit" className="save-btn">Lưu thay đổi</button>
@@ -67,8 +67,8 @@ const ProfilePage = () => {
                 <img src={avatar} alt="avatar" />
               </div>
               <div className="preview-name">{displayName}</div>
-              <div className="preview-id">ngan9299</div>
-              <button className="example-btn">Nút Ví dụ</button>
+              <div className="preview-id">Quang da Vinci</div>
+              <button className="example-btn">Lưu</button>
             </div>
           </section>
         </div>

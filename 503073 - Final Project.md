@@ -32,8 +32,7 @@ an email containing an activation link will be sent to the user’s registered e
 - Before the account is activated, users will have access to all functionalities, with the only distinction being a prominent notification
 on the website indicating that the account is unverified and advising them to check their email to complete the activation process.
 Once the user clicks the activation link in the email, the account will be activated, and the notification will disappear.
-- The User Preferences screen allows users to adjust specific settings, such as the font size of their notes, note colors, or toggling
-between light and dark themes.
+- The User Preferences screen allows users to adjust specific settings, such as the font size of their notes, note colors, or toggling between light and dark themes.
 - The Password Reset feature enables users to recover their password via email. Users must either click on the link provided in the
 email or input an OTP sent to their email before being redirected to the new password entry screen. Following a password reset,
 users are required to log in manually.
