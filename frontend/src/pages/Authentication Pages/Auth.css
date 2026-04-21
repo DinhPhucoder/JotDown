@@ -122,11 +122,6 @@ body {
   color: var(--auth-primary);
 }
 
-.form-control::placeholder {
-  color: grey;
-  font-style: italic;
-  opacity: 1;
-}
 
 /* Bootstrap Customization */
 .form-control {
@@ -135,6 +130,12 @@ body {
   color: white !important;
   border-radius: 12px !important;
   padding: 12px 14px 12px 44px !important;
+}
+
+.form-control::placeholder {
+  color: grey;
+  font-style: italic;
+  opacity: 1;
 }
 
 .form-control:focus {

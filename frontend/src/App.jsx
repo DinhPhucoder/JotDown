@@ -4,7 +4,6 @@ import LoginPage from './pages/Authentication Pages/LoginPage';
 import SignupPage from './pages/Authentication Pages/SignupPage';
 import LandingPage from './pages/LandingPage';
 import NotFoundPage from './pages/NotFoundPage';
-import ProfilePage from './pages/ProfilePage';
 
 
 function App() {
