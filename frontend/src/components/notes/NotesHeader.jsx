@@ -30,7 +30,7 @@ function NotesHeader({
     <header className="notes-topbar sticky-top">
       {!isVerified ? (
         <div className="notes-verification-banner">
-          Tai khoan chua xac minh email. Ban van co the trai nghiem note app o che do demo.
+          Tài khoản chưa xác thực. Vui lòng kiểm tra email
         </div>
       ) : null}
 

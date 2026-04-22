@@ -71,6 +71,36 @@ strong,
   font-family: 'Google Sans Flex', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
+html[data-bs-theme="light"] strong,
+html[data-bs-theme="light"] b,
+html[data-bs-theme="light"] .fw-bold {
+  background: var(--primary-gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+}
+
+html[data-bs-theme="light"] .btn strong,
+html[data-bs-theme="light"] .btn b,
+html[data-bs-theme="light"] .btn .fw-bold,
+html[data-bs-theme="light"] .badge strong,
+html[data-bs-theme="light"] .badge b,
+html[data-bs-theme="light"] .badge .fw-bold,
+html[data-bs-theme="light"] .note-meta-badge strong,
+html[data-bs-theme="light"] .note-meta-badge b,
+html[data-bs-theme="light"] .note-meta-badge .fw-bold,
+html[data-bs-theme="light"] .notes-icon-btn strong,
+html[data-bs-theme="light"] .notes-icon-btn b,
+html[data-bs-theme="light"] .notes-icon-btn .fw-bold,
+html[data-bs-theme="light"] .notes-avatar-toggle strong,
+html[data-bs-theme="light"] .notes-avatar-toggle b,
+html[data-bs-theme="light"] .notes-avatar-toggle .fw-bold {
+  background: none;
+  -webkit-text-fill-color: currentColor;
+  color: inherit;
+}
+
 .navbar-brand {
   font-family: 'Google Sans Flex', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   font-weight: 700;

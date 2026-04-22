@@ -89,6 +89,7 @@ export const mockNotes = [
     color: 'orange',
     isPinned: false,
     isLocked: true,
+    lockPassword: '1234',
     labels: ['Y tuong'],
     images: [],
     sharedWith: [],
@@ -136,6 +137,7 @@ function sanitizeNote(note) {
     isPinned: Boolean(note.isPinned),
     pinnedAt: note.pinnedAt ? String(note.pinnedAt) : undefined,
     isLocked: Boolean(note.isLocked),
+    lockPassword: note.lockPassword ? String(note.lockPassword) : '',
     labels: Array.isArray(note.labels) ? note.labels.filter(Boolean).map(String) : [],
     images: Array.isArray(note.images) ? note.images.filter(Boolean).map(String) : [],
     sharedWith: Array.isArray(note.sharedWith)

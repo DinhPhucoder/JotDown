@@ -1,5 +1,5 @@
 import { useDeferredValue, useEffect, useState } from 'react';
-import { Button, Offcanvas } from 'react-bootstrap';
+import { Button, Modal, Offcanvas } from 'react-bootstrap';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPlus, faStickyNote } from '@fortawesome/free-solid-svg-icons';
 import { useNavigate } from 'react-router-dom';
@@ -40,9 +40,15 @@ function NotesPage() {
   const [showShared, setShowShared] = useState(false);
   const [editorOpen, setEditorOpen] = useState(false);
   const [editingNote, setEditingNote] = useState(null);
+  const [unlockingNote, setUnlockingNote] = useState(null);
+  const [unlockPassword, setUnlockPassword] = useState('');
+  const [unlockError, setUnlockError] = useState('');
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [theme, setTheme] = useState(() => readStoredTheme());
+  const [isOffline, setIsOffline] = useState(() =>
+    typeof navigator !== 'undefined' ? !navigator.onLine : false,
+  );
 
   useEffect(() => {
     document.documentElement.setAttribute('data-bs-theme', theme);
@@ -57,6 +63,21 @@ function NotesPage() {
       viewMode,
     });
   }, [notes, labels, user, viewMode]);
+
+  useEffect(() => {
+    const updateOnlineStatus = () => {
+      setIsOffline(!navigator.onLine);
+    };
+
+    updateOnlineStatus();
+    window.addEventListener('online', updateOnlineStatus);
+    window.addEventListener('offline', updateOnlineStatus);
+
+    return () => {
+      window.removeEventListener('online', updateOnlineStatus);
+      window.removeEventListener('offline', updateOnlineStatus);
+    };
+  }, []);
 
   const normalizedSearch = deferredSearch.trim().toLowerCase();
 
@@ -85,8 +106,40 @@ function NotesPage() {
   const lastUpdated = notes[0] ? new Date(notes[0].updatedAt).toLocaleDateString('vi-VN') : 'Chua co';
 
   function openEditor(note = null) {
+    const requiredPassword = String(note?.lockPassword || '').trim();
+
+    if (note?.isLocked && requiredPassword.length > 0) {
+      setUnlockingNote(note);
+      setUnlockPassword('');
+      setUnlockError('');
+      return;
+    }
+
     setEditingNote(note);
     setEditorOpen(true);
+  }
+
+  function handleCancelUnlock() {
+    setUnlockingNote(null);
+    setUnlockPassword('');
+    setUnlockError('');
+  }
+
+  function handleConfirmUnlock() {
+    if (!unlockingNote) {
+      return;
+    }
+
+    const expectedPassword = String(unlockingNote.lockPassword || '').trim();
+
+    if (expectedPassword.length > 0 && unlockPassword.trim() !== expectedPassword) {
+      setUnlockError('Mat khau khong dung.');
+      return;
+    }
+
+    setEditingNote(unlockingNote);
+    setEditorOpen(true);
+    handleCancelUnlock();
   }
 
   function handleSave(nextNote) {
@@ -103,10 +156,27 @@ function NotesPage() {
     });
   }
 
-  function handleDelete(noteId) {
-    setNotes((currentNotes) => currentNotes.filter((item) => item.id !== noteId));
-    setEditingNote(null);
-    setEditorOpen(false);
+  function handleDelete(noteId) { 
+    setNotes((currentNotes) => currentNotes.filter((item) => item.id !== noteId)); 
+    setEditingNote(null); 
+    setEditorOpen(false); 
+  } 
+
+  function handleToggleNotePin(noteId) {
+    setNotes((currentNotes) =>
+      sortNotes(
+        currentNotes.map((note) =>
+          note.id === noteId
+            ? {
+              ...note,
+              isPinned: !note.isPinned,
+              pinnedAt: !note.isPinned ? new Date().toISOString() : undefined,
+              updatedAt: new Date().toISOString(),
+            }
+            : note,
+        ),
+      ),
+    );
   }
 
   function handleToggleLabel(labelName) {
@@ -178,13 +248,20 @@ function NotesPage() {
       <section className="mb-4">
         {title ? <div className="notes-section-title">{title}</div> : null}
         <div className={viewMode === 'grid' ? 'notes-grid' : 'notes-list'}>
-          {items.map((note) => (
-            <NoteCard key={note.id} note={note} viewMode={viewMode} onOpen={openEditor} />
-          ))}
-        </div>
-      </section>
-    );
-  }
+          {items.map((note) => ( 
+            <NoteCard
+              key={note.id}
+              note={note}
+              viewMode={viewMode}
+              onOpen={openEditor}
+              onTogglePin={handleToggleNotePin}
+              isOffline={isOffline}
+            /> 
+          ))} 
+        </div> 
+      </section> 
+    ); 
+  } 
 
   return (
     <div className={`notes-shell note-font-${user.preferences.fontSize}`}>
@@ -231,19 +308,14 @@ function NotesPage() {
               <div className="notes-summary-card">
                 <div className="notes-summary-card__label">Tong ghi chu</div>
                 <div className="notes-summary-card__value">{noteCount}</div>
-                <div className="notes-summary-card__caption">Sap xep uu tien theo ghim va cap nhat moi nhat</div>
               </div>
               <div className="notes-summary-card">
                 <div className="notes-summary-card__label">Dang hien thi</div>
                 <div className="notes-summary-card__value">{filteredNotes.length}</div>
-                <div className="notes-summary-card__caption">
-                  {selectedLabels.length > 0 ? `Loc theo ${selectedLabels.join(', ')}` : 'Tat ca bo loc dang mo'}
-                </div>
               </div>
               <div className="notes-summary-card">
                 <div className="notes-summary-card__label">Ghi chu chia se</div>
                 <div className="notes-summary-card__value">{sharedCount}</div>
-                <div className="notes-summary-card__caption">Cap nhat lan cuoi {lastUpdated}</div>
               </div>
             </div>
 
@@ -315,6 +387,7 @@ function NotesPage() {
           note={editingNote}
           open={editorOpen}
           defaultColor={user.preferences.defaultNoteColor}
+          availableLabels={labels.map((label) => label.name)}
           onClose={() => setEditorOpen(false)}
           onDelete={handleDelete}
           onSave={handleSave}
@@ -332,6 +405,39 @@ function NotesPage() {
           }))
         }
       />
+
+      <Modal show={Boolean(unlockingNote)} onHide={handleCancelUnlock} centered dialogClassName="note-lock-modal">
+        <Modal.Header className="border-0">
+          <Modal.Title>Nhap mat khau de mo ghi chu</Modal.Title>
+        </Modal.Header>
+        <Modal.Body className="pt-0">
+          <input
+            type="password"
+            className="note-editor__panel-input"
+            placeholder="Mat khau ghi chu"
+            value={unlockPassword}
+            onChange={(event) => {
+              setUnlockPassword(event.target.value);
+              setUnlockError('');
+            }}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter') {
+                event.preventDefault();
+                handleConfirmUnlock();
+              }
+            }}
+          />
+          {unlockError ? <div className="note-editor__lock-error">{unlockError}</div> : null}
+        </Modal.Body>
+        <Modal.Footer className="border-0 pt-0">
+          <Button variant="outline-secondary" onClick={handleCancelUnlock}>
+            Huy
+          </Button>
+          <Button variant="primary" onClick={handleConfirmUnlock}>
+            Mo ghi chu
+          </Button>
+        </Modal.Footer>
+      </Modal>
     </div>
   );
 }
