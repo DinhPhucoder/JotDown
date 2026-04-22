@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { Container, Row, Col, Form, Button, Alert, Spinner } from 'react-bootstrap';
 import { Mail, ArrowLeft } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
-import BrandLogo from '../../components/BrandLogo';
 import './Auth.css';
 
 const ForgotPasswordPage = () => {
@@ -44,8 +43,12 @@ const ForgotPasswordPage = () => {
 
   return (
     <Container fluid className="p-0 auth-wrapper">
-      <Link to="/" className="auth-logo" aria-label="Jot Down">
-        <BrandLogo size={30} />
+      <Link to="/landing" className="auth-logo">
+        <img src="/Logo_JotDown.png" alt="JotDown" />
+        <span className="brand-name">
+          <span className="brand-jot">Jot</span>
+          <span className="brand-down">Down</span>
+        </span>
       </Link>
 
       <Row className="g-0 min-vh-100">

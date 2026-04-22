@@ -1,63 +1,41 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Container, Row, Col, Form, Button, Spinner } from 'react-bootstrap';
-import { Mail, Lock, User, Camera, Eye, EyeOff } from 'lucide-react';
+import { Mail, Lock, User, Camera, Eye, EyeOff, ShieldCheck, ArrowLeft } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import BrandLogo from '../../components/BrandLogo';
 import './Auth.css';
 
 const SignupPage = () => {
-  const navigate = useNavigate();
-  const [fullName, setFullName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
-
-  function handleSubmit(event) {
-    event.preventDefault();
-
-    if (password !== confirmPassword) {
-      toast.error('Mat khau xac nhan chua khop');
-      return;
-    }
-
-    setLoading(true);
-
-    window.setTimeout(() => {
-      toast.success(`Chao mung ${fullName || 'ban'} den voi Jot Down`);
-      setLoading(false);
-      navigate('/notes');
-    }, 800);
-  }
-
   return (
     <Container fluid className="p-0 auth-wrapper">
-      <Link to="/" className="auth-logo" aria-label="Jot Down">
-        <BrandLogo size={30} />
+      <Link to="/landing" className="auth-logo">
+        <img src="/Logo_JotDown.png" alt="JotDown" />
+        <span className="brand-name">
+          <span className="brand-jot">Jot</span>
+          <span className="brand-down">Down</span>
+        </span>
       </Link>
 
       <Row className="g-0 min-vh-100">
         <Col lg={6} className="d-none d-lg-flex auth-branding">
           <div className="branding-content">
-            <h2>
-              Jot <span>Down</span>
-              <br />
-              <span>Nghi gi</span> ghi nay...
-            </h2>
-            <p className="lead">Bat dau khong gian ghi chu rieng, gon gon va san sang cho moi y tuong ban muon giu lai.</p>
+            <h2> Jot <span>Down</span> <br /> <span>Nghĩ gì</span> ghi nấy...</h2>
+            <p className="lead">Đừng để những suy nghĩ vụt mất. Ghi chép nhanh chóng, đồng bộ an toàn và quản lý tri thức của bạn một cách khoa học nhất.</p>
           </div>
         </Col>
 
         <Col lg={6} className="auth-form-container">
           <div className="auth-card">
             <div className="auth-header mb-4">
-              <h1 className="fw-bold">Dang ky</h1>
-              <p className="text-secondary">Tao tai khoan de mo note workspace ca nhan cua ban.</p>
+              <h1 className="fw-bold">Đăng ký</h1>
+              <p className="text-secondary">Bắt đầu không gian ghi chú của riêng bạn ngay hôm nay</p>
             </div>
 
+
+
+
+
+            {/* Chọn ảnh đại diện */}
             <div className="profile-image-picker mb-4">
               <div className="profile-image-circle">
                 <User size={40} className="profile-placeholder-icon" />
@@ -65,21 +43,23 @@ const SignupPage = () => {
                   <Camera size={20} />
                 </div>
               </div>
-              <p className="profile-image-label">Tai anh len sau</p>
+              <p className="profile-image-label">Tải ảnh lên</p>
+              <input
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                hidden
+              />
             </div>
 
-            <Form className="auth-form" onSubmit={handleSubmit}>
+            <Form className="auth-form">
               <Form.Group className="mb-4" controlId="fullName">
-                <Form.Label>Ho va ten</Form.Label>
+                <Form.Label>Họ và tên</Form.Label>
                 <div className="input-wrapper">
                   <User className="input-icon" size={20} />
                   <Form.Control
                     type="text"
                     name="fullName"
-                    placeholder="Ngo Xuan Quang"
-                    value={fullName}
-                    onChange={(event) => setFullName(event.target.value)}
-                    required
+                    placeholder="Ngô Xuân Quang"
                   />
                 </div>
               </Form.Group>
@@ -92,69 +72,106 @@ const SignupPage = () => {
                     type="email"
                     name="email"
                     placeholder="name@example.com"
-                    value={email}
-                    onChange={(event) => setEmail(event.target.value)}
-                    required
                   />
                 </div>
               </Form.Group>
 
               <Form.Group className="mb-4" controlId="password">
-                <Form.Label>Mat khau</Form.Label>
+                <Form.Label>Mật khẩu</Form.Label>
                 <div className="input-wrapper">
                   <Lock className="input-icon" size={20} />
                   <Form.Control
-                    type={showPassword ? 'text' : 'password'}
+                    type="password"
                     name="password"
                     placeholder="••••••••"
-                    value={password}
-                    onChange={(event) => setPassword(event.target.value)}
-                    required
                   />
                   <button
                     type="button"
                     className="password-toggle-btn"
                     tabIndex={-1}
-                    onClick={() => setShowPassword((currentValue) => !currentValue)}
                   >
-                    {showPassword ? <Eye size={18} /> : <EyeOff size={18} />}
+                    <EyeOff size={18} />
                   </button>
                 </div>
               </Form.Group>
 
               <Form.Group className="mb-4" controlId="confirmPassword">
-                <Form.Label>Xac nhan mat khau</Form.Label>
+                <Form.Label>Xác nhận mật khẩu</Form.Label>
                 <div className="input-wrapper">
                   <Lock className="input-icon" size={20} />
                   <Form.Control
-                    type={showConfirmPassword ? 'text' : 'password'}
+                    type="password"
                     name="confirmPassword"
                     placeholder="••••••••"
-                    value={confirmPassword}
-                    onChange={(event) => setConfirmPassword(event.target.value)}
-                    required
                   />
                   <button
                     type="button"
                     className="password-toggle-btn"
                     tabIndex={-1}
-                    onClick={() => setShowConfirmPassword((currentValue) => !currentValue)}
                   >
-                    {showConfirmPassword ? <Eye size={18} /> : <EyeOff size={18} />}
+                    <EyeOff size={18} />
                   </button>
                 </div>
               </Form.Group>
 
-              <Button variant="primary" type="submit" className="w-100" disabled={loading}>
-                {loading ? <Spinner as="span" animation="border" size="sm" /> : 'Tao tai khoan'}
+              <Button variant="primary" type="button" className="w-100">
+                Tạo tài khoản
               </Button>
             </Form>
 
+
+            {/* FORM XÁC THỰC OTP (KÍCH HOẠT TÀI KHOẢN) */}
+            {/* <div className="otp-verification-step">
+              <div className="otp-header">
+                <div className="otp-icon-wrapper mb-3">
+                  <ShieldCheck size={32} />
+                </div>
+                <h3>Xác thực Email</h3>
+                <p className="text-secondary">
+                  Chúng tôi đã gửi mã 6 chữ số đến <br />
+                  <strong className="text-white">name@example.com</strong>
+                </p>
+              </div>
+
+              <Form>
+                <div className="otp-input-group d-flex justify-content-between mb-4">
+                  {[1, 2, 3, 4, 5, 6].map((item, index) => (
+                    <Form.Control
+                      key={index}
+                      className="otp-field text-center"
+                      type="text"
+                      maxLength="1"
+                      placeholder="-"
+                      style={{ width: '45px', height: '55px', fontSize: '1.5rem', cursor: 'text' }}
+                    />
+                  ))}
+                </div>
+
+                <Button variant="primary" type="button" className="w-100 mb-3">
+                  Xác thực & Kích hoạt
+                </Button>
+              </Form>
+
+              <div className="resend-container text-center mb-3">
+                <span className="text-secondary">Chưa nhận được mã? </span>
+                <button className="resend-btn btn btn-link p-0 text-decoration-none">
+                  Gửi lại mã
+                </button>
+              </div>
+
+              <div className="text-center">
+                <button className="back-btn btn btn-link p-0 text-decoration-none text-secondary d-flex align-items-center justify-content-center gap-1 mx-auto">
+                  <ArrowLeft size={16} /> Quay lại chỉnh sửa
+                </button>
+              </div>
+            </div> */}
+
+
             <div className="auth-footer text-center mt-5">
               <p className="text-secondary">
-                Da co tai khoan?{' '}
+                Đã có tài khoản?{' '}
                 <Link to="/login" className="auth-link">
-                  Dang nhap
+                  Đăng nhập
                 </Link>
               </p>
             </div>
