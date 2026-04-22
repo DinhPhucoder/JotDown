@@ -1,5 +1,6 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import BrandLogo from '../BrandLogo';
 import MagneticButton from './MagneticButton';
 
 const Header = ({ theme, toggleTheme }) => {
@@ -8,9 +9,9 @@ const Header = ({ theme, toggleTheme }) => {
   return (
     <header className="navbar navbar-expand-lg border-bottom bg-body">
       <div className="container">
-        <a className="navbar-brand fw-bold d-flex align-items-center" href="#">
-        <i className="fa-solid fa-pen-nib"></i> <span className="ps-2">Jot Down</span>
-        </a>
+        <Link className="navbar-brand fw-bold d-flex align-items-center" to="/">
+          <BrandLogo size={32} />
+        </Link>
         <div className="d-flex align-items-center gap-3">
           <button
             className="btn btn-link text-body p-0 border-0"

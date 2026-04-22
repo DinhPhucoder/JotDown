@@ -31,3 +31,14 @@ nginx/*.log
 .agent/
 .gemini/
 .github/
+.agents/
+.claude/
+.gitnexus/
+.history/gitnexus/
+skills-lock.json
+
+# Cache / Models
+# -------------------------------------------------------------
+# HuggingFace embeddings cache (GitNexus)
+undefined/.cache/
+.cache/

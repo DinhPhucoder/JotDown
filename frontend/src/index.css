@@ -1,6 +1,4 @@
 @import url('https://fonts.googleapis.com/css2?family=Google+Sans+Flex:opsz,wght@8..144,100..1000&family=Inter:wght@300;400;500;600;700&display=swap');
-@import "tailwindcss";
-
 * {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
@@ -11,6 +9,7 @@
   --color-secondary: #0f172a;
   --color-cta: #3B82F6;
   --primary-gradient: linear-gradient(135deg, #0b5cff 0%, #1f58ff 45%, #7c3aed 100%);
+  --surface-border: rgba(148, 163, 184, 0.16);
 
   /* Background gradients */
   --bg-deep-sea: linear-gradient(135deg, #041a3b 0%, #0c2f63 42%, #281a5f 70%, #4b1d79 100%);
@@ -51,6 +50,7 @@ html[data-bs-theme="light"] body {
 body {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   overflow-x: hidden;
+  min-height: 100vh;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -69,6 +69,36 @@ h6 {
 strong,
 .fw-bold {
   font-family: 'Google Sans Flex', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+html[data-bs-theme="light"] strong,
+html[data-bs-theme="light"] b,
+html[data-bs-theme="light"] .fw-bold {
+  background: var(--primary-gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+}
+
+html[data-bs-theme="light"] .btn strong,
+html[data-bs-theme="light"] .btn b,
+html[data-bs-theme="light"] .btn .fw-bold,
+html[data-bs-theme="light"] .badge strong,
+html[data-bs-theme="light"] .badge b,
+html[data-bs-theme="light"] .badge .fw-bold,
+html[data-bs-theme="light"] .note-meta-badge strong,
+html[data-bs-theme="light"] .note-meta-badge b,
+html[data-bs-theme="light"] .note-meta-badge .fw-bold,
+html[data-bs-theme="light"] .notes-icon-btn strong,
+html[data-bs-theme="light"] .notes-icon-btn b,
+html[data-bs-theme="light"] .notes-icon-btn .fw-bold,
+html[data-bs-theme="light"] .notes-avatar-toggle strong,
+html[data-bs-theme="light"] .notes-avatar-toggle b,
+html[data-bs-theme="light"] .notes-avatar-toggle .fw-bold {
+  background: none;
+  -webkit-text-fill-color: currentColor;
+  color: inherit;
 }
 
 .navbar-brand {
@@ -182,6 +212,10 @@ html[data-bs-theme="light"] .meta-muted {
 
 .bg-primary {
   background: var(--primary-gradient) !important;
+  border: 0;
+}
+
+button {
   border: 0;
 }
 

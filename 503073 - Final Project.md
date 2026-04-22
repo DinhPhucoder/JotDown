@@ -91,7 +91,7 @@ synchronizing the data when an internet connection is restored.
 ## Online Deployment
 - Online deployment involves hosting the website and all related services, such as databases, on a public platform, making it accessible
 to anyone via a domain name. To earn 0.5 points for this requirement, you must deploy your website and database on an online
-service, ensuring the system runs without errors and remains operational during the instructor’s grading period.
+service, ensuring the system runs without errors and remains operational during the instructor’s grading period.5% left (65,819 used / 258K)
 - If online deployment is not feasible, an alternative is to use docker-compose. In this case, you must follow the instructor’s guidelines
 and provided project template to develop your application. Submitting the project in the correct format will allow the instructor to
 replicate and test it on their own system.

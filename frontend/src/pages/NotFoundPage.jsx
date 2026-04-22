@@ -4,7 +4,7 @@ import './NotFoundPage.css';
 
 const NotFound = () => {
     return (
-        <div className="not-found-page" style={{ backgroundImage: `url(/bg_login.jpg)` }}>
+        <div className="not-found-page" style={{ backgroundImage: `url(/404.png)` }}>
             <div className="not-found-overlay" />
             <div className="not-found-content">
                 <h1 className="not-found-title" data-text="404">

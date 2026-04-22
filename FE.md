@@ -21,13 +21,13 @@ khoản chưa kích hoạt.
     ○ Khu vực Pinned: Hiển thị các ghi chú được ghim lên đầu.
     ○ Khu vực Others: Các ghi chú còn lại sắp xếp theo thời gian.
     ○ Note Card: Mỗi thẻ ghi chú cần hiển thị: Tiêu đề, nội dung tóm tắt,
-hình ảnh đính kèm (nếu có), file đính kèm (nếu có), nhãn, và các Icon trạng thái (Khóa, Pin, Shared, Offline). (Tham khảo NoteCard ở LandingPage)
+hình ảnh đính kèm (nếu có), nhãn, và các Icon trạng thái    . (Tham khảo NoteCard ở LandingPage)
 
 ## Giao diện Trình soạn thảo (Note Editor Interface): (Khánh)
 **Cơ chế Auto-save:** Không có nút "Lưu". Khi người dùng ngừng gõ, hệ thống
 tự động lưu vào Database.
 **Thanh công cụ trong Note:**
-    ○ Nút đính kèm hình ảnh, document (PDF, DOCX).
+    ○ Nút đính kèm hình ảnh.
     ○ Nút quản lý Nhãn cho ghi chú đó.
     ○ Nút đặt mật khẩu (Lock): 
         - Thiết lập mới: Modal nhập mật khẩu 2 lần.
