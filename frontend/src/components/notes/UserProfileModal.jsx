@@ -1,13 +1,12 @@
 import { useState } from 'react';
 import { Modal, Button, Form, Tab, Row, Col, Nav } from 'react-bootstrap';
-import { User, Mail, PaintBucket, Shield, Globe, Camera, BookText, Lock } from 'lucide-react';
+import { User, Mail, PaintBucket, Shield, Globe, Camera, BookText, Lock, Eye, EyeOff, Menu, X } from 'lucide-react';
 import './UserProfileModal.css';
 
 function UserProfileModal({ open, onClose }) {
     const [activeTab, setActiveTab] = useState('profile');
     const [theme, setTheme] = useState('light');
 
-    // Giả lập trạng thái tạm thời cho các input
     const [formData, setFormData] = useState({
         displayName: 'Thomas Muller',
         email: 'thomas.muller@fcbayern.com',
@@ -22,6 +21,14 @@ function UserProfileModal({ open, onClose }) {
         confirmPassword: ''
     });
 
+    const [showPasswords, setShowPasswords] = useState({
+        current: false,
+        new: false,
+        confirm: false
+    });
+
+    const [showMobileNav, setShowMobileNav] = useState(false);
+
     const handleFormChange = (e) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
@@ -32,59 +39,106 @@ function UserProfileModal({ open, onClose }) {
         setPasswordData(prev => ({ ...prev, [name]: value }));
     };
 
+    const togglePasswordVisibility = (field) => {
+        setShowPasswords(prev => ({ ...prev, [field]: !prev[field] }));
+    };
+
     const submitPasswordChange = (e) => {
         e.preventDefault();
         // TODO: Xác thực và gửi yêu cầu đổi mật khẩu tới Server
         console.log('Change password payload:', passwordData);
         setIsChangingPassword(false);
         setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
+        setShowPasswords({ current: false, new: false, confirm: false });
     };
 
     const handleClosePasswordChange = () => {
         setIsChangingPassword(false);
         setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
+        setShowPasswords({ current: false, new: false, confirm: false });
     };
 
     const handleModalClose = () => {
         onClose();
         setIsChangingPassword(false);
         setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
+        setShowPasswords({ current: false, new: false, confirm: false });
+        setShowMobileNav(false);
     };
+
+    const renderNavItems = () => (
+        <Nav variant="pills" className="flex-column profile-nav">
+            <Nav.Item>
+                <Nav.Link
+                    eventKey="profile"
+                    className="d-flex align-items-center gap-2 mb-2"
+                    onClick={() => setShowMobileNav(false)}
+                >
+                    <User size={18} />
+                    Cá nhân
+                </Nav.Link>
+            </Nav.Item>
+            <Nav.Item>
+                <Nav.Link
+                    eventKey="settings"
+                    className="d-flex align-items-center gap-2 mb-2"
+                    onClick={() => setShowMobileNav(false)}
+                >
+                    <PaintBucket size={18} />
+                    Tuỳ chỉnh
+                </Nav.Link>
+            </Nav.Item>
+            <Nav.Item>
+                <Nav.Link
+                    eventKey="security"
+                    className="d-flex align-items-center gap-2"
+                    onClick={() => setShowMobileNav(false)}
+                >
+                    <Shield size={18} />
+                    Bảo mật
+                </Nav.Link>
+            </Nav.Item>
+        </Nav>
+    );
 
     return (
         <Modal show={open} onHide={handleModalClose} size="lg" centered className="profile-modal">
-            <Modal.Header closeButton className="border-bottom">
-                <Modal.Title className="h5 fw-bold">Cài đặt tài khoản</Modal.Title>
-            </Modal.Header>
-            <Modal.Body className="p-0">
-                <Tab.Container activeKey={activeTab} onSelect={(k) => setActiveTab(k)}>
+            <Tab.Container activeKey={activeTab} onSelect={(k) => setActiveTab(k)}>
+                <Modal.Header closeButton className="border-bottom">
+                    <div className="d-flex align-items-center gap-2">
+                        <button
+                            type="button"
+                            className="btn btn-sm btn-light d-sm-none profile-hamburger-btn"
+                            onClick={() => setShowMobileNav(true)}
+                        >
+                            <Menu size={18} />
+                        </button>
+                        <Modal.Title className="h5 fw-bold mb-0">Cài đặt tài khoản</Modal.Title>
+                    </div>
+                </Modal.Header>
+
+                <Modal.Body className="p-0">
+                    {/* Panel sidebar mobile nằm BÊN TRONG Modal.Body */}
+                    {showMobileNav && (
+                        <div className="profile-mobile-overlay d-sm-none" onClick={() => setShowMobileNav(false)}>
+                            <div className="profile-mobile-panel" onClick={(e) => e.stopPropagation()}>
+                                <div className="d-flex align-items-center justify-content-between mb-3">
+                                    <span className="h6 fw-bold mb-0">Danh mục</span>
+                                    <button type="button" className="btn btn-sm btn-light" onClick={() => setShowMobileNav(false)}>
+                                        <X size={16} />
+                                    </button>
+                                </div>
+                                {renderNavItems()}
+                            </div>
+                        </div>
+                    )}
+
                     <Row className="g-0 h-100">
-                        {/* Sidebar (Menus bên trái) */}
-                        <Col sm={4} md={3} className="border-end profile-sidebar bg-light p-3">
-                            <Nav variant="pills" className="flex-column profile-nav">
-                                <Nav.Item>
-                                    <Nav.Link eventKey="profile" className="d-flex align-items-center gap-2 mb-2">
-                                        <User size={18} />
-                                        Cá nhân
-                                    </Nav.Link>
-                                </Nav.Item>
-                                <Nav.Item>
-                                    <Nav.Link eventKey="settings" className="d-flex align-items-center gap-2 mb-2">
-                                        <PaintBucket size={18} />
-                                        Tuỳ chỉnh
-                                    </Nav.Link>
-                                </Nav.Item>
-                                <Nav.Item>
-                                    <Nav.Link eventKey="security" className="d-flex align-items-center gap-2">
-                                        <Shield size={18} />
-                                        Bảo mật
-                                    </Nav.Link>
-                                </Nav.Item>
-                            </Nav>
+                        <Col sm={4} md={3} className="border-end profile-sidebar bg-light p-3 d-none d-sm-block">
+                            {renderNavItems()}
                         </Col>
 
-                        {/* Vùng nội dung bên phải */}
-                        <Col sm={8} md={9} className="p-4 profile-content">
+                        <Col xs={12} sm={8} md={9} className="p-4 profile-content">
                             <Tab.Content>
                                 {/* ---- Tab: Thông tin cá nhân ---- */}
                                 <Tab.Pane eventKey="profile">
@@ -208,7 +262,7 @@ function UserProfileModal({ open, onClose }) {
                                 {/* ---- Tab: Bảo mật ---- */}
                                 <Tab.Pane eventKey="security">
                                     <h6 className="fw-bold mb-4">Bảo mật & Đăng nhập</h6>
-                                    
+
                                     {!isChangingPassword ? (
                                         <div className="p-3 border rounded-3 mb-4">
                                             <h6 className="mb-2 fw-semibold">Thay đổi mật khẩu</h6>
@@ -230,17 +284,24 @@ function UserProfileModal({ open, onClose }) {
                                                             <Lock size={18} />
                                                         </span>
                                                         <Form.Control
-                                                            type="password"
+                                                            type={showPasswords.current ? "text" : "password"}
                                                             name="currentPassword"
                                                             value={passwordData.currentPassword}
                                                             onChange={handlePasswordChange}
                                                             placeholder="Nhập mật khẩu hiện tại"
-                                                            style={{ paddingLeft: '40px' }}
+                                                            style={{ paddingLeft: '40px', paddingRight: '40px' }}
                                                             required
                                                         />
+                                                        <span
+                                                            className="position-absolute text-secondary"
+                                                            style={{ right: '12px', top: '50%', transform: 'translateY(-50%)', zIndex: 10, cursor: 'pointer' }}
+                                                            onClick={() => togglePasswordVisibility('current')}
+                                                        >
+                                                            {showPasswords.current ? <EyeOff size={18} /> : <Eye size={18} />}
+                                                        </span>
                                                     </div>
                                                 </Form.Group>
-                                                
+
                                                 <Form.Group className="mb-3">
                                                     <Form.Label className="small fw-semibold">Mật khẩu mới</Form.Label>
                                                     <div className="position-relative">
@@ -248,17 +309,24 @@ function UserProfileModal({ open, onClose }) {
                                                             <Lock size={18} />
                                                         </span>
                                                         <Form.Control
-                                                            type="password"
+                                                            type={showPasswords.new ? "text" : "password"}
                                                             name="newPassword"
                                                             value={passwordData.newPassword}
                                                             onChange={handlePasswordChange}
                                                             placeholder="Nhập mật khẩu mới"
-                                                            style={{ paddingLeft: '40px' }}
+                                                            style={{ paddingLeft: '40px', paddingRight: '40px' }}
                                                             required
                                                         />
+                                                        <span
+                                                            className="position-absolute text-secondary"
+                                                            style={{ right: '12px', top: '50%', transform: 'translateY(-50%)', zIndex: 10, cursor: 'pointer' }}
+                                                            onClick={() => togglePasswordVisibility('new')}
+                                                        >
+                                                            {showPasswords.new ? <EyeOff size={18} /> : <Eye size={18} />}
+                                                        </span>
                                                     </div>
                                                 </Form.Group>
-                                                
+
                                                 <Form.Group className="mb-4">
                                                     <Form.Label className="small fw-semibold">Xác nhận mật khẩu mới</Form.Label>
                                                     <div className="position-relative">
@@ -266,17 +334,24 @@ function UserProfileModal({ open, onClose }) {
                                                             <Lock size={18} />
                                                         </span>
                                                         <Form.Control
-                                                            type="password"
+                                                            type={showPasswords.confirm ? "text" : "password"}
                                                             name="confirmPassword"
                                                             value={passwordData.confirmPassword}
                                                             onChange={handlePasswordChange}
                                                             placeholder="Nhập lại mật khẩu mới"
-                                                            style={{ paddingLeft: '40px' }}
+                                                            style={{ paddingLeft: '40px', paddingRight: '40px' }}
                                                             required
                                                         />
+                                                        <span
+                                                            className="position-absolute text-secondary"
+                                                            style={{ right: '12px', top: '50%', transform: 'translateY(-50%)', zIndex: 10, cursor: 'pointer' }}
+                                                            onClick={() => togglePasswordVisibility('confirm')}
+                                                        >
+                                                            {showPasswords.confirm ? <EyeOff size={18} /> : <Eye size={18} />}
+                                                        </span>
                                                     </div>
                                                 </Form.Group>
-                                                
+
                                                 <div className="d-flex gap-2">
                                                     <Button variant="primary" type="submit" size="sm">Lưu mật khẩu</Button>
                                                     <Button variant="outline-secondary" size="sm" onClick={handleClosePasswordChange}>Hủy</Button>
@@ -284,14 +359,14 @@ function UserProfileModal({ open, onClose }) {
                                             </Form>
                                         </div>
                                     )}
-                                    
+
                                     {/* Không gian mở rộng tính năng bảo mật sau này */}
                                 </Tab.Pane>
                             </Tab.Content>
                         </Col>
                     </Row>
-                </Tab.Container>
-            </Modal.Body>
+                </Modal.Body>
+            </Tab.Container>
         </Modal>
     );
 }
