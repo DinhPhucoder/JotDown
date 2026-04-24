@@ -4,10 +4,41 @@
     border-radius: 12px;
     border: none;
     box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+    height: 550px;
+    display: flex;
+    flex-direction: column;
+}
+
+.profile-modal .modal-body {
+    flex: 1;
+    overflow: hidden;
 }
 
 .profile-sidebar {
-    min-height: 400px;
+    height: 100%;
+    overflow-y: auto;
+}
+
+.profile-content {
+    height: 100%;
+    overflow-y: auto;
+}
+
+/* Custom Scrollbar for inner tabs */
+.profile-sidebar::-webkit-scrollbar,
+.profile-content::-webkit-scrollbar {
+    width: 6px;
+}
+
+.profile-sidebar::-webkit-scrollbar-thumb,
+.profile-content::-webkit-scrollbar-thumb {
+    background-color: #cbd5e1;
+    border-radius: 4px;
+}
+
+html[data-bs-theme="dark"] .profile-sidebar::-webkit-scrollbar-thumb,
+html[data-bs-theme="dark"] .profile-content::-webkit-scrollbar-thumb {
+    background-color: #475569;
 }
 
 .profile-nav .nav-link {

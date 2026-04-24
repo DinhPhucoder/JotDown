@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Modal, Button, Form, Tab, Row, Col, Nav } from 'react-bootstrap';
-import { User, Mail, PaintBucket, Shield, Globe, Camera } from 'lucide-react';
+import { User, Mail, PaintBucket, Shield, Globe, Camera, BookText } from 'lucide-react';
 import './UserProfileModal.css';
 
 function UserProfileModal({ open, onClose }) {
@@ -53,7 +53,7 @@ function UserProfileModal({ open, onClose }) {
                         </Col>
 
                         {/* Vùng nội dung bên phải */}
-                        <Col sm={8} md={9} className="p-4">
+                        <Col sm={8} md={9} className="p-4 profile-content">
                             <Tab.Content>
                                 {/* ---- Tab: Thông tin cá nhân ---- */}
                                 <Tab.Pane eventKey="profile">
@@ -114,14 +114,20 @@ function UserProfileModal({ open, onClose }) {
 
                                         <Form.Group className="mb-4">
                                             <Form.Label className="small fw-semibold">Tiểu sử</Form.Label>
-                                            <Form.Control
-                                                as="textarea"
-                                                rows={3}
-                                                name="bio"
-                                                value={formData.bio}
-                                                onChange={handleFormChange}
-                                                placeholder="Giới thiệu nhanh về bạn..."
-                                            />
+                                            <div className="position-relative">
+                                                <span className="position-absolute text-secondary" style={{ left: '12px', top: '14px', zIndex: 10 }}>
+                                                    <BookText size={18} />
+                                                </span>
+                                                <Form.Control
+                                                    as="textarea"
+                                                    rows={3}
+                                                    name="bio"
+                                                    value={formData.bio}
+                                                    onChange={handleFormChange}
+                                                    placeholder="Giới thiệu nhanh về bạn..."
+                                                    style={{ paddingLeft: '40px' }}
+                                                />
+                                            </div>
                                         </Form.Group>
 
                                         <div className="d-flex justify-content-end">
