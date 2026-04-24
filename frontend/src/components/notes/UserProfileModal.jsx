@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Modal, Button, Form, Tab, Row, Col, Nav } from 'react-bootstrap';
-import { User, Mail, PaintBucket, Shield, Globe, Camera, BookText } from 'lucide-react';
+import { User, Mail, PaintBucket, Shield, Globe, Camera, BookText, Lock } from 'lucide-react';
 import './UserProfileModal.css';
 
 function UserProfileModal({ open, onClose }) {
@@ -15,13 +15,44 @@ function UserProfileModal({ open, onClose }) {
         language: 'vi'
     });
 
+    const [isChangingPassword, setIsChangingPassword] = useState(false);
+    const [passwordData, setPasswordData] = useState({
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: ''
+    });
+
     const handleFormChange = (e) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
     };
 
+    const handlePasswordChange = (e) => {
+        const { name, value } = e.target;
+        setPasswordData(prev => ({ ...prev, [name]: value }));
+    };
+
+    const submitPasswordChange = (e) => {
+        e.preventDefault();
+        // TODO: Xác thực và gửi yêu cầu đổi mật khẩu tới Server
+        console.log('Change password payload:', passwordData);
+        setIsChangingPassword(false);
+        setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
+    };
+
+    const handleClosePasswordChange = () => {
+        setIsChangingPassword(false);
+        setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
+    };
+
+    const handleModalClose = () => {
+        onClose();
+        setIsChangingPassword(false);
+        setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
+    };
+
     return (
-        <Modal show={open} onHide={onClose} size="lg" centered className="profile-modal">
+        <Modal show={open} onHide={handleModalClose} size="lg" centered className="profile-modal">
             <Modal.Header closeButton className="border-bottom">
                 <Modal.Title className="h5 fw-bold">Cài đặt tài khoản</Modal.Title>
             </Modal.Header>
@@ -177,14 +208,83 @@ function UserProfileModal({ open, onClose }) {
                                 {/* ---- Tab: Bảo mật ---- */}
                                 <Tab.Pane eventKey="security">
                                     <h6 className="fw-bold mb-4">Bảo mật & Đăng nhập</h6>
-                                    <div className="p-3 border rounded-3 mb-4">
-                                        <h6 className="mb-2 fw-semibold">Thay đổi mật khẩu</h6>
-                                        <p className="text-secondary small mb-3">
-                                            Nên sử dụng mật khẩu mạnh mà bạn chưa sử dụng ở đâu khác, có trên 8 ký tự.
-                                        </p>
-                                        <Button variant="outline-primary" size="sm">Tiến hành Đổi mật khẩu</Button>
-                                    </div>
-
+                                    
+                                    {!isChangingPassword ? (
+                                        <div className="p-3 border rounded-3 mb-4">
+                                            <h6 className="mb-2 fw-semibold">Thay đổi mật khẩu</h6>
+                                            <p className="text-secondary small mb-3">
+                                                Nên sử dụng mật khẩu mạnh mà bạn chưa sử dụng ở đâu khác, có trên 8 ký tự.
+                                            </p>
+                                            <Button variant="outline-primary" size="sm" onClick={() => setIsChangingPassword(true)}>
+                                                Tiến hành Đổi mật khẩu
+                                            </Button>
+                                        </div>
+                                    ) : (
+                                        <div className="p-3 border rounded-3 mb-4">
+                                            <h6 className="mb-3 fw-semibold text-primary">Cập nhật mật khẩu mới</h6>
+                                            <Form onSubmit={submitPasswordChange}>
+                                                <Form.Group className="mb-3">
+                                                    <Form.Label className="small fw-semibold">Mật khẩu hiện tại</Form.Label>
+                                                    <div className="position-relative">
+                                                        <span className="position-absolute text-secondary" style={{ left: '12px', top: '50%', transform: 'translateY(-50%)', zIndex: 10 }}>
+                                                            <Lock size={18} />
+                                                        </span>
+                                                        <Form.Control
+                                                            type="password"
+                                                            name="currentPassword"
+                                                            value={passwordData.currentPassword}
+                                                            onChange={handlePasswordChange}
+                                                            placeholder="Nhập mật khẩu hiện tại"
+                                                            style={{ paddingLeft: '40px' }}
+                                                            required
+                                                        />
+                                                    </div>
+                                                </Form.Group>
+                                                
+                                                <Form.Group className="mb-3">
+                                                    <Form.Label className="small fw-semibold">Mật khẩu mới</Form.Label>
+                                                    <div className="position-relative">
+                                                        <span className="position-absolute text-secondary" style={{ left: '12px', top: '50%', transform: 'translateY(-50%)', zIndex: 10 }}>
+                                                            <Lock size={18} />
+                                                        </span>
+                                                        <Form.Control
+                                                            type="password"
+                                                            name="newPassword"
+                                                            value={passwordData.newPassword}
+                                                            onChange={handlePasswordChange}
+                                                            placeholder="Nhập mật khẩu mới"
+                                                            style={{ paddingLeft: '40px' }}
+                                                            required
+                                                        />
+                                                    </div>
+                                                </Form.Group>
+                                                
+                                                <Form.Group className="mb-4">
+                                                    <Form.Label className="small fw-semibold">Xác nhận mật khẩu mới</Form.Label>
+                                                    <div className="position-relative">
+                                                        <span className="position-absolute text-secondary" style={{ left: '12px', top: '50%', transform: 'translateY(-50%)', zIndex: 10 }}>
+                                                            <Lock size={18} />
+                                                        </span>
+                                                        <Form.Control
+                                                            type="password"
+                                                            name="confirmPassword"
+                                                            value={passwordData.confirmPassword}
+                                                            onChange={handlePasswordChange}
+                                                            placeholder="Nhập lại mật khẩu mới"
+                                                            style={{ paddingLeft: '40px' }}
+                                                            required
+                                                        />
+                                                    </div>
+                                                </Form.Group>
+                                                
+                                                <div className="d-flex gap-2">
+                                                    <Button variant="primary" type="submit" size="sm">Lưu mật khẩu</Button>
+                                                    <Button variant="outline-secondary" size="sm" onClick={handleClosePasswordChange}>Hủy</Button>
+                                                </div>
+                                            </Form>
+                                        </div>
+                                    )}
+                                    
                                     {/* Không gian mở rộng tính năng bảo mật sau này */}
                                 </Tab.Pane>
                             </Tab.Content>
