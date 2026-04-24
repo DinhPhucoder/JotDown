@@ -6,6 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import NoteCard from '../components/notes/NoteCard';
 import NoteEditorModal from '../components/notes/NoteEditorModal';
 import NoteSettingsModal from '../components/notes/NoteSettingsModal';
+import UserProfileModal from '../components/notes/UserProfileModal';
 import NotesHeader from '../components/notes/NotesHeader';
 import NotesSidebar from '../components/notes/NotesSidebar';
 import { loadNoteWorkspace, saveNoteWorkspace } from '../data/noteWorkspace';
@@ -44,6 +45,7 @@ function NotesPage() {
   const [unlockPassword, setUnlockPassword] = useState('');
   const [unlockError, setUnlockError] = useState('');
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [theme, setTheme] = useState(() => readStoredTheme());
   const [isOffline, setIsOffline] = useState(() =>
@@ -156,11 +158,11 @@ function NotesPage() {
     });
   }
 
-  function handleDelete(noteId) { 
-    setNotes((currentNotes) => currentNotes.filter((item) => item.id !== noteId)); 
-    setEditingNote(null); 
-    setEditorOpen(false); 
-  } 
+  function handleDelete(noteId) {
+    setNotes((currentNotes) => currentNotes.filter((item) => item.id !== noteId));
+    setEditingNote(null);
+    setEditorOpen(false);
+  }
 
   function handleToggleNotePin(noteId) {
     setNotes((currentNotes) =>
@@ -248,7 +250,7 @@ function NotesPage() {
       <section className="mb-4">
         {title ? <div className="notes-section-title">{title}</div> : null}
         <div className={viewMode === 'grid' ? 'notes-grid' : 'notes-list'}>
-          {items.map((note) => ( 
+          {items.map((note) => (
             <NoteCard
               key={note.id}
               note={note}
@@ -256,12 +258,12 @@ function NotesPage() {
               onOpen={openEditor}
               onTogglePin={handleToggleNotePin}
               isOffline={isOffline}
-            /> 
-          ))} 
-        </div> 
-      </section> 
-    ); 
-  } 
+            />
+          ))}
+        </div>
+      </section>
+    );
+  }
 
   return (
     <div className={`notes-shell note-font-${user.preferences.fontSize}`}>
@@ -276,6 +278,7 @@ function NotesPage() {
         onToggleTheme={() => setTheme((currentTheme) => (currentTheme === 'dark' ? 'light' : 'dark'))}
         onLogout={() => navigate('/login')}
         onOpenSettings={() => setSettingsOpen(true)}
+        onOpenProfile={() => setProfileOpen(true)}
         onToggleMobileSidebar={() => setMobileSidebarOpen(true)}
       />
 
@@ -404,6 +407,11 @@ function NotesPage() {
             preferences: nextPreferences,
           }))
         }
+      />
+
+      <UserProfileModal
+        open={profileOpen}
+        onClose={() => setProfileOpen(false)}
       />
 
       <Modal show={Boolean(unlockingNote)} onHide={handleCancelUnlock} centered dialogClassName="note-lock-modal">

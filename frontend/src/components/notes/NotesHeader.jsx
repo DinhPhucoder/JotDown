@@ -8,6 +8,7 @@ import {
   faRightFromBracket,
   faSearch,
   faSun,
+  faPenToSquare
 } from '@fortawesome/free-solid-svg-icons';
 import { Dropdown } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
@@ -25,6 +26,7 @@ function NotesHeader({
   onLogout,
   onOpenSettings,
   onToggleMobileSidebar,
+  onOpenProfile
 }) {
   return (
     <header className="notes-topbar sticky-top">
@@ -91,6 +93,10 @@ function NotesHeader({
               <Dropdown.Item onClick={onOpenSettings}>
                 <FontAwesomeIcon icon={faGear} fixedWidth className="me-2" />
                 Cai dat
+              </Dropdown.Item>
+              <Dropdown.Item onClick={onOpenProfile}>
+                <FontAwesomeIcon icon={faPenToSquare} fixedWidth className="me-2" />
+                Sửa hồ sơ
               </Dropdown.Item>
               <Dropdown.Item onClick={onToggleTheme}>
                 <FontAwesomeIcon icon={theme === 'dark' ? faSun : faMoon} fixedWidth className="me-2" />
