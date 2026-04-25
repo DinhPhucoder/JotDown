@@ -1,11 +1,21 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Modal, Button, Form, Tab, Row, Col, Nav } from 'react-bootstrap';
-import { User, Mail, PaintBucket, Shield, Globe, Camera, BookText, Lock, Eye, EyeOff, Menu, X } from 'lucide-react';
+import { User, Mail, PaintBucket, Shield, Globe, Camera, BookText, Lock, Eye, EyeOff, Menu, X, Type } from 'lucide-react';
 import './UserProfileModal.css';
 
-function UserProfileModal({ open, onClose }) {
+function UserProfileModal({ open, onClose, theme, onToggleTheme }) {
     const [activeTab, setActiveTab] = useState('profile');
-    const [theme, setTheme] = useState('light');
+
+    // Font size: đọc từ localStorage, mặc định 16px
+    const [fontSize, setFontSize] = useState(() => {
+        return parseInt(localStorage.getItem('app-font-size')) || 16;
+    });
+
+    // Áp dụng font size lên document khi thay đổi
+    useEffect(() => {
+        document.documentElement.style.fontSize = fontSize + 'px';
+        localStorage.setItem('app-font-size', fontSize);
+    }, [fontSize]);
 
     const [formData, setFormData] = useState({
         displayName: 'Thomas Muller',
@@ -225,8 +235,31 @@ function UserProfileModal({ open, onClose }) {
                                                 role="switch"
                                                 id="theme-switch"
                                                 checked={theme === 'dark'}
-                                                onChange={(e) => setTheme(e.target.checked ? 'dark' : 'light')}
+                                                onChange={(e) => onToggleTheme(e.target.checked ? 'dark' : 'light')}
                                             />
+                                        </div>
+                                    </div>
+
+                                    <div className="p-3 border rounded-3">
+                                        <div className="d-flex align-items-center gap-2 mb-2">
+                                            <Type size={18} />
+                                            <h6 className="mb-0 fw-semibold">Kích cỡ chữ</h6>
+                                        </div>
+                                        <p className="text-secondary small mb-3">Điều chỉnh kích cỡ chữ cho toàn bộ ứng dụng.</p>
+                                        <div className="d-flex align-items-center gap-3">
+                                            <span className="small text-secondary" style={{ fontSize: '12px' }}>A</span>
+                                            <Form.Range
+                                                min={12}
+                                                max={22}
+                                                step={1}
+                                                value={fontSize}
+                                                onChange={(e) => setFontSize(Number(e.target.value))}
+                                                className="profile-font-slider"
+                                            />
+                                            <span className="text-secondary" style={{ fontSize: '20px', fontWeight: 600 }}>A</span>
+                                        </div>
+                                        <div className="text-center mt-2">
+                                            <span className="badge bg-primary bg-opacity-10 text-primary fw-semibold">{fontSize}px</span>
                                         </div>
                                     </div>
                                 </Tab.Pane>

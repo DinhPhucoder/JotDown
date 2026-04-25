@@ -90,17 +90,9 @@ function NotesHeader({
             </Dropdown.Toggle>
             <Dropdown.Menu className="notes-account-menu">
               <Dropdown.Header>{userName}</Dropdown.Header>
-              <Dropdown.Item onClick={onOpenSettings}>
-                <FontAwesomeIcon icon={faGear} fixedWidth className="me-2" />
-                Cai dat
-              </Dropdown.Item>
               <Dropdown.Item onClick={onOpenProfile}>
-                <FontAwesomeIcon icon={faPenToSquare} fixedWidth className="me-2" />
-                Sửa hồ sơ
-              </Dropdown.Item>
-              <Dropdown.Item onClick={onToggleTheme}>
-                <FontAwesomeIcon icon={theme === 'dark' ? faSun : faMoon} fixedWidth className="me-2" />
-                {theme === 'dark' ? 'Che do sang' : 'Che do toi'}
+                <FontAwesomeIcon icon={faGear} fixedWidth className="me-2" />
+                Cài đặt
               </Dropdown.Item>
               <Dropdown.Divider />
               <Dropdown.Item onClick={onLogout}>
