@@ -8,11 +8,9 @@ import {
   faRightFromBracket,
   faSearch,
   faSun,
-  faPenToSquare
 } from '@fortawesome/free-solid-svg-icons';
 import { Dropdown } from 'react-bootstrap';
-import { Link } from 'react-router-dom';
-import BrandLogo from '../BrandLogo';
+import AppLogo from '../AppLogo';
 
 function NotesHeader({
   search,
@@ -47,9 +45,7 @@ function NotesHeader({
             <FontAwesomeIcon icon={faBars} />
           </button>
 
-          <Link to="/notes" className="text-decoration-none">
-            <BrandLogo size={34} />
-          </Link>
+            <AppLogo to="/notes" size={45} />
         </div>
 
         <div className="notes-search">
