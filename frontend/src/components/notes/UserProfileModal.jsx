@@ -145,13 +145,19 @@ function UserProfileModal({ open, onClose }) {
                                     <h6 className="fw-bold mb-4">Thông tin Hồ sơ</h6>
 
                                     <div className="d-flex align-items-center gap-4 mb-4">
-                                        <div className="position-relative">
-                                            <div className="profile-avatar">
-                                                {formData.displayName.charAt(0).toUpperCase()}
+                                        <div className="profile-image-picker">
+                                            <div className="profile-image-circle">
+                                                <User size={40} className="profile-placeholder-icon" />
+                                                <div className="profile-image-overlay">
+                                                    <Camera size={20} />
+                                                </div>
                                             </div>
-                                            <button type="button" className="btn btn-light position-absolute bottom-0 end-0 rounded-circle shadow-sm profile-camera-btn">
-                                                <Camera size={14} />
-                                            </button>
+                                            <p className="profile-image-label mb-0">Thay đổi</p>
+                                            <input
+                                                type="file"
+                                                accept="image/jpeg,image/png,image/webp"
+                                                hidden
+                                            />
                                         </div>
                                         <div>
                                             <h5 className="mb-1 fw-semibold">{formData.displayName}</h5>
