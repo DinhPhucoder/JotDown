@@ -153,3 +153,48 @@ html[data-bs-theme="dark"] .profile-camera-btn {
     border-color: #334155;
     color: white;
 }
+
+/* Button styles — phong cách Auth (gradient + glow) */
+.profile-modal .btn-primary {
+    background: linear-gradient(135deg, #0b5cff 0%, #1f58ff 45%, #7c3aed 100%) !important;
+    border: none !important;
+    border-radius: 10px !important;
+    font-weight: 600 !important;
+    color: #fff !important;
+    box-shadow: 0 0 18px rgba(49, 105, 255, 0.35);
+    transition: all 0.3s ease !important;
+}
+
+.profile-modal .btn-primary:hover {
+    box-shadow: 0 0 28px rgba(74, 108, 255, 0.6) !important;
+    transform: translateY(-1px);
+}
+
+.profile-modal .btn-outline-primary {
+    background: transparent !important;
+    border: 2px solid #4f46e5 !important;
+    border-radius: 10px !important;
+    font-weight: 600 !important;
+    color: #4f46e5 !important;
+    transition: all 0.3s ease !important;
+}
+
+.profile-modal .btn-outline-primary:hover {
+    background: linear-gradient(135deg, #0b5cff 0%, #1f58ff 45%, #7c3aed 100%) !important;
+    border-color: transparent !important;
+    color: #fff !important;
+    box-shadow: 0 0 24px rgba(49, 105, 255, 0.45);
+}
+
+.profile-modal .btn-outline-secondary {
+    background: transparent !important;
+    border: 2px solid rgba(148, 163, 184, 0.4) !important;
+    border-radius: 10px !important;
+    font-weight: 600 !important;
+    transition: all 0.3s ease !important;
+}
+
+.profile-modal .btn-outline-secondary:hover {
+    border-color: rgba(148, 163, 184, 0.7) !important;
+    transform: translateY(-1px);
+}

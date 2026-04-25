@@ -197,24 +197,6 @@ function UserProfileModal({ open, onClose }) {
                                             </Form.Text>
                                         </Form.Group>
 
-                                        <Form.Group className="mb-4">
-                                            <Form.Label className="small fw-semibold">Tiểu sử</Form.Label>
-                                            <div className="position-relative">
-                                                <span className="position-absolute text-secondary" style={{ left: '12px', top: '14px', zIndex: 10 }}>
-                                                    <BookText size={18} />
-                                                </span>
-                                                <Form.Control
-                                                    as="textarea"
-                                                    rows={3}
-                                                    name="bio"
-                                                    value={formData.bio}
-                                                    onChange={handleFormChange}
-                                                    placeholder="Giới thiệu nhanh về bạn..."
-                                                    style={{ paddingLeft: '40px' }}
-                                                />
-                                            </div>
-                                        </Form.Group>
-
                                         <div className="d-flex justify-content-end">
                                             <Button variant="primary">Lưu hồ sơ</Button>
                                         </div>
@@ -240,22 +222,6 @@ function UserProfileModal({ open, onClose }) {
                                                 onChange={(e) => setTheme(e.target.checked ? 'dark' : 'light')}
                                             />
                                         </div>
-                                    </div>
-
-                                    <div className="p-3 border rounded-3">
-                                        <div className="d-flex align-items-center gap-2 mb-3">
-                                            <Globe size={18} />
-                                            <h6 className="mb-0 fw-semibold">Ngôn ngữ</h6>
-                                        </div>
-                                        <p className="text-secondary small mb-3">Tuỳ chỉnh ngôn ngữ cho các chức năng trong app.</p>
-                                        <Form.Select
-                                            name="language"
-                                            value={formData.language}
-                                            onChange={handleFormChange}
-                                        >
-                                            <option value="vi">Tiếng Việt (Việt Nam)</option>
-                                            <option value="en">English (US)</option>
-                                        </Form.Select>
                                     </div>
                                 </Tab.Pane>
 
