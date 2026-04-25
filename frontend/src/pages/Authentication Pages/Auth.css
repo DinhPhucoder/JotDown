@@ -47,7 +47,7 @@ body {
 .auth-logo .brand-name {
   font-size: 1.5rem;
   font-weight: 800;
-  letter-spacing: -0.5px;
+  letter-spacing: 1px;
   line-height: 1;
 }
 
@@ -56,7 +56,7 @@ body {
 }
 
 .auth-logo .brand-down {
-  color: #4f46e5;
+  color: #fff;
 }
 
 /* Branding Side */
