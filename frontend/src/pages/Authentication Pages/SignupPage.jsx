@@ -19,7 +19,7 @@ const SignupPage = () => {
       <Row className="g-0 min-vh-100">
         <Col lg={7} className="d-none d-lg-flex auth-branding">
           <div className="branding-content">
-            <h2> Jot <span>Down</span> <br /> <span>Nơi mọi</span> ý tưởng lớn <br />bắt đầu</h2>
+            <h2> Jot Down <br />Nơi mọi ý tưởng lớn <br />bắt đầu</h2>
             <p className="lead">Đừng để những suy nghĩ vụt mất. Ghi chép nhanh chóng, đồng bộ an toàn và quản lý tri thức của bạn một cách khoa học nhất.</p>
           </div>
         </Col>
