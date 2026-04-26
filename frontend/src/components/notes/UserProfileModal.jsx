@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { Modal, Button, Form, Tab, Row, Col, Nav } from 'react-bootstrap';
-import { User, Mail, PaintBucket, Shield, Camera, Lock, Eye, EyeOff, Menu, X, Type } from 'lucide-react';
+import { User, Mail, PaintBucket, Shield, Camera, Lock, Eye, EyeOff, X, Type } from 'lucide-react';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faBars } from '@fortawesome/free-solid-svg-icons';
 import { noteColorOptions } from '../../data/noteWorkspace';
 import './UserProfileModal.css';
 
@@ -133,10 +135,10 @@ function UserProfileModal({ open, onClose, theme, onToggleTheme, preferences, on
                     <div className="d-flex align-items-center gap-2">
                         <button
                             type="button"
-                            className="btn btn-sm btn-light d-sm-none profile-hamburger-btn"
+                            className="notes-icon-btn d-sm-none profile-hamburger-btn"
                             onClick={() => setShowMobileNav(true)}
                         >
-                            <Menu size={18} />
+                            <FontAwesomeIcon icon={faBars} />
                         </button>
                         <Modal.Title className="h5 fw-bold mb-0">Cài đặt tài khoản</Modal.Title>
                     </div>
