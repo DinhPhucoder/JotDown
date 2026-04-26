@@ -81,7 +81,7 @@ function NotesSidebar({
       <SidebarButton
         active={selectedLabels.length === 0 && !showShared}
         icon={faFolderOpen}
-        label="Tat ca ghi chu"
+        label="Tất cả ghi chú"
         onClick={onShowAll}
       />
       <SidebarButton
@@ -92,7 +92,7 @@ function NotesSidebar({
       />
 
       <div className="notes-sidebar__section">
-        <div className="notes-sidebar__heading">Nhan</div>
+        <div className="notes-sidebar__heading">Nhãn</div>
 
         <div className="d-flex flex-column gap-2">
           {labels.map((label) =>
@@ -110,7 +110,7 @@ function NotesSidebar({
                   }}
                   autoFocus
                 />
-                <button type="button" className="notes-icon-btn" onClick={handleRename} aria-label="Luu nhan">
+                <button type="button" className="notes-icon-btn" onClick={handleRename} aria-label="Lưu nhãn">
                   <FontAwesomeIcon icon={faCheck} />
                 </button>
               </div>
@@ -130,7 +130,7 @@ function NotesSidebar({
                         event.stopPropagation();
                         startEditing(label);
                       }}
-                      aria-label={`Sua nhan ${label.name}`}
+                      aria-label={`Sửa nhãn ${label.name}`}
                     >
                       <FontAwesomeIcon icon={faPencil} />
                     </button>
@@ -141,7 +141,7 @@ function NotesSidebar({
                         event.stopPropagation();
                         onDeleteLabel(label.id);
                       }}
-                      aria-label={`Xoa nhan ${label.name}`}
+                      aria-label={`Xóa nhãn ${label.name}`}
                     >
                       <FontAwesomeIcon icon={faTrash} />
                     </button>
@@ -156,7 +156,7 @@ function NotesSidebar({
           <input
             type="text"
             className="form-control"
-            placeholder="Nhan moi..."
+            placeholder="Nhãn mới..."
             value={newLabel}
             onChange={(event) => setNewLabel(event.target.value)}
             onKeyDown={(event) => {
@@ -165,7 +165,7 @@ function NotesSidebar({
               }
             }}
           />
-          <button type="button" className="notes-icon-btn" onClick={handleAddLabel} aria-label="Them nhan">
+          <button type="button" className="notes-icon-btn" onClick={handleAddLabel} aria-label="Thêm nhãn">
             <FontAwesomeIcon icon={faPlus} />
           </button>
         </div>

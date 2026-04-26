@@ -114,7 +114,7 @@ function resizeImageFile(file) {
 
       if (!context) {
         URL.revokeObjectURL(imageUrl);
-        reject(new Error('Khong the xu ly anh'));
+        reject(new Error('Không thể xử lý ảnh'));
         return;
       }
 
@@ -128,7 +128,7 @@ function resizeImageFile(file) {
 
     image.onerror = () => {
       URL.revokeObjectURL(imageUrl);
-      reject(new Error('Khong the doc anh'));
+      reject(new Error('Không thể đọc ảnh'));
     };
 
     image.src = imageUrl;
@@ -139,7 +139,7 @@ function formatLastEditedText(value) {
   const parsedDate = value ? new Date(value) : new Date();
 
   if (Number.isNaN(parsedDate.getTime())) {
-    return 'Da chinh sua luc --:--';
+    return 'Đã chỉnh sửa lúc --:--';
   }
 
   const now = new Date();
@@ -156,7 +156,7 @@ function formatLastEditedText(value) {
       year: 'numeric',
     });
 
-  return `Da chinh sua luc ${formattedValue}`;
+  return `Đã chỉnh sửa lúc ${formattedValue}`;
 }
 
 function NoteEditorModal({
@@ -329,12 +329,12 @@ function NoteEditorModal({
     const confirmPassword = lockDraftConfirm.trim();
 
     if (password.length < 4) {
-      setLockSetupError('Mat khau can it nhat 4 ky tu.');
+      setLockSetupError('Mật khẩu cần ít nhất 4 ký tự.');
       return;
     }
 
     if (password !== confirmPassword) {
-      setLockSetupError('Hai mat khau khong khop.');
+      setLockSetupError('Hai mật khẩu không khớp.');
       return;
     }
 
@@ -473,7 +473,7 @@ function NoteEditorModal({
         dialogClassName="note-editor-modal"
       >
         <Modal.Header closeButton className="border-0 pb-0">
-          <Modal.Title>{note ? 'Chinh sua ghi chu' : 'Tao ghi chu moi'}</Modal.Title>
+          <Modal.Title>{note ? 'Chỉnh sửa ghi chú' : 'Tạo ghi chú mới'}</Modal.Title>
         </Modal.Header>
 
         <Modal.Body className="pt-3">
@@ -485,7 +485,7 @@ function NoteEditorModal({
                   className="note-editor__media-item"
                   role="button"
                   tabIndex={0}
-                  aria-label="Mo anh dinh kem"
+                  aria-label="Mở ảnh đính kèm"
                   onClick={() => setActiveImage(image)}
                   onKeyDown={(event) => {
                     if (event.key === 'Enter' || event.key === ' ') {
@@ -504,8 +504,8 @@ function NoteEditorModal({
                         currentImages.filter((_, itemIndex) => itemIndex !== index),
                       );
                     }}
-                    aria-label="Xoa anh"
-                    title="Xoa anh"
+                    aria-label="Xóa ảnh"
+                    title="Xóa ảnh"
                   >
                     <FontAwesomeIcon icon={faXmark} />
                   </button>
@@ -517,14 +517,14 @@ function NoteEditorModal({
           <input
             type="text"
             className="note-editor__title"
-            placeholder="Tieu de"
+            placeholder="Tiêu đề"
             value={title}
             onChange={(event) => setTitle(event.target.value)}
           />
           <textarea
             className="note-editor__content"
             rows={9}
-            placeholder="Noi dung ghi chu..."
+            placeholder="Nội dung ghi chú..."
             value={content}
             onChange={(event) => setContent(event.target.value)}
           />
@@ -545,7 +545,7 @@ function NoteEditorModal({
                   type="button" 
                   className={`notes-icon-btn ${sharedWith.length > 0 ? 'active' : ''}`} 
                   onClick={() => setIsCollaboratorsOpen(true)}
-                  title="Mo cong tac vien"
+                  title="Mở cộng tác viên"
                 >
                   <FontAwesomeIcon icon={faUserPlus} />
                 </button>
@@ -555,7 +555,7 @@ function NoteEditorModal({
                 type="button"
                 className={`notes-icon-btn ${selectedLabels.length > 0 ? 'active' : ''}`}
                 onClick={() => setIsLabelPanelOpen((current) => !current)}
-                title="Gan nhan"
+                title="Gắn nhãn"
               >
                 <FontAwesomeIcon icon={faTag} />
               </button>
@@ -567,8 +567,8 @@ function NoteEditorModal({
                 disabled={remainingImageSlots <= 0}
                 title={
                   remainingImageSlots > 0
-                    ? `Them anh (${images.length}/3)`
-                    : 'Da dat toi da 3 anh'
+                    ? `Thêm ảnh (${images.length}/3)`
+                    : 'Đã đạt tối đa 3 ảnh'
                 }
               >
                 <FontAwesomeIcon icon={faImage} />
@@ -579,7 +579,7 @@ function NoteEditorModal({
                   type="button"
                   className={`notes-icon-btn ${isLocked ? 'active' : ''}`}
                   onClick={handleOpenLockSetup}
-                  title={isLocked ? 'Quan ly khoa' : 'Them khoa'}
+                  title={isLocked ? 'Quản lý khóa' : 'Thêm khóa'}
                 >
                   <FontAwesomeIcon icon={faLock} />
                 </button>
@@ -596,7 +596,7 @@ function NoteEditorModal({
                   <input
                     type="text"
                     className="note-editor__panel-input"
-                    placeholder="Tim nhan..."
+                    placeholder="Tìm nhãn..."
                     value={labelQuery}
                     onChange={(event) => setLabelQuery(event.target.value)}
                   />
@@ -612,11 +612,11 @@ function NoteEditorModal({
                           onClick={() => handleToggleLabel(label)}
                         >
                           <span>{label}</span>
-                          {selectedLabels.includes(label) ? <span>Da chon</span> : null}
+                          {selectedLabels.includes(label) ? <span>Đã chọn</span> : null}
                         </button>
                       ))
                     ) : (
-                      <div className="note-editor__panel-empty">Khong tim thay nhan phu hop.</div>
+                      <div className="note-editor__panel-empty">Không tìm thấy nhãn phù hợp.</div>
                     )}
                   </div>
                 </div>
@@ -639,7 +639,7 @@ function NoteEditorModal({
 
         <Modal.Footer className="border-0 pt-0">
           <Button variant="outline-secondary" onClick={handleHide}>
-            Dong
+            Đóng
           </Button>
         </Modal.Footer>
       </Modal>
@@ -667,13 +667,13 @@ function NoteEditorModal({
         dialogClassName="note-lock-modal"
       >
         <Modal.Header className="border-0">
-          <Modal.Title>{isLocked ? 'Quan ly khoa ghi chu' : 'Thiet lap khoa ghi chu'}</Modal.Title>
+          <Modal.Title>{isLocked ? 'Quản lý khóa ghi chú' : 'Thiết lập khóa ghi chú'}</Modal.Title>
         </Modal.Header>
         <Modal.Body className="pt-0">
           <input
             type="password"
             className="note-editor__panel-input"
-            placeholder="Nhap mat khau"
+            placeholder="Nhập mật khẩu"
             value={lockDraftPassword}
             onChange={(event) => {
               setLockDraftPassword(event.target.value);
@@ -683,7 +683,7 @@ function NoteEditorModal({
           <input
             type="password"
             className="note-editor__panel-input"
-            placeholder="Nhap lai mat khau"
+            placeholder="Nhập lại mật khẩu"
             value={lockDraftConfirm}
             onChange={(event) => {
               setLockDraftConfirm(event.target.value);
@@ -701,14 +701,14 @@ function NoteEditorModal({
         <Modal.Footer className="border-0 pt-0">
           {isLocked ? (
             <Button variant="outline-danger" onClick={handleRemoveLock}>
-              Bo khoa
+              Bỏ khóa
             </Button>
           ) : null}
           <Button variant="outline-secondary" onClick={handleCancelLockSetup}>
-            Huy
+            Hủy
           </Button>
           <Button variant="primary" onClick={handleSaveLockSetup}>
-            Luu
+            Lưu
           </Button>
         </Modal.Footer>
       </Modal>
@@ -718,7 +718,7 @@ function NoteEditorModal({
           className="note-image-viewer"
           role="dialog"
           aria-modal="true"
-          aria-label="Xem anh dinh kem"
+          aria-label="Xem ảnh đính kèm"
           onClick={handleCloseImageViewer}
         >
           <button
@@ -728,20 +728,20 @@ function NoteEditorModal({
               event.stopPropagation();
               handleCloseImageViewer();
             }}
-            aria-label="Dong anh"
-            title="Dong"
+            aria-label="Đóng ảnh"
+            title="Đóng"
           >
             <FontAwesomeIcon icon={faXmark} />
           </button>
           <div className="note-image-viewer__stage" onClick={(event) => event.stopPropagation()}>
-            <img className="note-image-viewer__img" src={activeImage} alt="Anh dinh kem" />
+            <img className="note-image-viewer__img" src={activeImage} alt="Ảnh đính kèm" />
           </div>
         </div>
       ) : null}
 
       <NoteDeleteConfirmDialog
         open={isDeleteConfirmOpen}
-        noteTitle={note?.title || 'Untitled'}
+        noteTitle={note?.title || 'Không tiêu đề'}
         onConfirm={handleDeleteConfirm}
         onCancel={handleDeleteCancel}
         isDeleting={isDeleting}

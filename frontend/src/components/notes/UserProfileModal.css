@@ -51,7 +51,6 @@
 }
 
 .profile-modal .profile-image-label {
-    margin-top: 6px;
     font-size: 0.8rem;
     color: #94a3b8;
     transition: color 0.3s ease;
@@ -61,21 +60,82 @@
     color: #4f46e5;
 }
 
-/* Font size slider */
-.profile-font-slider::-webkit-slider-runnable-track {
-    background: linear-gradient(90deg, #0b5cff, #7c3aed) !important;
-    height: 6px;
-    border-radius: 3px;
+/* Note color config */
+.profile-note-colors {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
 }
 
-.profile-font-slider::-webkit-slider-thumb {
-    width: 18px;
-    height: 18px;
-    border-radius: 50%;
-    background: #fff;
-    box-shadow: 0 0 6px rgba(79, 70, 229, 0.4);
-    border: 2px solid #4f46e5;
-    cursor: pointer;
+.profile-note-color-swatch {
+    width: 2rem;
+    height: 2rem;
+    border-radius: 999px;
+    border: 2px solid transparent;
+    box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.35);
+    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.profile-note-color-swatch:hover {
+    transform: translateY(-1px);
+}
+
+.profile-note-color-swatch.active {
+    border-color: #4f46e5;
+    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.18);
+}
+
+/* Font size presets */
+.profile-font-size-options {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.6rem;
+}
+
+.profile-font-size-option {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.25rem;
+    min-height: 3.25rem;
+    border: 1px solid rgba(148, 163, 184, 0.35);
+    border-radius: 10px;
+    background: rgba(248, 250, 252, 0.85);
+    color: #334155;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.profile-font-size-option:hover {
+    transform: translateY(-1px);
+    border-color: rgba(79, 70, 229, 0.5);
+}
+
+.profile-font-size-option.active {
+    border-color: #4f46e5;
+    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.16);
+}
+
+.profile-font-size-option__preview {
+    font-weight: 700;
+    line-height: 1;
+}
+
+.profile-font-size-option__label {
+    font-size: 0.72rem;
+    font-weight: 600;
+}
+
+.profile-font-size-option:nth-child(1) .profile-font-size-option__preview {
+    font-size: 0.82rem;
+}
+
+.profile-font-size-option:nth-child(2) .profile-font-size-option__preview {
+    font-size: 0.98rem;
+}
+
+.profile-font-size-option:nth-child(3) .profile-font-size-option__preview {
+    font-size: 1.14rem;
 }
 
 /* Panel sidebar mobile nằm BÊN TRONG Modal */
@@ -140,6 +200,80 @@
 .profile-content {
     height: 100%;
     overflow-y: auto;
+}
+
+.profile-input-icon {
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 10;
+    color: #64748b;
+    pointer-events: none;
+}
+
+.profile-input-icon--right {
+    left: auto;
+    right: 12px;
+    cursor: pointer;
+    pointer-events: auto;
+}
+
+.profile-input-control {
+    min-height: 44px;
+    padding-left: 40px;
+    border-radius: 10px;
+    border: 1px solid rgba(148, 163, 184, 0.4);
+    background: rgba(255, 255, 255, 0.92);
+    color: #0f172a;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+}
+
+.profile-input-control::placeholder {
+    color: #94a3b8;
+}
+
+.profile-input-control:focus {
+    border-color: rgba(79, 70, 229, 0.55);
+    box-shadow: 0 0 0 0.2rem rgba(79, 70, 229, 0.14);
+    background: #ffffff;
+}
+
+.profile-input-control--with-trailing-icon {
+    padding-right: 40px;
+}
+
+.profile-input-control:disabled,
+.profile-input-control[readonly] {
+    background: rgba(241, 245, 249, 0.9);
+    color: #64748b;
+    opacity: 1;
+}
+
+html[data-bs-theme="dark"] .profile-input-control {
+    border-color: rgba(100, 116, 139, 0.5);
+    background: rgba(15, 23, 42, 0.55);
+    color: #e2e8f0;
+}
+
+html[data-bs-theme="dark"] .profile-input-control::placeholder {
+    color: #94a3b8;
+}
+
+html[data-bs-theme="dark"] .profile-input-control:focus {
+    border-color: rgba(129, 140, 248, 0.7);
+    box-shadow: 0 0 0 0.2rem rgba(129, 140, 248, 0.2);
+    background: rgba(15, 23, 42, 0.78);
+    color: #f8fafc;
+}
+
+html[data-bs-theme="dark"] .profile-input-control:disabled,
+html[data-bs-theme="dark"] .profile-input-control[readonly] {
+    background: rgba(30, 41, 59, 0.7);
+    color: #cbd5e1;
+}
+
+html[data-bs-theme="dark"] .profile-input-icon {
+    color: #94a3b8;
 }
 
 /* Custom Scrollbar for inner tabs */
@@ -230,6 +364,17 @@ html[data-bs-theme="dark"] .profile-camera-btn {
     background-color: #475569;
     border-color: #334155;
     color: white;
+}
+
+html[data-bs-theme="dark"] .profile-font-size-option {
+    background: rgba(15, 23, 42, 0.72);
+    border-color: rgba(148, 163, 184, 0.28);
+    color: #e2e8f0;
+}
+
+html[data-bs-theme="dark"] .profile-font-size-option.active {
+    border-color: #818cf8;
+    box-shadow: 0 0 0 3px rgba(129, 140, 248, 0.2);
 }
 
 /* Button styles — phong cách Auth (gradient + glow) */

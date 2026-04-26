@@ -4,6 +4,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPlus, faStickyNote } from '@fortawesome/free-solid-svg-icons';
 import { useNavigate } from 'react-router-dom';
 import Masonry from 'react-masonry-css';
+import { motion, useReducedMotion } from 'framer-motion';
 import NoteCard from '../components/notes/NoteCard';
 import NoteEditorModal from '../components/notes/NoteEditorModal';
 import NoteSettingsModal from '../components/notes/NoteSettingsModal';
@@ -17,6 +18,10 @@ function readStoredTheme() {
   const storedTheme = window.localStorage.getItem('theme');
   const prefersDark = window.matchMedia?.('(prefers-color-scheme: dark)')?.matches;
   return storedTheme || (prefersDark ? 'dark' : 'light');
+}
+
+function resolveNoteFontSize(value) {
+  return value === 'small' || value === 'large' ? value : 'medium';
 }
 
 function sortNotes(items) {
@@ -84,6 +89,7 @@ function NotesPage() {
   const [unlockError, setUnlockError] = useState('');
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
+  const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [desktopSidebarOpen, setDesktopSidebarOpen] = useState(true);
   const [theme, setTheme] = useState(() => readStoredTheme());
@@ -95,15 +101,6 @@ function NotesPage() {
     document.documentElement.setAttribute('data-bs-theme', theme);
     window.localStorage.setItem('theme', theme);
   }, [theme]);
-
-  // Khôi phục font size đã lưu khi app khởi động
-  useEffect(() => {
-    const savedFontSize = localStorage.getItem('app-font-size');
-    if (savedFontSize) {
-      document.documentElement.style.fontSize = savedFontSize + 'px';
-    }
-  }, []);
-
   useEffect(() => {
     saveNoteWorkspace({
       notes,
@@ -164,7 +161,41 @@ function NotesPage() {
   const ownedSharedNotes = filteredNotes.filter((note) => note.__shareMeta?.isOwnedShared);
   const receivedSharedNotes = filteredNotes.filter((note) => note.__shareMeta?.isReceivedShared);
   const noteCount = notes.length;
-  const lastUpdated = notes[0] ? new Date(notes[0].updatedAt).toLocaleDateString('vi-VN') : 'Chua co';
+  const lastUpdated = notes[0] ? new Date(notes[0].updatedAt).toLocaleDateString('vi-VN') : 'Chưa có';
+  const noteFontSize = resolveNoteFontSize(user?.preferences?.fontSize);
+  const prefersReducedMotion = useReducedMotion();
+
+  const noteMotionProps = {
+    layout: true,
+    initial: prefersReducedMotion ? false : { opacity: 0, y: 14, scale: 0.98 },
+    animate: { opacity: 1, y: 0, scale: 1 },
+    exit: prefersReducedMotion ? { opacity: 0 } : { opacity: 0, y: -12, scale: 0.98 },
+    transition: prefersReducedMotion
+      ? { duration: 0.12 }
+      : { type: 'spring', stiffness: 300, damping: 26, mass: 0.7 },
+  };
+
+  function renderAnimatedNote(note) {
+    return (
+      <motion.div key={note.id} className="note-card-motion" {...noteMotionProps}>
+        <NoteCard
+          note={note}
+          viewMode={viewMode}
+          onOpen={openEditor}
+          onTogglePin={handleToggleNotePin}
+          isOffline={isOffline}
+          shareScope={
+            note.__shareMeta?.isReceivedShared
+              ? 'received'
+              : note.__shareMeta?.isOwnedShared
+                ? 'owned'
+                : null
+          }
+          accessPermission={note.__shareMeta?.isReceivedShared ? note.__shareMeta.myPermission : null}
+        />
+      </motion.div>
+    );
+  }
 
   function openEditor(note = null) {
     const requiredPassword = String(note?.lockPassword || '').trim();
@@ -194,7 +225,7 @@ function NotesPage() {
     const expectedPassword = String(unlockingNote.lockPassword || '').trim();
 
     if (expectedPassword.length > 0 && unlockPassword.trim() !== expectedPassword) {
-      setUnlockError('Mat khau khong dung.');
+      setUnlockError('Mật khẩu không đúng.');
       return;
     }
 
@@ -300,6 +331,49 @@ function NotesPage() {
     );
   }
 
+  function handleUpdateProfilePreferences(nextPreferences) {
+    const nextDefaultColor = String(nextPreferences?.defaultNoteColor || '').trim();
+    const shouldSyncAllNoteColors =
+      nextDefaultColor.length > 0 && nextDefaultColor !== user?.preferences?.defaultNoteColor;
+
+    setUser((currentUser) => ({
+      ...currentUser,
+      preferences: {
+        ...currentUser.preferences,
+        ...nextPreferences,
+        fontSize: resolveNoteFontSize(nextPreferences?.fontSize),
+      },
+    }));
+
+    if (!shouldSyncAllNoteColors) {
+      return;
+    }
+
+    setNotes((currentNotes) =>
+      currentNotes.map((note) =>
+        note.color === nextDefaultColor
+          ? note
+          : {
+              ...note,
+              color: nextDefaultColor,
+            },
+      ),
+    );
+  }
+
+  function handleOpenLogoutConfirm() {
+    setLogoutConfirmOpen(true);
+  }
+
+  function handleCloseLogoutConfirm() {
+    setLogoutConfirmOpen(false);
+  }
+
+  function handleConfirmLogout() {
+    setLogoutConfirmOpen(false);
+    navigate('/login');
+  }
+
 function renderNoteSection(title, items) {
     if (items.length === 0) {
       return null;
@@ -321,33 +395,11 @@ function renderNoteSection(title, items) {
             className="notes-masonry-grid"
             columnClassName="notes-masonry-grid_column"
           >
-            {items.map((note) => (
-              <NoteCard
-                key={note.id}
-                note={note}
-                viewMode={viewMode}
-                onOpen={openEditor}
-                onTogglePin={handleToggleNotePin}
-                isOffline={isOffline}
-                shareScope={note.__shareMeta?.isReceivedShared ? 'received' : note.__shareMeta?.isOwnedShared ? 'owned' : null}
-                accessPermission={note.__shareMeta?.isReceivedShared ? note.__shareMeta.myPermission : null}
-              />
-            ))}
+            {items.map(renderAnimatedNote)}
           </Masonry>
         ) : (
           <div className="notes-list">
-            {items.map((note) => (
-              <NoteCard
-                key={note.id}
-                note={note}
-                viewMode={viewMode}
-                onOpen={openEditor}
-                onTogglePin={handleToggleNotePin}
-                isOffline={isOffline}
-                shareScope={note.__shareMeta?.isReceivedShared ? 'received' : note.__shareMeta?.isOwnedShared ? 'owned' : null}
-                accessPermission={note.__shareMeta?.isReceivedShared ? note.__shareMeta.myPermission : null}
-              />
-            ))}
+            {items.map(renderAnimatedNote)}
           </div>
         )}
       </section>
@@ -374,44 +426,22 @@ function renderNoteSection(title, items) {
               className="notes-masonry-grid"
               columnClassName="notes-masonry-grid_column"
             >
-              {items.map((note) => (
-                <NoteCard
-                  key={note.id}
-                  note={note}
-                  viewMode={viewMode}
-                  onOpen={openEditor}
-                  onTogglePin={handleToggleNotePin}
-                  isOffline={isOffline}
-                  shareScope={note.__shareMeta?.isReceivedShared ? 'received' : note.__shareMeta?.isOwnedShared ? 'owned' : null}
-                  accessPermission={note.__shareMeta?.isReceivedShared ? note.__shareMeta.myPermission : null}
-                />
-              ))}
+              {items.map(renderAnimatedNote)}
             </Masonry>
           ) : (
             <div className="notes-list">
-              {items.map((note) => (
-                <NoteCard
-                  key={note.id}
-                  note={note}
-                  viewMode={viewMode}
-                  onOpen={openEditor}
-                  onTogglePin={handleToggleNotePin}
-                  isOffline={isOffline}
-                  shareScope={note.__shareMeta?.isReceivedShared ? 'received' : note.__shareMeta?.isOwnedShared ? 'owned' : null}
-                  accessPermission={note.__shareMeta?.isReceivedShared ? note.__shareMeta.myPermission : null}
-                />
-              ))}
+              {items.map(renderAnimatedNote)}
             </div>
           )
         ) : (
-          <div className="notes-shared-space__empty">Khong co ghi chu trong khu vuc nay.</div>
+          <div className="notes-shared-space__empty">Không có ghi chú trong khu vực này.</div>
         )}
       </section>
     );
   }
 
   return (
-    <div className={`notes-shell note-font-${user.preferences.fontSize}`}>
+    <div className={`notes-shell note-font-${noteFontSize}`}>
       <NotesHeader
         search={search}
         onSearchChange={setSearch}
@@ -419,9 +449,7 @@ function renderNoteSection(title, items) {
         onViewModeChange={setViewMode}
         userName={user.displayName}
         isVerified={user.isVerified}
-        theme={theme}
-        onToggleTheme={() => setTheme((currentTheme) => (currentTheme === 'dark' ? 'light' : 'dark'))}
-        onLogout={() => navigate('/login')}
+        onLogout={handleOpenLogoutConfirm}
         onOpenSettings={() => setSettingsOpen(true)}
         onOpenProfile={() => setProfileOpen(true)}
         onToggleMobileSidebar={() => setMobileSidebarOpen(true)}
@@ -462,8 +490,8 @@ function renderNoteSection(title, items) {
                   </>
                 ) : (
                   <>
-                    {renderNoteSection(pinnedNotes.length > 0 ? 'Da ghim' : '', pinnedNotes)}
-                    {renderNoteSection(pinnedNotes.length > 0 ? 'Khac' : '', otherNotes)}
+                    {renderNoteSection(pinnedNotes.length > 0 ? 'Đã ghim' : '', pinnedNotes)}
+                    {renderNoteSection(pinnedNotes.length > 0 ? 'Khác' : '', otherNotes)}
                   </>
                 )}
               </>
@@ -472,12 +500,12 @@ function renderNoteSection(title, items) {
                 <div className="notes-empty-state__icon">
                   <FontAwesomeIcon icon={faStickyNote} />
                 </div>
-                <h2 className="h4">Chua co ghi chu phu hop</h2>
+                <h2 className="h4">Chưa có ghi chú phù hợp</h2>
                 <p className="text-secondary mb-4">
-                  Thu xoa bo loc hien tai hoac tao ghi chu moi de bat dau kho ghi chu cua ban.
+                  Thử xóa bộ lọc hiện tại hoặc tạo ghi chú mới để bắt đầu kho ghi chú của bạn.
                 </p>
                 <Button variant="primary" onClick={() => openEditor(null)}>
-                  Tao ghi chu dau tien
+                  Tạo ghi chú đầu tiên
                 </Button>
               </div>
             )}
@@ -485,7 +513,7 @@ function renderNoteSection(title, items) {
         </div>
       </div>
 
-      <Button className="note-fab" onClick={() => openEditor(null)} aria-label="Tao ghi chu moi">
+      <Button className="note-fab" onClick={() => openEditor(null)} aria-label="Tạo ghi chú mới">
         <FontAwesomeIcon icon={faPlus} />
       </Button>
 
@@ -496,7 +524,7 @@ function renderNoteSection(title, items) {
         className="notes-offcanvas"
       >
         <Offcanvas.Header closeButton>
-          <Offcanvas.Title>Bo loc ghi chu</Offcanvas.Title>
+          <Offcanvas.Title>Bộ lọc ghi chú</Offcanvas.Title>
         </Offcanvas.Header>
         <Offcanvas.Body>
           <NotesSidebar
@@ -554,17 +582,19 @@ function renderNoteSection(title, items) {
         onClose={() => setProfileOpen(false)}
         theme={theme}
         onToggleTheme={setTheme}
+        preferences={user.preferences}
+        onUpdatePreferences={handleUpdateProfilePreferences}
       />
 
       <Modal show={Boolean(unlockingNote)} onHide={handleCancelUnlock} centered dialogClassName="note-lock-modal">
         <Modal.Header className="border-0">
-          <Modal.Title>Nhap mat khau de mo ghi chu</Modal.Title>
+          <Modal.Title>Nhập mật khẩu để mở ghi chú</Modal.Title>
         </Modal.Header>
         <Modal.Body className="pt-0">
           <input
             type="password"
             className="note-editor__panel-input"
-            placeholder="Mat khau ghi chu"
+            placeholder="Mật khẩu ghi chú"
             value={unlockPassword}
             onChange={(event) => {
               setUnlockPassword(event.target.value);
@@ -581,10 +611,27 @@ function renderNoteSection(title, items) {
         </Modal.Body>
         <Modal.Footer className="border-0 pt-0">
           <Button variant="outline-secondary" onClick={handleCancelUnlock}>
-            Huy
+            Hủy
           </Button>
           <Button variant="primary" onClick={handleConfirmUnlock}>
-            Mo ghi chu
+            Mở ghi chú
+          </Button>
+        </Modal.Footer>
+      </Modal>
+
+      <Modal show={logoutConfirmOpen} onHide={handleCloseLogoutConfirm} centered>
+        <Modal.Header closeButton className="border-0">
+          <Modal.Title>Xác nhận đăng xuất</Modal.Title>
+        </Modal.Header>
+        <Modal.Body className="pt-0">
+          Bạn có chắc muốn đăng xuất khỏi phiên làm việc hiện tại không?
+        </Modal.Body>
+        <Modal.Footer className="border-0 pt-0">
+          <Button variant="outline-secondary" onClick={handleCloseLogoutConfirm}>
+            Hủy
+          </Button>
+          <Button variant="primary" onClick={handleConfirmLogout}>
+            Đăng xuất
           </Button>
         </Modal.Footer>
       </Modal>

@@ -110,7 +110,7 @@ function NoteCard({
             {note.isLocked ? ( 
               <span className="note-meta-badge note-meta-badge--locked"> 
                 <FontAwesomeIcon icon={faLock} /> 
-                <span>Khoa</span> 
+                <span>Khóa</span> 
               </span>
             ) : null}
             {collaboratorEmails.length > 0 ? (
@@ -124,7 +124,7 @@ function NoteCard({
                 className={`note-meta-badge note-meta-badge--permission note-meta-badge--permission-${normalizedPermission}`}
               >
                 <FontAwesomeIcon icon={normalizedPermission === 'edit' ? faPenToSquare : faEye} />
-                <span>{normalizedPermission === 'edit' ? 'Quyen Sua' : 'Quyen Doc'}</span>
+                <span>{normalizedPermission === 'edit' ? 'Quyền sửa' : 'Quyền đọc'}</span>
               </span>
             ) : null}
             {isOffline ? (
@@ -136,7 +136,7 @@ function NoteCard({
           </div>
         ) : null}
 
-        <div className="note-card__title">{note.title || 'Khong co tieu de'}</div>
+        <div className="note-card__title">{note.title || 'Không có tiêu đề'}</div>
       </div>
 
       <div className={`note-card__content ${note.isLocked ? 'note-card__content--locked' : ''}`}>
@@ -163,8 +163,8 @@ function NoteCard({
           {hiddenCollaboratorCount > 0 ? (
             <span
               className="note-card__avatar note-card__avatar--more"
-              title={`${hiddenCollaboratorCount} cong tac vien khac`}
-              aria-label={`${hiddenCollaboratorCount} cong tac vien khac`}
+              title={`${hiddenCollaboratorCount} cộng tác viên khác`}
+              aria-label={`${hiddenCollaboratorCount} cộng tác viên khác`}
             >
               +{hiddenCollaboratorCount}
             </span>
@@ -183,8 +183,8 @@ function NoteCard({
         type="button"
         className={`note-card__pin-corner ${note.isPinned ? 'active' : ''}`}
         onClick={handleTogglePin}
-        title={note.isPinned ? 'Bo ghim' : 'Ghim ghi chu'}
-        aria-label={note.isPinned ? 'Bo ghim' : 'Ghim ghi chu'}
+        title={note.isPinned ? 'Bỏ ghim' : 'Ghim ghi chú'}
+        aria-label={note.isPinned ? 'Bỏ ghim' : 'Ghim ghi chú'}
       >
         <FontAwesomeIcon icon={faThumbtack} />
       </button>

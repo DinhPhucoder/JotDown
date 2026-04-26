@@ -1,14 +1,12 @@
-import React, { useState } from 'react';
-import { Container, Row, Col, Form, Button, Spinner } from 'react-bootstrap';
-import { Mail, Lock, Eye, EyeOff } from 'lucide-react';
-import { Link, useNavigate } from 'react-router-dom';
-import { toast } from 'sonner';
+import React from 'react';
+import { Container, Row, Col, Form, Button } from 'react-bootstrap';
+import { Mail, Lock, EyeOff } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import './Auth.css';
 
 const LoginPage = () => {
   return (
     <Container fluid className="p-0 auth-wrapper">
-      {/* Logo và brand name */}
       <Link to="/landing" className="auth-logo">
         <img src="/Logo_JotDown.png" alt="JotDown" />
         <span className="brand-name">
@@ -20,46 +18,34 @@ const LoginPage = () => {
       <Row className="g-0 min-vh-100">
         <Col lg={7} className="d-none d-lg-flex auth-branding">
           <div className="branding-content">
-            <h2> Jot Down <br />Nơi mọi ý tưởng lớn <br />bắt đầu</h2>
-            <p className="lead">Đừng để những suy nghĩ vụt mất. Ghi chép nhanh chóng, đồng bộ an toàn và quản lý tri thức của bạn một cách khoa học nhất.</p>
+            <h2>Nơi mọi ý tưởng lớn <span>bắt đầu</span></h2>
+           
           </div>
         </Col>
 
         <Col lg={5} className="auth-form-container">
           <div className="auth-card">
-            <div className="auth-header mb-5">
-              <h1 className="fw-bold">Đăng nhập</h1>
-              <p className='text-secondary'>Chào mừng trở lại! Vui lòng nhập thông tin của bạn</p>
+            <div className="auth-header mb-3">
+              <h1 className="fw-bold">Chào mừng bạn</h1>
+              <p className="text-secondary">Vui lòng nhập thông tin</p>
             </div>
 
             <Form className="auth-form">
-              <Form.Group className="mb-4" controlId="email">
+              <Form.Group className="mb-3" controlId="email">
                 <Form.Label>Email</Form.Label>
                 <div className="input-wrapper">
                   <Mail className="input-icon" size={20} />
-                  <Form.Control
-                    type="email"
-                    name="email"
-                    placeholder="name@example.com"
-                  />
+                  <Form.Control type="email" name="email" placeholder="name@example.com" />
                 </div>
               </Form.Group>
 
-              <Form.Group className="mb-4" controlId="password">
+              <Form.Group className="mb-3" controlId="password">
                 <Form.Label>Mật khẩu</Form.Label>
                 <div className="input-wrapper">
                   <Lock className="input-icon" size={20} />
-                  <Form.Control
-                    type="password"
-                    name="password"
-                    placeholder="••••••••"
-                  />
-                  <button
-                    type="button"
-                    className="password-toggle-btn"
-                    tabIndex={-1}
-                  >
-                    < EyeOff size={18} />
+                  <Form.Control type="password" name="password" placeholder="••••••••" />
+                  <button type="button" className="password-toggle-btn" tabIndex={-1}>
+                    <EyeOff size={18} />
                   </button>
                 </div>
               </Form.Group>

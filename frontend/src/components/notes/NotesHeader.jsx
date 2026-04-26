@@ -4,10 +4,8 @@ import {
   faBorderAll,
   faGear,
   faList,
-  faMoon,
   faRightFromBracket,
   faSearch,
-  faSun,
 } from '@fortawesome/free-solid-svg-icons';
 import { Dropdown } from 'react-bootstrap';
 import AppLogo from '../AppLogo';
@@ -19,8 +17,6 @@ function NotesHeader({
   onViewModeChange,
   userName,
   isVerified,
-  theme,
-  onToggleTheme,
   onLogout,
   onOpenSettings,
   onToggleMobileSidebar,
@@ -41,7 +37,7 @@ function NotesHeader({
             type="button"
             className="notes-icon-btn d-lg-none"
             onClick={onToggleMobileSidebar}
-            aria-label="Mo bo loc"
+            aria-label="Mở bộ lọc"
           >
             <FontAwesomeIcon icon={faBars} />
           </button>
@@ -50,7 +46,7 @@ function NotesHeader({
             type="button"
             className="notes-icon-btn d-none d-lg-inline-flex"
             onClick={onToggleDesktopSidebar}
-            aria-label="An hien thanh ben"
+            aria-label="Ẩn hiện thanh bên"
           >
             <FontAwesomeIcon icon={faBars} />
           </button>
@@ -63,7 +59,7 @@ function NotesHeader({
           <input
             className="form-control notes-search__input"
             type="search"
-            placeholder="Tim theo tieu de, noi dung..."
+            placeholder="Tìm theo tiêu đề, nội dung..."
             value={search}
             onChange={(event) => onSearchChange(event.target.value)}
           />
@@ -74,20 +70,10 @@ function NotesHeader({
             type="button"
             className="notes-icon-btn d-none d-md-inline-flex"
             onClick={() => onViewModeChange(viewMode === 'grid' ? 'list' : 'grid')}
-            title={viewMode === 'grid' ? 'Che do danh sach' : 'Che do luoi'}
-            aria-label={viewMode === 'grid' ? 'Che do danh sach' : 'Che do luoi'}
+            title={viewMode === 'grid' ? 'Chế độ danh sách' : 'Chế độ lưới'}
+            aria-label={viewMode === 'grid' ? 'Chế độ danh sách' : 'Chế độ lưới'}
           >
             <FontAwesomeIcon icon={viewMode === 'grid' ? faList : faBorderAll} />
-          </button>
-
-          <button
-            type="button"
-            className="notes-icon-btn"
-            onClick={onToggleTheme}
-            title={theme === 'dark' ? 'Chuyen sang giao dien sang' : 'Chuyen sang giao dien toi'}
-            aria-label="Doi giao dien"
-          >
-            <FontAwesomeIcon icon={theme === 'dark' ? faSun : faMoon} />
           </button>
 
           <Dropdown align="end">
@@ -103,7 +89,7 @@ function NotesHeader({
               <Dropdown.Divider />
               <Dropdown.Item onClick={onLogout}>
                 <FontAwesomeIcon icon={faRightFromBracket} fixedWidth className="me-2" />
-                Dang xuat
+                Đăng xuất
               </Dropdown.Item>
             </Dropdown.Menu>
           </Dropdown>

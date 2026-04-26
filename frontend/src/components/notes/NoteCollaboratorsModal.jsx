@@ -20,7 +20,7 @@ function NoteCollaboratorsModal({
   open,
   onCancel,
   onSave,
-  ownerName = 'Ban (Chu so huu)',
+  ownerName = 'Bạn (Chủ sở hữu)',
   ownerEmail = 'user@example.com',
   collaborators,
   suggestions,
@@ -93,7 +93,7 @@ function NoteCollaboratorsModal({
   return (
     <Modal show={open} onHide={handleCancel} centered dialogClassName="note-collaborators-modal">
       <Modal.Header className="border-0">
-        <Modal.Title>Cong tac vien</Modal.Title>
+        <Modal.Title>Cộng tác viên</Modal.Title>
       </Modal.Header>
       <Modal.Body className="pt-0">
         <div className="note-editor__collaborator-list">
@@ -112,10 +112,10 @@ function NoteCollaboratorsModal({
                 <div className="note-editor__collaborator-name">{getDisplayName(entry.email)}</div>
                 <div className="note-editor__collaborator-email">{entry.email}</div>
                 <div className="note-editor__permission-summary">
-                  Quyen hien tai: {entry.permission === 'edit' ? 'Sua' : 'Doc'}
+                  Quyền hiện tại: {entry.permission === 'edit' ? 'Sửa' : 'Đọc'}
                 </div>
               </div>
-              <div className="note-editor__permission-actions" role="group" aria-label="Quan ly quyen">
+              <div className="note-editor__permission-actions" role="group" aria-label="Quản lý quyền">
                 <button
                   type="button"
                   className={`note-editor__permission-btn ${
@@ -123,7 +123,7 @@ function NoteCollaboratorsModal({
                   }`}
                   onClick={() => handlePermissionChange(entry.email, 'read')}
                 >
-                  Doc
+                  Đọc
                 </button>
                 <button
                   type="button"
@@ -132,14 +132,14 @@ function NoteCollaboratorsModal({
                   }`}
                   onClick={() => handlePermissionChange(entry.email, 'edit')}
                 >
-                  Sua
+                  Sửa
                 </button>
                 <button
                   type="button"
                   className="note-editor__permission-btn note-editor__permission-btn--danger"
                   onClick={() => handleRemove(entry.email)}
                 >
-                  Thu hoi
+                  Thu hồi
                 </button>
               </div>
             </div>
@@ -153,7 +153,7 @@ function NoteCollaboratorsModal({
               <input
                 type="email"
                 className="note-editor__share-input"
-                placeholder="Nguoi hoac email se chia se"
+                placeholder="Người hoặc email sẽ chia sẻ"
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
                 onKeyDown={(event) => {
@@ -183,7 +183,7 @@ function NoteCollaboratorsModal({
               className="notes-icon-btn"
               onClick={() => handleAdd()}
               disabled={!canAdd}
-              title="Them nguoi chia se"
+              title="Thêm người chia sẻ"
             >
               <FontAwesomeIcon icon={faPlus} />
             </button>
@@ -192,10 +192,10 @@ function NoteCollaboratorsModal({
       </Modal.Body>
       <Modal.Footer className="border-0 pt-0">
         <Button variant="outline-secondary" onClick={handleCancel}>
-          Huy
+          Hủy
         </Button>
         <Button variant="primary" onClick={handleSave}>
-          Luu
+          Lưu
         </Button>
       </Modal.Footer>
     </Modal>

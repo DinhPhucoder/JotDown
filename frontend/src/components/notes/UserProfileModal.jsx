@@ -1,21 +1,24 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Modal, Button, Form, Tab, Row, Col, Nav } from 'react-bootstrap';
-import { User, Mail, PaintBucket, Shield, Globe, Camera, BookText, Lock, Eye, EyeOff, Menu, X, Type } from 'lucide-react';
+import { User, Mail, PaintBucket, Shield, Camera, Lock, Eye, EyeOff, Menu, X, Type } from 'lucide-react';
+import { noteColorOptions } from '../../data/noteWorkspace';
 import './UserProfileModal.css';
 
-function UserProfileModal({ open, onClose, theme, onToggleTheme }) {
+const noteFontSizeOptions = [
+    { value: 'small', label: 'Nho', preview: 'A-' },
+    { value: 'medium', label: 'Binh thuong', preview: 'A' },
+    { value: 'large', label: 'To', preview: 'A+' },
+];
+
+function UserProfileModal({ open, onClose, theme, onToggleTheme, preferences, onUpdatePreferences }) {
     const [activeTab, setActiveTab] = useState('profile');
 
-    // Font size: đọc từ localStorage, mặc định 16px
-    const [fontSize, setFontSize] = useState(() => {
-        return parseInt(localStorage.getItem('app-font-size')) || 16;
-    });
-
-    // Áp dụng font size lên document khi thay đổi
-    useEffect(() => {
-        document.documentElement.style.fontSize = fontSize + 'px';
-        localStorage.setItem('app-font-size', fontSize);
-    }, [fontSize]);
+    const selectedFontSize = noteFontSizeOptions.some((option) => option.value === preferences?.fontSize)
+        ? preferences.fontSize
+        : 'medium';
+    const selectedDefaultColor = noteColorOptions.some((option) => option.value === preferences?.defaultNoteColor)
+        ? preferences.defaultNoteColor
+        : 'default';
 
     const [formData, setFormData] = useState({
         displayName: 'Thomas Muller',
@@ -38,6 +41,18 @@ function UserProfileModal({ open, onClose, theme, onToggleTheme }) {
     });
 
     const [showMobileNav, setShowMobileNav] = useState(false);
+
+    const handlePreferenceChange = (patch) => {
+        if (typeof onUpdatePreferences !== 'function') {
+            return;
+        }
+
+        onUpdatePreferences({
+            ...(preferences || {}),
+            fontSize: patch.fontSize || selectedFontSize,
+            defaultNoteColor: patch.defaultNoteColor || selectedDefaultColor,
+        });
+    };
 
     const handleFormChange = (e) => {
         const { name, value } = e.target;
@@ -179,7 +194,7 @@ function UserProfileModal({ open, onClose, theme, onToggleTheme }) {
                                         <Form.Group className="mb-3">
                                             <Form.Label className="small fw-semibold">Họ và tên</Form.Label>
                                             <div className="position-relative">
-                                                <span className="position-absolute text-secondary" style={{ left: '12px', top: '50%', transform: 'translateY(-50%)', zIndex: 10 }}>
+                                                <span className="position-absolute profile-input-icon">
                                                     <User size={18} />
                                                 </span>
                                                 <Form.Control
@@ -187,7 +202,7 @@ function UserProfileModal({ open, onClose, theme, onToggleTheme }) {
                                                     name="displayName"
                                                     value={formData.displayName}
                                                     onChange={handleFormChange}
-                                                    style={{ paddingLeft: '40px' }}
+                                                    className="profile-input-control"
                                                 />
                                             </div>
                                         </Form.Group>
@@ -195,21 +210,20 @@ function UserProfileModal({ open, onClose, theme, onToggleTheme }) {
                                         <Form.Group className="mb-3">
                                             <Form.Label className="small fw-semibold">Địa chỉ Email</Form.Label>
                                             <div className="position-relative">
-                                                <span className="position-absolute text-secondary" style={{ left: '12px', top: '50%', transform: 'translateY(-50%)', zIndex: 10 }}>
+                                                <span className="position-absolute profile-input-icon">
                                                     <Mail size={18} />
                                                 </span>
                                                 <Form.Control
                                                     type="email"
                                                     name="email"
                                                     value={formData.email}
-                                                    style={{ paddingLeft: '40px' }}
+                                                    className="profile-input-control"
                                                     disabled
                                                     readOnly
-                                                    className="bg-light"
                                                 />
                                             </div>
                                             <Form.Text className="text-muted small">
-                                                Email dùng cho đăng nhập nên không thể thay đổi.
+                                                Email không thể thay đổi.
                                             </Form.Text>
                                         </Form.Group>
 
@@ -240,26 +254,45 @@ function UserProfileModal({ open, onClose, theme, onToggleTheme }) {
                                         </div>
                                     </div>
 
+                                    <div className="p-3 border rounded-3 mb-4">
+                                        <div className="d-flex align-items-center gap-2 mb-2">
+                                            <PaintBucket size={18} />
+                                            <h6 className="mb-0 fw-semibold">Màu note mặc định</h6>
+                                        </div>
+                                        <p className="text-secondary small mb-3">Áp dụng đồng bộ cho toàn bộ note trong Notes page.</p>
+                                        <div className="profile-note-colors">
+                                            {noteColorOptions.map((option) => (
+                                                <button
+                                                    key={option.value}
+                                                    type="button"
+                                                    className={`profile-note-color-swatch ${selectedDefaultColor === option.value ? 'active' : ''}`}
+                                                    style={{ background: option.swatch }}
+                                                    onClick={() => handlePreferenceChange({ defaultNoteColor: option.value })}
+                                                    title={option.label}
+                                                    aria-label={option.label}
+                                                />
+                                            ))}
+                                        </div>
+                                    </div>
+
                                     <div className="p-3 border rounded-3">
                                         <div className="d-flex align-items-center gap-2 mb-2">
                                             <Type size={18} />
-                                            <h6 className="mb-0 fw-semibold">Kích cỡ chữ</h6>
+                                            <h6 className="mb-0 fw-semibold">Kích cỡ chữ ghi chú</h6>
                                         </div>
-                                        <p className="text-secondary small mb-3">Điều chỉnh kích cỡ chữ cho toàn bộ ứng dụng.</p>
-                                        <div className="d-flex align-items-center gap-3">
-                                            <span className="small text-secondary" style={{ fontSize: '12px' }}>A</span>
-                                            <Form.Range
-                                                min={12}
-                                                max={22}
-                                                step={1}
-                                                value={fontSize}
-                                                onChange={(e) => setFontSize(Number(e.target.value))}
-                                                className="profile-font-slider"
-                                            />
-                                            <span className="text-secondary" style={{ fontSize: '20px', fontWeight: 600 }}>A</span>
-                                        </div>
-                                        <div className="text-center mt-2">
-                                            <span className="badge bg-primary bg-opacity-10 text-primary fw-semibold">{fontSize}px</span>
+                                        <p className="text-secondary small mb-3">Chỉ ảnh hưởng đến Notes page, không đổi font các page khác.</p>
+                                        <div className="profile-font-size-options">
+                                            {noteFontSizeOptions.map((option) => (
+                                                <button
+                                                    key={option.value}
+                                                    type="button"
+                                                    className={`profile-font-size-option ${selectedFontSize === option.value ? 'active' : ''}`}
+                                                    onClick={() => handlePreferenceChange({ fontSize: option.value })}
+                                                >
+                                                    <span className="profile-font-size-option__preview">{option.preview}</span>
+                                                    <span className="profile-font-size-option__label">{option.label}</span>
+                                                </button>
+                                            ))}
                                         </div>
                                     </div>
                                 </Tab.Pane>
@@ -285,7 +318,7 @@ function UserProfileModal({ open, onClose, theme, onToggleTheme }) {
                                                 <Form.Group className="mb-3">
                                                     <Form.Label className="small fw-semibold">Mật khẩu hiện tại</Form.Label>
                                                     <div className="position-relative">
-                                                        <span className="position-absolute text-secondary" style={{ left: '12px', top: '50%', transform: 'translateY(-50%)', zIndex: 10 }}>
+                                                        <span className="position-absolute profile-input-icon">
                                                             <Lock size={18} />
                                                         </span>
                                                         <Form.Control
@@ -294,12 +327,11 @@ function UserProfileModal({ open, onClose, theme, onToggleTheme }) {
                                                             value={passwordData.currentPassword}
                                                             onChange={handlePasswordChange}
                                                             placeholder="Nhập mật khẩu hiện tại"
-                                                            style={{ paddingLeft: '40px', paddingRight: '40px' }}
+                                                            className="profile-input-control profile-input-control--with-trailing-icon"
                                                             required
                                                         />
                                                         <span
-                                                            className="position-absolute text-secondary"
-                                                            style={{ right: '12px', top: '50%', transform: 'translateY(-50%)', zIndex: 10, cursor: 'pointer' }}
+                                                            className="position-absolute profile-input-icon profile-input-icon--right"
                                                             onClick={() => togglePasswordVisibility('current')}
                                                         >
                                                             {showPasswords.current ? <EyeOff size={18} /> : <Eye size={18} />}
@@ -310,7 +342,7 @@ function UserProfileModal({ open, onClose, theme, onToggleTheme }) {
                                                 <Form.Group className="mb-3">
                                                     <Form.Label className="small fw-semibold">Mật khẩu mới</Form.Label>
                                                     <div className="position-relative">
-                                                        <span className="position-absolute text-secondary" style={{ left: '12px', top: '50%', transform: 'translateY(-50%)', zIndex: 10 }}>
+                                                        <span className="position-absolute profile-input-icon">
                                                             <Lock size={18} />
                                                         </span>
                                                         <Form.Control
@@ -319,12 +351,11 @@ function UserProfileModal({ open, onClose, theme, onToggleTheme }) {
                                                             value={passwordData.newPassword}
                                                             onChange={handlePasswordChange}
                                                             placeholder="Nhập mật khẩu mới"
-                                                            style={{ paddingLeft: '40px', paddingRight: '40px' }}
+                                                            className="profile-input-control profile-input-control--with-trailing-icon"
                                                             required
                                                         />
                                                         <span
-                                                            className="position-absolute text-secondary"
-                                                            style={{ right: '12px', top: '50%', transform: 'translateY(-50%)', zIndex: 10, cursor: 'pointer' }}
+                                                            className="position-absolute profile-input-icon profile-input-icon--right"
                                                             onClick={() => togglePasswordVisibility('new')}
                                                         >
                                                             {showPasswords.new ? <EyeOff size={18} /> : <Eye size={18} />}
@@ -335,7 +366,7 @@ function UserProfileModal({ open, onClose, theme, onToggleTheme }) {
                                                 <Form.Group className="mb-4">
                                                     <Form.Label className="small fw-semibold">Xác nhận mật khẩu mới</Form.Label>
                                                     <div className="position-relative">
-                                                        <span className="position-absolute text-secondary" style={{ left: '12px', top: '50%', transform: 'translateY(-50%)', zIndex: 10 }}>
+                                                        <span className="position-absolute profile-input-icon">
                                                             <Lock size={18} />
                                                         </span>
                                                         <Form.Control
@@ -344,12 +375,11 @@ function UserProfileModal({ open, onClose, theme, onToggleTheme }) {
                                                             value={passwordData.confirmPassword}
                                                             onChange={handlePasswordChange}
                                                             placeholder="Nhập lại mật khẩu mới"
-                                                            style={{ paddingLeft: '40px', paddingRight: '40px' }}
+                                                            className="profile-input-control profile-input-control--with-trailing-icon"
                                                             required
                                                         />
                                                         <span
-                                                            className="position-absolute text-secondary"
-                                                            style={{ right: '12px', top: '50%', transform: 'translateY(-50%)', zIndex: 10, cursor: 'pointer' }}
+                                                            className="position-absolute profile-input-icon profile-input-icon--right"
                                                             onClick={() => togglePasswordVisibility('confirm')}
                                                         >
                                                             {showPasswords.confirm ? <EyeOff size={18} /> : <Eye size={18} />}

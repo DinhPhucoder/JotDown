@@ -5,11 +5,11 @@ function NoteSettingsModal({ open, preferences, onClose, onUpdate }) {
   return (
     <Modal show={open} onHide={onClose} centered>
       <Modal.Header closeButton className="border-0 pb-0">
-        <Modal.Title>Cai dat note</Modal.Title>
+        <Modal.Title>Cài đặt ghi chú</Modal.Title>
       </Modal.Header>
       <Modal.Body className="pt-3">
         <div className="notes-settings-group">
-          <Form.Label>Co chu mac dinh</Form.Label>
+          <Form.Label>Cỡ chữ mặc định</Form.Label>
           <Form.Select
             value={preferences.fontSize}
             onChange={(event) => onUpdate({ ...preferences, fontSize: event.target.value })}
@@ -23,7 +23,7 @@ function NoteSettingsModal({ open, preferences, onClose, onUpdate }) {
         </div>
 
         <div className="notes-settings-group">
-          <Form.Label>Mau ghi chu mac dinh</Form.Label>
+          <Form.Label>Màu ghi chú mặc định</Form.Label>
           <div className="notes-settings-swatches">
             {noteColorOptions.map((option) => (
               <button

@@ -1,5 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Sun, Moon } from 'lucide-react';
 import AppLogo from '../AppLogo';
 import MagneticButton from './MagneticButton';
 
@@ -20,9 +21,9 @@ const Header = ({ theme, toggleTheme }) => {
             title="Chuyển đổi chế độ sáng/tối"
           >
             {theme === 'dark' ? (
-              <i className="fa-regular fa-sun fs-5"></i>
+              <Sun size={20} />
             ) : (
-              <i className="fa-regular fa-moon fs-5"></i>
+              <Moon size={20} />
             )}
           </button>
           <MagneticButton className="btn btn-primary p-3 fw-medium" onClick={() => navigate('/login')}>

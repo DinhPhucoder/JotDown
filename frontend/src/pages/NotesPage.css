@@ -141,8 +141,12 @@ html[data-bs-theme='light'] .modal-content {
 }
 
 /* Style your items */
-.notes-masonry-grid_column > .note-card {
+.notes-masonry-grid_column > .note-card-motion {
   margin-bottom: 1rem;
+}
+
+.note-card-motion {
+  display: block;
 }
 
 .notes-list {
@@ -609,6 +613,38 @@ html[data-bs-theme='light'] .note-card__pin-corner.active {
 
 .note-card--teal {
   background-image: linear-gradient(135deg, rgba(13, 148, 136, 0.22), rgba(45, 212, 191, 0.08));
+}
+
+html[data-bs-theme='light'] .note-card--default {
+  background-image: linear-gradient(135deg, rgba(59, 130, 246, 0.16), rgba(191, 219, 254, 0.28));
+}
+
+html[data-bs-theme='light'] .note-card--yellow {
+  background-image: linear-gradient(135deg, rgba(245, 158, 11, 0.34), rgba(253, 224, 71, 0.18));
+}
+
+html[data-bs-theme='light'] .note-card--green {
+  background-image: linear-gradient(135deg, rgba(16, 185, 129, 0.32), rgba(134, 239, 172, 0.16));
+}
+
+html[data-bs-theme='light'] .note-card--blue {
+  background-image: linear-gradient(135deg, rgba(59, 130, 246, 0.34), rgba(125, 211, 252, 0.18));
+}
+
+html[data-bs-theme='light'] .note-card--pink {
+  background-image: linear-gradient(135deg, rgba(236, 72, 153, 0.3), rgba(251, 207, 232, 0.2));
+}
+
+html[data-bs-theme='light'] .note-card--purple {
+  background-image: linear-gradient(135deg, rgba(139, 92, 246, 0.32), rgba(221, 214, 254, 0.2));
+}
+
+html[data-bs-theme='light'] .note-card--orange {
+  background-image: linear-gradient(135deg, rgba(249, 115, 22, 0.34), rgba(254, 215, 170, 0.2));
+}
+
+html[data-bs-theme='light'] .note-card--teal {
+  background-image: linear-gradient(135deg, rgba(13, 148, 136, 0.3), rgba(153, 246, 228, 0.18));
 }
 
 .notes-sidebar {
@@ -1385,16 +1421,52 @@ html[data-bs-theme='light'] .note-editor__floating-panel {
   gap: 0.75rem;
 }
 
+.note-font-small .note-card__title {
+  font-size: 1.05rem;
+}
+
 .note-font-small .note-card__content {
   font-size: 0.88rem;
+}
+
+.note-font-small .note-chip,
+.note-font-small .note-meta-badge,
+.note-font-small .note-card__footer,
+.note-font-small .note-card__avatar,
+.note-font-small .note-card__image-more {
+  font-size: 0.74rem;
+}
+
+.note-font-medium .note-card__title {
+  font-size: 1.15rem;
 }
 
 .note-font-medium .note-card__content {
   font-size: 0.95rem;
 }
 
+.note-font-medium .note-chip,
+.note-font-medium .note-meta-badge,
+.note-font-medium .note-card__footer,
+.note-font-medium .note-card__avatar,
+.note-font-medium .note-card__image-more {
+  font-size: 0.8rem;
+}
+
+.note-font-large .note-card__title {
+  font-size: 1.24rem;
+}
+
 .note-font-large .note-card__content {
   font-size: 1.03rem;
+}
+
+.note-font-large .note-chip,
+.note-font-large .note-meta-badge,
+.note-font-large .note-card__footer,
+.note-font-large .note-card__avatar,
+.note-font-large .note-card__image-more {
+  font-size: 0.86rem;
 }
 
 @media (max-width: 991.98px) {

@@ -1,8 +1,7 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { Container, Row, Col, Form, Button, Spinner } from 'react-bootstrap';
-import { Mail, Lock, User, Camera, Eye, EyeOff, ShieldCheck, ArrowLeft } from 'lucide-react';
-import { Link, useNavigate } from 'react-router-dom';
-import { toast } from 'sonner';
+import React from 'react';
+import { Container, Row, Col, Form, Button } from 'react-bootstrap';
+import { Mail, Lock, User, Camera, EyeOff } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import './Auth.css';
 
 const SignupPage = () => {
@@ -19,8 +18,7 @@ const SignupPage = () => {
       <Row className="g-0 min-vh-100">
         <Col lg={7} className="d-none d-lg-flex auth-branding">
           <div className="branding-content">
-            <h2> Jot Down <br />Nơi mọi ý tưởng lớn <br />bắt đầu</h2>
-            <p className="lead">Đừng để những suy nghĩ vụt mất. Ghi chép nhanh chóng, đồng bộ an toàn và quản lý tri thức của bạn một cách khoa học nhất.</p>
+            <h2>Ghi chú ngay cùng <span>JotDown</span> </h2>
           </div>
         </Col>
 
@@ -28,11 +26,9 @@ const SignupPage = () => {
           <div className="auth-card">
             <div className="auth-header mb-4">
               <h1 className="fw-bold">Đăng ký</h1>
-              <p className="text-secondary">Bắt đầu không gian ghi chú của riêng bạn ngay hôm nay</p>
             </div>
 
-            {/* Chọn ảnh đại diện */}
-            <div className="profile-image-picker mb-4">
+            <div className="profile-image-picker mb-2">
               <div className="profile-image-circle">
                 <User size={40} className="profile-placeholder-icon" />
                 <div className="profile-image-overlay">
@@ -40,71 +36,43 @@ const SignupPage = () => {
                 </div>
               </div>
               <p className="profile-image-label">Tải ảnh lên</p>
-              <input
-                type="file"
-                accept="image/jpeg,image/png,image/webp"
-                hidden
-              />
+              <input type="file" accept="image/jpeg,image/png,image/webp" hidden />
             </div>
 
             <Form className="auth-form">
-              <Form.Group className="mb-4" controlId="fullName">
+              <Form.Group className="mb-2" controlId="fullName">
                 <Form.Label>Họ và tên</Form.Label>
                 <div className="input-wrapper">
                   <User className="input-icon" size={20} />
-                  <Form.Control
-                    type="text"
-                    name="fullName"
-                    placeholder="Ngô Xuân Quang"
-                  />
+                  <Form.Control type="text" name="fullName" placeholder="Ngô Xuân Quang" />
                 </div>
               </Form.Group>
 
-              <Form.Group className="mb-4" controlId="email">
+              <Form.Group className="mb-2" controlId="email">
                 <Form.Label>Email</Form.Label>
                 <div className="input-wrapper">
                   <Mail className="input-icon" size={20} />
-                  <Form.Control
-                    type="email"
-                    name="email"
-                    placeholder="name@example.com"
-                  />
+                  <Form.Control type="email" name="email" placeholder="name@example.com" />
                 </div>
               </Form.Group>
 
-              <Form.Group className="mb-4" controlId="password">
+              <Form.Group className="mb-2" controlId="password">
                 <Form.Label>Mật khẩu</Form.Label>
                 <div className="input-wrapper">
                   <Lock className="input-icon" size={20} />
-                  <Form.Control
-                    type="password"
-                    name="password"
-                    placeholder="••••••••"
-                  />
-                  <button
-                    type="button"
-                    className="password-toggle-btn"
-                    tabIndex={-1}
-                  >
+                  <Form.Control type="password" name="password" placeholder="••••••••" />
+                  <button type="button" className="password-toggle-btn" tabIndex={-1}>
                     <EyeOff size={18} />
                   </button>
                 </div>
               </Form.Group>
 
-              <Form.Group className="mb-4" controlId="confirmPassword">
+              <Form.Group className="mb-3" controlId="confirmPassword">
                 <Form.Label>Xác nhận mật khẩu</Form.Label>
                 <div className="input-wrapper">
                   <Lock className="input-icon" size={20} />
-                  <Form.Control
-                    type="password"
-                    name="confirmPassword"
-                    placeholder="••••••••"
-                  />
-                  <button
-                    type="button"
-                    className="password-toggle-btn"
-                    tabIndex={-1}
-                  >
+                  <Form.Control type="password" name="confirmPassword" placeholder="••••••••" />
+                  <button type="button" className="password-toggle-btn" tabIndex={-1}>
                     <EyeOff size={18} />
                   </button>
                 </div>
@@ -115,55 +83,7 @@ const SignupPage = () => {
               </Button>
             </Form>
 
-
-            {/* FORM XÁC THỰC OTP (KÍCH HOẠT TÀI KHOẢN) */}
-            {/* <div className="otp-verification-step">
-              <div className="otp-header">
-                <div className="otp-icon-wrapper mb-3">
-                  <ShieldCheck size={32} />
-                </div>
-                <h3>Xác thực Email</h3>
-                <p className="text-secondary">
-                  Chúng tôi đã gửi mã 6 chữ số đến <br />
-                  <strong className="text-white">name@example.com</strong>
-                </p>
-              </div>
-
-              <Form>
-                <div className="otp-input-group d-flex justify-content-between mb-4">
-                  {[1, 2, 3, 4, 5, 6].map((item, index) => (
-                    <Form.Control
-                      key={index}
-                      className="otp-field text-center"
-                      type="text"
-                      maxLength="1"
-                      placeholder="-"
-                      style={{ width: '45px', height: '55px', fontSize: '1.5rem', cursor: 'text' }}
-                    />
-                  ))}
-                </div>
-
-                <Button variant="primary" type="button" className="w-100 mb-3">
-                  Xác thực & Kích hoạt
-                </Button>
-              </Form>
-
-              <div className="resend-container text-center mb-3">
-                <span className="text-secondary">Chưa nhận được mã? </span>
-                <button className="resend-btn btn btn-link p-0 text-decoration-none">
-                  Gửi lại mã
-                </button>
-              </div>
-
-              <div className="text-center">
-                <button className="back-btn btn btn-link p-0 text-decoration-none text-secondary d-flex align-items-center justify-content-center gap-1 mx-auto">
-                  <ArrowLeft size={16} /> Quay lại chỉnh sửa
-                </button>
-              </div>
-            </div> */}
-
-
-            <div className="auth-footer text-center mt-5">
+            <div className="auth-footer text-center mt-4">
               <p className="text-secondary">
                 Đã có tài khoản?{' '}
                 <Link to="/login" className="auth-link">
