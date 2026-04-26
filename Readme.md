@@ -8,13 +8,8 @@ Tài liệu này hướng dẫn chạy dự án ở local bằng Docker Compose,
 
 ## 2) Thiết lập môi trường
 1. Vào `backend/`, tạo file `backend/.env` (copy từ `backend/.env.example`).
-2. Cấu hình DB mặc định chạy trong Docker:
-   - `DB_CONNECTION=mysql`
-   - `DB_HOST=db`
-   - `DB_PORT=3306`
-   - `DB_DATABASE=notes_db`
-   - `DB_USERNAME=root`
-   - `DB_PASSWORD=root`
+2. Cấu hình DB mặc định chạy trong Docker (đã khớp với `.env.example`).
+3. **Lưu ý về App Key & Migration:** Dự án đã được cấu hình tự động chạy `php artisan key:generate --force` và `php artisan migrate --force` ngay khi bạn chạy lệnh `docker compose up`. Các thành viên **không cần** chạy tay các lệnh này.
 
 ## 3) Khởi động dự án (lần đầu / bình thường)
 ```bash
