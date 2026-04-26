@@ -26,6 +26,7 @@ function NotesHeader({
   onLogout,
   onOpenSettings,
   onToggleMobileSidebar,
+  onToggleDesktopSidebar,
   onOpenProfile
 }) {
   return (
@@ -43,6 +44,15 @@ function NotesHeader({
             className="notes-icon-btn d-lg-none"
             onClick={onToggleMobileSidebar}
             aria-label="Mo bo loc"
+          >
+            <FontAwesomeIcon icon={faBars} />
+          </button>
+          
+          <button
+            type="button"
+            className="notes-icon-btn d-none d-lg-inline-flex"
+            onClick={onToggleDesktopSidebar}
+            aria-label="An hien thanh ben"
           >
             <FontAwesomeIcon icon={faBars} />
           </button>
@@ -66,7 +76,7 @@ function NotesHeader({
         <div className="d-flex align-items-center gap-2">
           <button
             type="button"
-            className="notes-icon-btn"
+            className="notes-icon-btn d-none d-md-inline-flex"
             onClick={() => onViewModeChange(viewMode === 'grid' ? 'list' : 'grid')}
             title={viewMode === 'grid' ? 'Che do danh sach' : 'Che do luoi'}
             aria-label={viewMode === 'grid' ? 'Che do danh sach' : 'Che do luoi'}

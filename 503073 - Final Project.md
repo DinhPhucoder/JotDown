@@ -108,7 +108,7 @@ sees the shared note when they log in.
 - Better Approach: Implementing a mechanism to validate the entered email, ensuring it belongs to a registered user. Additionally,
 the  recipient  should  receive  an  email  notification  about  the  shared  note.  At  a  minimum,  a  notification  should  be  prominently
 displayed in the recipient’s account upon their next login, making it easy to notice and access the shared note.
-Password-Protected Notes
+## Password-Protected Notes
 - Subpar Approach: Creating a password by allowing users to enter the desired password once. Similarly, when changing the password,
 the user enters the new password directly. Disabling password protection requires only selecting an option from the menu.
 - Better Approach: Enhancing security by requiring users to enter the password twice when creating or updating it, ensuring there

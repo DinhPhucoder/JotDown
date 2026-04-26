@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Button, Modal } from 'react-bootstrap';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faPlus, faUserPlus, faXmark } from '@fortawesome/free-solid-svg-icons';
+import { faPlus, faUserPlus } from '@fortawesome/free-solid-svg-icons';
 
 function isValidEmail(email) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
@@ -63,6 +63,23 @@ function NoteCollaboratorsModal({
     );
   }
 
+  function handlePermissionChange(email, permission) {
+    if (permission !== 'read' && permission !== 'edit') {
+      return;
+    }
+
+    setDraftCollaborators((currentEntries) =>
+      currentEntries.map((entry) =>
+        entry.email === email
+          ? {
+              ...entry,
+              permission,
+            }
+          : entry,
+      ),
+    );
+  }
+
   function handleSave() {
     onSave(draftCollaborators);
   }
@@ -94,16 +111,37 @@ function NoteCollaboratorsModal({
               <div className="note-editor__collaborator-meta">
                 <div className="note-editor__collaborator-name">{getDisplayName(entry.email)}</div>
                 <div className="note-editor__collaborator-email">{entry.email}</div>
+                <div className="note-editor__permission-summary">
+                  Quyen hien tai: {entry.permission === 'edit' ? 'Sua' : 'Doc'}
+                </div>
               </div>
-              <button
-                type="button"
-                className="note-editor__remove-btn note-editor__remove-btn--flat"
-                onClick={() => handleRemove(entry.email)}
-                aria-label="Xoa nguoi chia se"
-                title="Xoa nguoi chia se"
-              >
-                <FontAwesomeIcon icon={faXmark} />
-              </button>
+              <div className="note-editor__permission-actions" role="group" aria-label="Quan ly quyen">
+                <button
+                  type="button"
+                  className={`note-editor__permission-btn ${
+                    entry.permission === 'read' ? 'active' : ''
+                  }`}
+                  onClick={() => handlePermissionChange(entry.email, 'read')}
+                >
+                  Doc
+                </button>
+                <button
+                  type="button"
+                  className={`note-editor__permission-btn ${
+                    entry.permission === 'edit' ? 'active' : ''
+                  }`}
+                  onClick={() => handlePermissionChange(entry.email, 'edit')}
+                >
+                  Sua
+                </button>
+                <button
+                  type="button"
+                  className="note-editor__permission-btn note-editor__permission-btn--danger"
+                  onClick={() => handleRemove(entry.email)}
+                >
+                  Thu hoi
+                </button>
+              </div>
             </div>
           ))}
 

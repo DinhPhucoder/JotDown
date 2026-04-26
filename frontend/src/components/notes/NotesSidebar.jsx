@@ -12,13 +12,24 @@ import {
 
 function SidebarButton({ active, icon, label, onClick, trailing }) {
   return (
-    <button type="button" className={`notes-sidebar-btn ${active ? 'active' : ''}`} onClick={onClick}>
+    <div 
+      className={`notes-sidebar-btn ${active ? 'active' : ''}`} 
+      onClick={onClick}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          onClick();
+        }
+      }}
+    >
       <span className="notes-sidebar-btn__icon">
         <FontAwesomeIcon icon={icon} />
       </span>
       <span className="flex-grow-1 text-start text-truncate">{label}</span>
       {trailing}
-    </button>
+    </div>
   );
 }
 
@@ -76,7 +87,7 @@ function NotesSidebar({
       <SidebarButton
         active={showShared}
         icon={faShareNodes}
-        label="Duoc chia se"
+        label="Ghi chú chia sẻ"
         onClick={onToggleShared}
       />
 

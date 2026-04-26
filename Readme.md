@@ -1,76 +1,81 @@
-# NOTE MANAGEMENT - HƯỚNG DẪN VẬN HÀNH DỰ ÁN
+# NOTE MANAGEMENT — Hướng dẫn chạy local
 
-Tài liệu này cung cấp hướng dẫn chi tiết để thiết lập môi trường phát triển (Local) 
-và các lưu ý quan trọng khi phát triển, deploy hệ thống.
+Tài liệu này hướng dẫn chạy dự án ở local bằng Docker Compose, cách reset database (đặc biệt trước khi chạy migration), và cách kiểm tra DB bằng extension MySQL trong VSCode.
 
----
+## 1) Yêu cầu
+- Đã cài Docker Desktop (có `docker compose`).
+- Chạy lệnh trong thư mục gốc dự án (nơi có `docker-compose.yml`).
 
-## I. CÔNG NGHỆ SỬ DỤNG (TECH STACK)
-**Frontend:** ReactJS (Vite), Bootstrap 5, FontAwesome.
-**Backend:** Laravel 11.
-**Database:** MySQL 8.0.
-**DevOps:** Docker, Docker Compose.
+## 2) Thiết lập môi trường
+1. Vào `backend/`, tạo file `backend/.env` (copy từ `backend/.env.example`).
+2. Cấu hình DB mặc định chạy trong Docker:
+   - `DB_CONNECTION=mysql`
+   - `DB_HOST=db`
+   - `DB_PORT=3306`
+   - `DB_DATABASE=notes_db`
+   - `DB_USERNAME=root`
+   - `DB_PASSWORD=root`
 
----
-
-## II. HƯỚNG DẪN KHỞI ĐỘNG DỰ ÁN Ở LOCAL
-
-### Bước 1: Thiết lập biến môi trường (Environment)
-1.  Vào thư mục `backend/`, copy file `.env.example` thành `.env`.
-2.  Kiểm tra các thông số Database trong `.env` để khớp với `docker-compose.yml` 
-    (mặc định đã được cấu hình sẵn).
-
-### Bước 2: Khởi động hệ thống với Docker
-Mở terminal tại thư mục gốc của dự án và chạy lệnh:
+## 3) Khởi động dự án (lần đầu / bình thường)
 ```bash
 docker compose up --build -d
 ```
 
-### Bước 3: Đợi hệ thống tự động thiết lập (Initialization)
-Dự án đã được cấu hình để tự động cài đặt thư viện, tạo App Key và chạy Migration ngay khi container khởi động. 
-
-**Lưu ý:** Ở lần đầu tiên, quá trình này mất khoảng 1-2 phút tùy tốc độ mạng. Bạn có thể theo dõi tiến trình bằng lệnh:
+Xem log backend:
 ```bash
 docker compose logs -f backend
 ```
-Khi thấy log thông báo hoàn tất các bước (Composer, Key, Migrate), hệ thống đã sẵn sàng.
 
-### Bước 4: Truy cập ứng dụng
-*   **Giao diện người dùng (Frontend):** [http://localhost](http://localhost)
-*   **Cổng API (Nginx Gateway):** [http://localhost/api](http://localhost/api)
-*   **Mailpit (Kiểm tra Email local):** [http://localhost:8025](http://localhost:8025)
+Kiểm tra container:
+```bash
+docker compose ps
+```
 
----
+## 4) Reset database (Khi vừa thay đổi schema)
+Dự án đang mount dữ liệu MySQL vào `./docker/mysql_data` (bind mount), nên reset DB có 2 mức:
 
-## III. NHỮNG LƯU Ý QUAN TRỌNG
+### A) Reset schema bằng Laravel (giữ nguyên volume MySQL)
+Dùng khi muốn “đập lại” toàn bộ bảng theo migration hiện tại:
+```bash
+docker compose exec backend php artisan migrate:fresh --force
+```
 
-### 1. Quản lý Database (Migration)
-*   **TUYỆT ĐỐI KHÔNG** chỉnh sửa trực tiếp cấu trúc DB trong MySQL.
-*   Mọi thay đổi cấu trúc table phải được thực hiện thông qua **Laravel Migration**.
-    ```bash
-    docker compose exec backend php artisan make:migration [tên_thành_phần]
-    ```
-*   Khi có code mới từ team, hãy chạy lại migration: `php artisan migrate`.
+Nếu có seed:
+```bash
+docker compose exec backend php artisan migrate:fresh --seed --force
+```
 
-### 2. Biến môi trường & Bảo mật
-*   **Không bao giờ** commit file `.env` lên Git.
-*   Khi thêm biến environment mới, hãy cập nhật vào `.env.example` để Team Member khác biết.
-*   Các secret key trên Production (Render/Vercel) phải được cấu hình trong tab **Environment Variables** của Platform.
+### B) Reset sạch MySQL 
+Dùng khi DB bị lệch lâu ngày, hoặc cần clean tuyệt đối:
+1) Dừng containers:
+```bash
+docker compose down
+```
+2) Xóa dữ liệu MySQL local:
+- Xóa thư mục `docker/mysql_data/` (xóa cả folder hoặc xóa toàn bộ file bên trong).
+(Lưu ý: `docker compose down -v` **không** xóa được dữ liệu trong trường hợp này vì MySQL đang dùng bind mount.)
+3) Chạy lại:
+```bash
+docker compose up --build -d
+```
+## 5) Truy cập & health check
+- Frontend (Vite dev server): http://localhost:5173
+- API (qua Nginx gateway): http://localhost/api
+- Backend health: http://localhost/api/health
 
-### 3. Lưu ý khi Deploy
-*   **Backend (Render):** Sử dụng file `render.yaml`. Migration production được chạy tự động qua `preDeployCommand`.
-*   **Frontend (Vercel):** Đảm bảo `VITE_API_BASE_URL` trên Vercel trỏ đúng về URL Backend của Render.
-*   **Database (Aiven):** Cấu hình đúng `DB_HOST`, `DB_PORT`, `DB_USERNAME`, `DB_PASSWORD` từ Aiven vào Render.
+## 6) Kiểm tra database bằng VSCode MySQL extension
+MySQL được expose ra host ở `127.0.0.1:3306`:
+- Host: `127.0.0.1`
+- Port: `3306`
+- User: `root`
+- Password: `root`
+- Database: `notes_db`
 
----
-
-## IV. CÁC LỆNH THƯỜNG DÙNG
-| Lệnh | Tác dụng |
-| :--- | :--- |
-| `docker compose up -d` | Khởi động lại các container đã có |
-| `docker compose down` | Dừng và xóa toàn bộ container |
-| `docker compose ps` | Kiểm tra trạng thái các service |
-| `docker compose logs -f [service]` | Xem log realtime (backend/frontend/db) |
-
----
-**Note Management Project - 2026**
+Chạy các query sau để kiểm tra migration + routines:
+```sql
+SHOW TABLES;
+SHOW TRIGGERS;
+SHOW PROCEDURE STATUS WHERE Db = DATABASE();
+SHOW FUNCTION STATUS WHERE Db = DATABASE();
+```
+Note Management Project — 2026

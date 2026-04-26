@@ -3,6 +3,7 @@ import { Button, Modal, Offcanvas } from 'react-bootstrap';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPlus, faStickyNote } from '@fortawesome/free-solid-svg-icons';
 import { useNavigate } from 'react-router-dom';
+import Masonry from 'react-masonry-css';
 import NoteCard from '../components/notes/NoteCard';
 import NoteEditorModal from '../components/notes/NoteEditorModal';
 import NoteSettingsModal from '../components/notes/NoteSettingsModal';
@@ -28,6 +29,43 @@ function sortNotes(items) {
   });
 }
 
+function normalizeEmail(value) {
+  return String(value || '').trim().toLowerCase();
+}
+
+function normalizePermission(value) {
+  return value === 'edit' ? 'edit' : 'read';
+}
+
+function resolveNoteShareMeta(note, currentUserEmail) {
+  const ownerEmail = normalizeEmail(note.ownerEmail || note.createdByEmail || note.authorEmail);
+  const ownerName = String(note.ownerName || note.authorName || '').trim();
+  const normalizedCurrentEmail = normalizeEmail(currentUserEmail);
+  const normalizedSharedWith = Array.isArray(note.sharedWith)
+    ? note.sharedWith.map((entry) => ({
+        email: normalizeEmail(typeof entry === 'string' ? entry : entry?.email),
+        permission: normalizePermission(typeof entry === 'string' ? 'read' : entry?.permission),
+      }))
+    : [];
+
+  const mySharedEntry = normalizedSharedWith.find((entry) => entry.email === normalizedCurrentEmail);
+  const fallbackPermission = normalizePermission(
+    note.accessPermission || note.viewerPermission || note.permission,
+  );
+  const isOwnedByMe = !ownerEmail || ownerEmail === normalizedCurrentEmail;
+  const isOwnedShared = isOwnedByMe && normalizedSharedWith.length > 0;
+  const isReceivedShared = !isOwnedByMe && (Boolean(mySharedEntry) || Boolean(note.accessPermission));
+
+  return {
+    ownerEmail,
+    ownerName,
+    isOwnedByMe,
+    isOwnedShared,
+    isReceivedShared,
+    myPermission: mySharedEntry?.permission || fallbackPermission,
+  };
+}
+
 function NotesPage() {
   const navigate = useNavigate();
   const [initialWorkspace] = useState(() => loadNoteWorkspace());
@@ -47,6 +85,7 @@ function NotesPage() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+  const [desktopSidebarOpen, setDesktopSidebarOpen] = useState(true);
   const [theme, setTheme] = useState(() => readStoredTheme());
   const [isOffline, setIsOffline] = useState(() =>
     typeof navigator !== 'undefined' ? !navigator.onLine : false,
@@ -83,9 +122,16 @@ function NotesPage() {
 
   const normalizedSearch = deferredSearch.trim().toLowerCase();
 
+  const normalizedUserEmail = normalizeEmail(user.email);
+
   const filteredNotes = sortNotes(
-    notes.filter((note) => {
-      if (showShared && note.sharedWith.length === 0) {
+    notes
+      .map((note) => ({
+        ...note,
+        __shareMeta: resolveNoteShareMeta(note, normalizedUserEmail),
+      }))
+      .filter((note) => {
+      if (showShared && !note.__shareMeta.isOwnedShared && !note.__shareMeta.isReceivedShared) {
         return false;
       }
 
@@ -98,12 +144,17 @@ function NotesPage() {
       }
 
       return `${note.title} ${note.content}`.toLowerCase().includes(normalizedSearch);
-    }),
+      }),
   );
 
   const pinnedNotes = filteredNotes.filter((note) => note.isPinned);
   const otherNotes = filteredNotes.filter((note) => !note.isPinned);
-  const sharedCount = notes.filter((note) => note.sharedWith.length > 0).length;
+  const sharedCount = notes.filter((note) => {
+    const meta = resolveNoteShareMeta(note, normalizedUserEmail);
+    return meta.isOwnedShared || meta.isReceivedShared;
+  }).length;
+  const ownedSharedNotes = filteredNotes.filter((note) => note.__shareMeta?.isOwnedShared);
+  const receivedSharedNotes = filteredNotes.filter((note) => note.__shareMeta?.isReceivedShared);
   const noteCount = notes.length;
   const lastUpdated = notes[0] ? new Date(notes[0].updatedAt).toLocaleDateString('vi-VN') : 'Chua co';
 
@@ -241,26 +292,112 @@ function NotesPage() {
     );
   }
 
-  function renderNoteSection(title, items) {
+function renderNoteSection(title, items) {
     if (items.length === 0) {
       return null;
     }
 
+    const masonryBreakpoints = {
+      default: 4,
+      1400: 3,
+      1100: 2,
+      700: 1
+    };
+
     return (
       <section className="mb-4">
         {title ? <div className="notes-section-title">{title}</div> : null}
-        <div className={viewMode === 'grid' ? 'notes-grid' : 'notes-list'}>
-          {items.map((note) => (
-            <NoteCard
-              key={note.id}
-              note={note}
-              viewMode={viewMode}
-              onOpen={openEditor}
-              onTogglePin={handleToggleNotePin}
-              isOffline={isOffline}
-            />
-          ))}
+        {viewMode === 'grid' ? (
+          <Masonry
+            breakpointCols={masonryBreakpoints}
+            className="notes-masonry-grid"
+            columnClassName="notes-masonry-grid_column"
+          >
+            {items.map((note) => (
+              <NoteCard
+                key={note.id}
+                note={note}
+                viewMode={viewMode}
+                onOpen={openEditor}
+                onTogglePin={handleToggleNotePin}
+                isOffline={isOffline}
+                shareScope={note.__shareMeta?.isReceivedShared ? 'received' : note.__shareMeta?.isOwnedShared ? 'owned' : null}
+                accessPermission={note.__shareMeta?.isReceivedShared ? note.__shareMeta.myPermission : null}
+              />
+            ))}
+          </Masonry>
+        ) : (
+          <div className="notes-list">
+            {items.map((note) => (
+              <NoteCard
+                key={note.id}
+                note={note}
+                viewMode={viewMode}
+                onOpen={openEditor}
+                onTogglePin={handleToggleNotePin}
+                isOffline={isOffline}
+                shareScope={note.__shareMeta?.isReceivedShared ? 'received' : note.__shareMeta?.isOwnedShared ? 'owned' : null}
+                accessPermission={note.__shareMeta?.isReceivedShared ? note.__shareMeta.myPermission : null}
+              />
+            ))}
+          </div>
+        )}
+      </section>
+    );
+  }
+
+  function renderSharedSpace(title, items) {
+    const masonryBreakpoints = {
+      default: 4,
+      1400: 3,
+      1100: 2,
+      700: 1
+    };
+
+    return (
+      <section className="notes-shared-space">
+        <div className="notes-shared-space__header">
+          <div className="notes-shared-space__title">{title}</div>
         </div>
+        {items.length > 0 ? (
+          viewMode === 'grid' ? (
+            <Masonry
+              breakpointCols={masonryBreakpoints}
+              className="notes-masonry-grid"
+              columnClassName="notes-masonry-grid_column"
+            >
+              {items.map((note) => (
+                <NoteCard
+                  key={note.id}
+                  note={note}
+                  viewMode={viewMode}
+                  onOpen={openEditor}
+                  onTogglePin={handleToggleNotePin}
+                  isOffline={isOffline}
+                  shareScope={note.__shareMeta?.isReceivedShared ? 'received' : note.__shareMeta?.isOwnedShared ? 'owned' : null}
+                  accessPermission={note.__shareMeta?.isReceivedShared ? note.__shareMeta.myPermission : null}
+                />
+              ))}
+            </Masonry>
+          ) : (
+            <div className="notes-list">
+              {items.map((note) => (
+                <NoteCard
+                  key={note.id}
+                  note={note}
+                  viewMode={viewMode}
+                  onOpen={openEditor}
+                  onTogglePin={handleToggleNotePin}
+                  isOffline={isOffline}
+                  shareScope={note.__shareMeta?.isReceivedShared ? 'received' : note.__shareMeta?.isOwnedShared ? 'owned' : null}
+                  accessPermission={note.__shareMeta?.isReceivedShared ? note.__shareMeta.myPermission : null}
+                />
+              ))}
+            </div>
+          )
+        ) : (
+          <div className="notes-shared-space__empty">Khong co ghi chu trong khu vuc nay.</div>
+        )}
       </section>
     );
   }
@@ -280,11 +417,12 @@ function NotesPage() {
         onOpenSettings={() => setSettingsOpen(true)}
         onOpenProfile={() => setProfileOpen(true)}
         onToggleMobileSidebar={() => setMobileSidebarOpen(true)}
+        onToggleDesktopSidebar={() => setDesktopSidebarOpen(!desktopSidebarOpen)}
       />
 
       <div className="container-fluid notes-main">
-        <div className="row g-4">
-          <aside className="col-lg-3 col-xl-3 col-xxl-2 d-none d-lg-block">
+        <div className="row g-4 flex-nowrap overflow-hidden">
+          <aside className={`col-lg-3 col-xl-3 col-xxl-2 d-none d-lg-block notes-sidebar-aside ${!desktopSidebarOpen ? 'collapsed' : ''}`}>
             <div className="notes-panel position-sticky top-0">
               <NotesSidebar
                 labels={labels}
@@ -306,26 +444,20 @@ function NotesPage() {
             </div>
           </aside>
 
-          <div className="col-lg-9 col-xl-9 col-xxl-10">
-            <div className="notes-summary-grid">
-              <div className="notes-summary-card">
-                <div className="notes-summary-card__label">Tong ghi chu</div>
-                <div className="notes-summary-card__value">{noteCount}</div>
-              </div>
-              <div className="notes-summary-card">
-                <div className="notes-summary-card__label">Dang hien thi</div>
-                <div className="notes-summary-card__value">{filteredNotes.length}</div>
-              </div>
-              <div className="notes-summary-card">
-                <div className="notes-summary-card__label">Ghi chu chia se</div>
-                <div className="notes-summary-card__value">{sharedCount}</div>
-              </div>
-            </div>
-
+          <div className="col flex-grow-1 notes-content-area">
             {filteredNotes.length > 0 ? (
               <>
-                {renderNoteSection(pinnedNotes.length > 0 ? 'Da ghim' : '', pinnedNotes)}
-                {renderNoteSection(pinnedNotes.length > 0 ? 'Khac' : '', otherNotes)}
+                {showShared ? (
+                  <>
+                    {renderSharedSpace('Ghi chú của tôi', ownedSharedNotes)}
+                    {renderSharedSpace('Ghi chú được chia sẻ', receivedSharedNotes)}
+                  </>
+                ) : (
+                  <>
+                    {renderNoteSection(pinnedNotes.length > 0 ? 'Da ghim' : '', pinnedNotes)}
+                    {renderNoteSection(pinnedNotes.length > 0 ? 'Khac' : '', otherNotes)}
+                  </>
+                )}
               </>
             ) : (
               <div className="notes-panel notes-empty-state">

@@ -10,6 +10,7 @@ import {
   faXmark, 
 } from '@fortawesome/free-solid-svg-icons'; 
 import NoteCollaboratorsModal from './NoteCollaboratorsModal';
+import NoteDeleteConfirmDialog from './NoteDeleteConfirmDialog';
 
 const collaboratorEmailSuggestions = [
   'dinhphan1209@gmail.com',
@@ -48,15 +49,17 @@ function createDraftSnapshot(
   nextLocked,
   nextLockPassword,
 ) {
+  const normalizedState = normalizeSecurityState(nextLocked, nextLockPassword, nextSharedWith);
+
   return JSON.stringify({
     title: nextTitle,
     content: nextContent,
     isPinned: nextPinned,
     images: nextImages,
     labels: normalizeLabels(nextLabels).sort((left, right) => left.localeCompare(right)),
-    isLocked: Boolean(nextLocked),
-    lockPassword: nextLockPassword ? String(nextLockPassword) : '',
-    sharedWith: nextSharedWith
+    isLocked: normalizedState.isLocked,
+    lockPassword: normalizedState.lockPassword,
+    sharedWith: normalizedState.sharedWith
       .map((entry) => ({
         email: entry.email,
         permission: entry.permission,
@@ -74,6 +77,26 @@ function normalizeSharedWith(entries) {
       sharedAt: String(entry.sharedAt || new Date().toISOString()),
     }))
     .filter((entry) => entry.email.length > 0);
+}
+
+function normalizeSecurityState(nextLocked, nextLockPassword, nextSharedWith) {
+  const normalizedSharedWith = normalizeSharedWith(nextSharedWith);
+  const isLocked = Boolean(nextLocked);
+  const lockPassword = nextLockPassword ? String(nextLockPassword) : '';
+
+  if (isLocked) {
+    return {
+      isLocked: true,
+      lockPassword,
+      sharedWith: [],
+    };
+  }
+
+  return {
+    isLocked: false,
+    lockPassword: '',
+    sharedWith: normalizedSharedWith,
+  };
 }
 
 function resizeImageFile(file) {
@@ -150,9 +173,14 @@ function NoteEditorModal({
   const initialPinned = Boolean(note?.isPinned);
   const initialImages = Array.isArray(note?.images) ? note.images.filter(Boolean).slice(0, 3) : [];
   const initialLabels = normalizeLabels(note?.labels);
-  const initialSharedWith = normalizeSharedWith(note?.sharedWith);
-  const initialIsLocked = Boolean(note?.isLocked);
-  const initialLockPassword = typeof note?.lockPassword === 'string' ? note.lockPassword : '';
+  const initialSecurityState = normalizeSecurityState(
+    note?.isLocked,
+    typeof note?.lockPassword === 'string' ? note.lockPassword : '',
+    note?.sharedWith,
+  );
+  const initialSharedWith = initialSecurityState.sharedWith;
+  const initialIsLocked = initialSecurityState.isLocked;
+  const initialLockPassword = initialSecurityState.lockPassword;
   const initialUpdatedAt = note?.updatedAt || new Date().toISOString();
 
   const [title, setTitle] = useState(() => initialTitle);
@@ -172,6 +200,8 @@ function NoteEditorModal({
   const [labelQuery, setLabelQuery] = useState('');
   const [isLabelPanelOpen, setIsLabelPanelOpen] = useState(false);
   const [activeImage, setActiveImage] = useState(null);
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const fileInputRef = useRef(null);
   const labelPanelRef = useRef(null);
@@ -217,6 +247,8 @@ function NoteEditorModal({
   );
   const isDirty = hasMeaningfulData && currentSnapshot !== savedSnapshot;
   const remainingImageSlots = Math.max(3 - images.length, 0);
+  const canManageCollaborators = !isLocked;
+  const canManageLock = sharedWith.length === 0;
 
   function setSnapshotFromDraft(draft) {
     setSavedSnapshot(
@@ -238,6 +270,7 @@ function NoteEditorModal({
     (now) => {
       const id = noteIdRef.current || crypto.randomUUID();
       noteIdRef.current = id;
+      const normalizedState = normalizeSecurityState(isLocked, lockPassword, sharedWith);
 
       return {
         id,
@@ -246,11 +279,11 @@ function NoteEditorModal({
         color: note?.color || defaultColor || 'default',
         isPinned,
         pinnedAt: isPinned ? note?.pinnedAt || now : undefined,
-        isLocked,
-        lockPassword: isLocked ? lockPassword : '',
+        isLocked: normalizedState.isLocked,
+        lockPassword: normalizedState.lockPassword,
         labels: normalizeLabels(selectedLabels),
         images,
-        sharedWith,
+        sharedWith: normalizedState.sharedWith,
         createdAt: note?.createdAt || now,
         updatedAt: now,
       };
@@ -273,6 +306,10 @@ function NoteEditorModal({
   }
 
   function handleOpenLockSetup() {
+    if (!canManageLock) {
+      return;
+    }
+
     setIsLabelPanelOpen(false);
     setLockDraftPassword('');
     setLockDraftConfirm('');
@@ -301,6 +338,7 @@ function NoteEditorModal({
       return;
     }
 
+    setSharedWith([]);
     setIsLocked(true);
     setLockPassword(password);
     setIsLockSetupOpen(false);
@@ -401,13 +439,28 @@ function NoteEditorModal({
     onClose();
   }
 
-  function handleDelete() {
-    if (!note) {
+  function handleDeleteClick() {
+    setIsDeleteConfirmOpen(true);
+  }
+
+  function handleDeleteConfirm() {
+    if (!note || isDeleting) {
       return;
     }
 
-    onDelete(note.id);
-    onClose();
+    setIsDeleting(true);
+    
+    try {
+      onDelete(note.id);
+      setIsDeleteConfirmOpen(false);
+      onClose();
+    } finally {
+      setIsDeleting(false);
+    }
+  }
+
+  function handleDeleteCancel() {
+    setIsDeleteConfirmOpen(false);
   }
 
   return (
@@ -487,14 +540,16 @@ function NoteEditorModal({
 
           <div className="note-editor__toolbar">
             <div className="note-editor__toolbar-actions">
-              <button 
-                type="button" 
-                className={`notes-icon-btn ${sharedWith.length > 0 ? 'active' : ''}`} 
-                onClick={() => setIsCollaboratorsOpen(true)}
-                title="Mo cong tac vien"
-              >
-                <FontAwesomeIcon icon={faUserPlus} />
-              </button>
+              {canManageCollaborators ? (
+                <button 
+                  type="button" 
+                  className={`notes-icon-btn ${sharedWith.length > 0 ? 'active' : ''}`} 
+                  onClick={() => setIsCollaboratorsOpen(true)}
+                  title="Mo cong tac vien"
+                >
+                  <FontAwesomeIcon icon={faUserPlus} />
+                </button>
+              ) : null}
 
               <button
                 type="button"
@@ -519,17 +574,19 @@ function NoteEditorModal({
                 <FontAwesomeIcon icon={faImage} />
               </button>
 
-              <button
-                type="button"
-                className={`notes-icon-btn ${isLocked ? 'active' : ''}`}
-                onClick={handleOpenLockSetup}
-                title={isLocked ? 'Quan ly khoa' : 'Them khoa'}
-              >
-                <FontAwesomeIcon icon={faLock} />
-              </button>
+              {canManageLock ? (
+                <button
+                  type="button"
+                  className={`notes-icon-btn ${isLocked ? 'active' : ''}`}
+                  onClick={handleOpenLockSetup}
+                  title={isLocked ? 'Quan ly khoa' : 'Them khoa'}
+                >
+                  <FontAwesomeIcon icon={faLock} />
+                </button>
+              ) : null}
 
               {note ? (
-                <button type="button" className="notes-icon-btn notes-icon-btn--danger" onClick={handleDelete}>
+                <button type="button" className="notes-icon-btn notes-icon-btn--danger" onClick={handleDeleteClick}>
                   <FontAwesomeIcon icon={faTrash} />
                 </button>
               ) : null}
@@ -592,7 +649,10 @@ function NoteEditorModal({
           open={isCollaboratorsOpen}
           onCancel={() => setIsCollaboratorsOpen(false)}
           onSave={(nextCollaborators) => {
-            setSharedWith(nextCollaborators);
+            const normalizedState = normalizeSecurityState(false, '', nextCollaborators);
+            setSharedWith(normalizedState.sharedWith);
+            setIsLocked(normalizedState.isLocked);
+            setLockPassword(normalizedState.lockPassword);
             setIsCollaboratorsOpen(false);
           }}
           collaborators={sharedWith}
@@ -678,6 +738,14 @@ function NoteEditorModal({
           </div>
         </div>
       ) : null}
+
+      <NoteDeleteConfirmDialog
+        open={isDeleteConfirmOpen}
+        noteTitle={note?.title || 'Untitled'}
+        onConfirm={handleDeleteConfirm}
+        onCancel={handleDeleteCancel}
+        isDeleting={isDeleting}
+      />
     </>
   );
 }

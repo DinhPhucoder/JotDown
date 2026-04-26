@@ -122,12 +122,40 @@ export const mockNotes = [
     createdAt: '2026-04-10T12:00:00Z',
     updatedAt: '2026-04-21T12:00:00Z',
   },
+  {
+    id: '7',
+    title: 'Checklist release tu Team Product',
+    content: 'Chot changelog, doi soat KPI va xac nhan tai lieu huong dan truoc khi release ban moi.',
+    color: 'default',
+    isPinned: false,
+    isLocked: false,
+    labels: ['Cong viec'],
+    images: [],
+    ownerEmail: 'pm@example.com',
+    ownerName: 'Le Product Owner',
+    accessPermission: 'read',
+    sharedWith: [{ email: 'user@example.com', permission: 'read', sharedAt: '2026-04-24T09:00:00Z' }],
+    createdAt: '2026-04-24T09:00:00Z',
+    updatedAt: '2026-04-24T09:30:00Z',
+  },
 ];
 
 function sanitizeNote(note) {
   if (!note || typeof note !== 'object') {
     return null;
   }
+
+  const isLocked = Boolean(note.isLocked);
+  const lockPassword = note.lockPassword ? String(note.lockPassword) : '';
+  const normalizedSharedWith = Array.isArray(note.sharedWith)
+    ? note.sharedWith
+        .filter(Boolean)
+        .map((entry) => ({
+          email: String(entry.email || ''),
+          permission: entry.permission === 'edit' ? 'edit' : 'read',
+          sharedAt: String(entry.sharedAt || new Date().toISOString()),
+        }))
+    : [];
 
   return {
     id: String(note.id || crypto.randomUUID()),
@@ -136,19 +164,18 @@ function sanitizeNote(note) {
     color: typeof note.color === 'string' ? note.color : 'default',
     isPinned: Boolean(note.isPinned),
     pinnedAt: note.pinnedAt ? String(note.pinnedAt) : undefined,
-    isLocked: Boolean(note.isLocked),
-    lockPassword: note.lockPassword ? String(note.lockPassword) : '',
+    isLocked,
+    lockPassword: isLocked ? lockPassword : '',
     labels: Array.isArray(note.labels) ? note.labels.filter(Boolean).map(String) : [],
     images: Array.isArray(note.images) ? note.images.filter(Boolean).map(String) : [],
-    sharedWith: Array.isArray(note.sharedWith)
-      ? note.sharedWith
-          .filter(Boolean)
-          .map((entry) => ({
-            email: String(entry.email || ''),
-            permission: entry.permission === 'edit' ? 'edit' : 'read',
-            sharedAt: String(entry.sharedAt || new Date().toISOString()),
-          }))
-      : [],
+    // Mutual exclusive invariant: locked notes cannot be shared.
+    sharedWith: isLocked ? [] : normalizedSharedWith,
+    ownerEmail: note.ownerEmail ? String(note.ownerEmail).trim().toLowerCase() : undefined,
+    ownerName: note.ownerName ? String(note.ownerName) : undefined,
+    accessPermission:
+      note.accessPermission === 'edit' || note.accessPermission === 'read'
+        ? note.accessPermission
+        : undefined,
     createdAt: String(note.createdAt || new Date().toISOString()),
     updatedAt: String(note.updatedAt || new Date().toISOString()),
   };
@@ -174,6 +201,36 @@ function getDefaultWorkspace() {
   };
 }
 
+function ensureSharedDemoNote(notes) {
+  const sanitizedNotes = Array.isArray(notes) ? notes.map(sanitizeNote).filter(Boolean) : [];
+  const hasReceivedSharedNote = sanitizedNotes.some((note) => {
+    const ownerEmail = String(note.ownerEmail || '').trim().toLowerCase();
+    const hasViewer = Array.isArray(note.sharedWith)
+      ? note.sharedWith.some((entry) => String(entry.email || '').trim().toLowerCase() === mockUser.email)
+      : false;
+
+    return ownerEmail && ownerEmail !== mockUser.email && hasViewer;
+  });
+
+  if (hasReceivedSharedNote) {
+    return sanitizedNotes;
+  }
+
+  const demoSharedNote = sanitizeNote(mockNotes.find((note) => note.id === '7'));
+
+  if (!demoSharedNote) {
+    return sanitizedNotes;
+  }
+
+  const hasSameId = sanitizedNotes.some((note) => note.id === demoSharedNote.id);
+
+  if (hasSameId) {
+    return sanitizedNotes.map((note) => (note.id === demoSharedNote.id ? demoSharedNote : note));
+  }
+
+  return [demoSharedNote, ...sanitizedNotes];
+}
+
 export function loadNoteWorkspace() {
   if (typeof window === 'undefined') {
     return getDefaultWorkspace();
@@ -193,7 +250,7 @@ export function loadNoteWorkspace() {
     }
 
     return {
-      notes: Array.isArray(parsed.notes) ? parsed.notes.map(sanitizeNote).filter(Boolean) : mockNotes,
+      notes: ensureSharedDemoNote(Array.isArray(parsed.notes) ? parsed.notes : mockNotes),
       labels: Array.isArray(parsed.labels)
         ? parsed.labels
             .filter((label) => label && typeof label === 'object')

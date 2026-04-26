@@ -1,7 +1,9 @@
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   faClock,
+  faEye,
   faLock,
+  faPenToSquare,
   faShareNodes,
   faThumbtack,
   faWifi,
@@ -43,14 +45,25 @@ function getAvatarInitial(email) {
   return (localPart.charAt(0) || '?').toUpperCase();
 }
 
-function NoteCard({ note, viewMode, onOpen, onTogglePin, isOffline = false }) { 
+function NoteCard({
+  note,
+  viewMode,
+  onOpen,
+  onTogglePin,
+  isOffline = false,
+  shareScope = null,
+  accessPermission = null,
+}) {
   const previewImages = note.images.slice(0, 3);
   const hiddenImageCount = Math.max(note.images.length - 3, 0);
+  const normalizedPermission = accessPermission === 'edit' ? 'edit' : 'read';
+  const showPermissionBadge = shareScope === 'received';
   const collaboratorEmails = (Array.isArray(note.sharedWith) ? note.sharedWith : [])
     .map(getCollaboratorEmail)
     .filter(Boolean);
   const displayedCollaborators = collaboratorEmails.slice(0, 5);
   const hiddenCollaboratorCount = Math.max(collaboratorEmails.length - displayedCollaborators.length, 0);
+  const hasBadges = note.isLocked || collaboratorEmails.length > 0 || showPermissionBadge || isOffline;
 
   function handleCardKeyDown(event) {
     if (event.key === 'Enter' || event.key === ' ') {
@@ -69,13 +82,10 @@ function NoteCard({ note, viewMode, onOpen, onTogglePin, isOffline = false }) {
 
   return ( 
     <div 
-      role="button"
-      tabIndex={0}
       className={`note-card ${colorClassNames[note.color] || colorClassNames.default} ${ 
         viewMode === 'list' ? 'note-card--list' : '' 
       }`} 
       onClick={() => onOpen(note)} 
-      onKeyDown={handleCardKeyDown}
     > 
       {previewImages.length > 0 ? (
         <div
@@ -95,28 +105,38 @@ function NoteCard({ note, viewMode, onOpen, onTogglePin, isOffline = false }) {
       ) : null}
 
       <div className="note-card__header">
-        <div className="note-card__title">{note.title || 'Khong co tieu de'}</div>
+        {hasBadges ? (
+          <div className="note-card__meta-badges">
+            {note.isLocked ? ( 
+              <span className="note-meta-badge note-meta-badge--locked"> 
+                <FontAwesomeIcon icon={faLock} /> 
+                <span>Khoa</span> 
+              </span>
+            ) : null}
+            {collaboratorEmails.length > 0 ? (
+              <span className="note-meta-badge note-meta-badge--shared">
+                <FontAwesomeIcon icon={faShareNodes} />
+                <span>Chia sẻ</span>
+              </span>
+            ) : null}
+            {showPermissionBadge ? (
+              <span
+                className={`note-meta-badge note-meta-badge--permission note-meta-badge--permission-${normalizedPermission}`}
+              >
+                <FontAwesomeIcon icon={normalizedPermission === 'edit' ? faPenToSquare : faEye} />
+                <span>{normalizedPermission === 'edit' ? 'Quyen Sua' : 'Quyen Doc'}</span>
+              </span>
+            ) : null}
+            {isOffline ? (
+              <span className="note-meta-badge note-meta-badge--offline">
+                <FontAwesomeIcon icon={faWifi} />
+                <span>Offline</span>
+              </span>
+            ) : null}
+          </div>
+        ) : null}
 
-        <div className="note-card__meta-badges">
-          {note.isLocked ? ( 
-            <span className="note-meta-badge note-meta-badge--locked"> 
-              <FontAwesomeIcon icon={faLock} /> 
-              <span>Khoa</span> 
-            </span>
-          ) : null}
-          {collaboratorEmails.length > 0 ? (
-            <span className="note-meta-badge note-meta-badge--shared">
-              <FontAwesomeIcon icon={faShareNodes} />
-              <span>Chia sẻ</span>
-            </span>
-          ) : null}
-          {isOffline ? (
-            <span className="note-meta-badge note-meta-badge--offline">
-              <FontAwesomeIcon icon={faWifi} />
-              <span>Offline</span>
-            </span>
-          ) : null}
-        </div>
+        <div className="note-card__title">{note.title || 'Khong co tieu de'}</div>
       </div>
 
       <div className={`note-card__content ${note.isLocked ? 'note-card__content--locked' : ''}`}>
