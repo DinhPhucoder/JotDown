@@ -17,3 +17,11 @@ use Illuminate\Http\Request;
 Route::get('/health', function () {
     return response()->json(['status' => 'ok']);
 });
+
+Route::get('/ping', function () {
+    return response()->json([
+        'status' => 'alive', 
+        'message' => 'Render instance is awake!', 
+        'time' => now()
+    ]);
+});
