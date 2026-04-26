@@ -43,4 +43,4 @@ RUN chown -R www-data:www-data storage bootstrap/cache
 # Render sẽ tự cấp PORT, Apache mặc định chạy cổng 80, Render sẽ tự map
 EXPOSE 80
 
-CMD ["apache2-foreground"]
+CMD sh -c "php artisan migrate --force && apache2-foreground"
