@@ -1,78 +1,35 @@
-import { useDeferredValue, useEffect, useState } from 'react';
+import { useEffect, useState, useDeferredValue } from 'react';
 import { Button, Modal, Offcanvas } from 'react-bootstrap';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPlus, faStickyNote } from '@fortawesome/free-solid-svg-icons';
 import { useNavigate } from 'react-router-dom';
-import Masonry from 'react-masonry-css';
-import { motion, useReducedMotion } from 'framer-motion';
-import NoteCard from '../components/notes/NoteCard';
-import NoteEditorModal from '../components/notes/NoteEditorModal';
-import NoteSettingsModal from '../components/notes/NoteSettingsModal';
-import UserProfileModal from '../components/notes/UserProfileModal';
-import NotesHeader from '../components/notes/NotesHeader';
-import NotesSidebar from '../components/notes/NotesSidebar';
+import NoteCard from '../features/notes/components/NoteCard';
+import NoteEditorModal from '../features/notes/components/NoteEditorModal';
+import NoteSettingsModal from '../features/notes/components/NoteSettingsModal';
+import UserProfileModal from '../features/profile/components/UserProfileModal';
+import NotesHeader from '../features/notes/components/NotesHeader';
+import NotesSidebar from '../features/notes/components/NotesSidebar';
 import { loadNoteWorkspace, saveNoteWorkspace } from '../data/noteWorkspace';
-import './NotesPage.css';
-
-function readStoredTheme() {
-  const storedTheme = window.localStorage.getItem('theme');
-  const prefersDark = window.matchMedia?.('(prefers-color-scheme: dark)')?.matches;
-  return storedTheme || (prefersDark ? 'dark' : 'light');
-}
+import { useTheme } from '../hooks/useTheme';
+import { useOnlineStatus } from '../hooks/useOnlineStatus';
+import { resolveNoteShareMeta } from '../features/notes/utils/noteShareResolver';
+import { sortNotes } from '../features/notes/utils/noteSorter';
+import NoteGrid from '../components/common/NoteGrid';
+import AnimatedNoteCard from '../components/common/AnimatedNoteCard';
+import '../features/notes/styles/index.css';
 
 function resolveNoteFontSize(value) {
   return value === 'small' || value === 'large' ? value : 'medium';
-}
-
-function sortNotes(items) {
-  return [...items].sort((left, right) => {
-    if (left.isPinned !== right.isPinned) {
-      return Number(right.isPinned) - Number(left.isPinned);
-    }
-
-    return new Date(right.updatedAt).getTime() - new Date(left.updatedAt).getTime();
-  });
 }
 
 function normalizeEmail(value) {
   return String(value || '').trim().toLowerCase();
 }
 
-function normalizePermission(value) {
-  return value === 'edit' ? 'edit' : 'read';
-}
-
-function resolveNoteShareMeta(note, currentUserEmail) {
-  const ownerEmail = normalizeEmail(note.ownerEmail || note.createdByEmail || note.authorEmail);
-  const ownerName = String(note.ownerName || note.authorName || '').trim();
-  const normalizedCurrentEmail = normalizeEmail(currentUserEmail);
-  const normalizedSharedWith = Array.isArray(note.sharedWith)
-    ? note.sharedWith.map((entry) => ({
-        email: normalizeEmail(typeof entry === 'string' ? entry : entry?.email),
-        permission: normalizePermission(typeof entry === 'string' ? 'read' : entry?.permission),
-      }))
-    : [];
-
-  const mySharedEntry = normalizedSharedWith.find((entry) => entry.email === normalizedCurrentEmail);
-  const fallbackPermission = normalizePermission(
-    note.accessPermission || note.viewerPermission || note.permission,
-  );
-  const isOwnedByMe = !ownerEmail || ownerEmail === normalizedCurrentEmail;
-  const isOwnedShared = isOwnedByMe && normalizedSharedWith.length > 0;
-  const isReceivedShared = !isOwnedByMe && (Boolean(mySharedEntry) || Boolean(note.accessPermission));
-
-  return {
-    ownerEmail,
-    ownerName,
-    isOwnedByMe,
-    isOwnedShared,
-    isReceivedShared,
-    myPermission: mySharedEntry?.permission || fallbackPermission,
-  };
-}
-
 function NotesPage() {
   const navigate = useNavigate();
+  const { theme, setTheme } = useTheme();
+  const isOffline = useOnlineStatus();
   const [initialWorkspace] = useState(() => loadNoteWorkspace());
   const [notes, setNotes] = useState(() => sortNotes(initialWorkspace.notes));
   const [labels, setLabels] = useState(() => initialWorkspace.labels);
@@ -92,38 +49,10 @@ function NotesPage() {
   const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [desktopSidebarOpen, setDesktopSidebarOpen] = useState(true);
-  const [theme, setTheme] = useState(() => readStoredTheme());
-  const [isOffline, setIsOffline] = useState(() =>
-    typeof navigator !== 'undefined' ? !navigator.onLine : false,
-  );
 
   useEffect(() => {
-    document.documentElement.setAttribute('data-bs-theme', theme);
-    window.localStorage.setItem('theme', theme);
-  }, [theme]);
-  useEffect(() => {
-    saveNoteWorkspace({
-      notes,
-      labels,
-      user,
-      viewMode,
-    });
+    saveNoteWorkspace({ notes, labels, user, viewMode });
   }, [notes, labels, user, viewMode]);
-
-  useEffect(() => {
-    const updateOnlineStatus = () => {
-      setIsOffline(!navigator.onLine);
-    };
-
-    updateOnlineStatus();
-    window.addEventListener('online', updateOnlineStatus);
-    window.addEventListener('offline', updateOnlineStatus);
-
-    return () => {
-      window.removeEventListener('online', updateOnlineStatus);
-      window.removeEventListener('offline', updateOnlineStatus);
-    };
-  }, []);
 
   const normalizedSearch = deferredSearch.trim().toLowerCase();
 
@@ -154,46 +83,26 @@ function NotesPage() {
 
   const pinnedNotes = filteredNotes.filter((note) => note.isPinned);
   const otherNotes = filteredNotes.filter((note) => !note.isPinned);
-  const sharedCount = notes.filter((note) => {
-    const meta = resolveNoteShareMeta(note, normalizedUserEmail);
-    return meta.isOwnedShared || meta.isReceivedShared;
-  }).length;
   const ownedSharedNotes = filteredNotes.filter((note) => note.__shareMeta?.isOwnedShared);
   const receivedSharedNotes = filteredNotes.filter((note) => note.__shareMeta?.isReceivedShared);
-  const noteCount = notes.length;
-  const lastUpdated = notes[0] ? new Date(notes[0].updatedAt).toLocaleDateString('vi-VN') : 'Chưa có';
   const noteFontSize = resolveNoteFontSize(user?.preferences?.fontSize);
-  const prefersReducedMotion = useReducedMotion();
 
-  const noteMotionProps = {
-    layout: true,
-    initial: prefersReducedMotion ? false : { opacity: 0, y: 14, scale: 0.98 },
-    animate: { opacity: 1, y: 0, scale: 1 },
-    exit: prefersReducedMotion ? { opacity: 0 } : { opacity: 0, y: -12, scale: 0.98 },
-    transition: prefersReducedMotion
-      ? { duration: 0.12 }
-      : { type: 'spring', stiffness: 300, damping: 26, mass: 0.7 },
-  };
-
-  function renderAnimatedNote(note) {
+  function renderNote(note) {
     return (
-      <motion.div key={note.id} className="note-card-motion" {...noteMotionProps}>
-        <NoteCard
-          note={note}
-          viewMode={viewMode}
-          onOpen={openEditor}
-          onTogglePin={handleToggleNotePin}
-          isOffline={isOffline}
-          shareScope={
-            note.__shareMeta?.isReceivedShared
-              ? 'received'
-              : note.__shareMeta?.isOwnedShared
-                ? 'owned'
-                : null
-          }
-          accessPermission={note.__shareMeta?.isReceivedShared ? note.__shareMeta.myPermission : null}
-        />
-      </motion.div>
+      <AnimatedNoteCard
+        key={note.id}
+        note={note}
+        viewMode={viewMode}
+        onOpen={openEditor}
+        onTogglePin={handleToggleNotePin}
+        isOffline={isOffline}
+        shareScope={
+          note.__shareMeta?.isReceivedShared ? 'received'
+          : note.__shareMeta?.isOwnedShared ? 'owned'
+          : null
+        }
+        accessPermission={note.__shareMeta?.isReceivedShared ? note.__shareMeta.myPermission : null}
+      />
     );
   }
 
@@ -374,72 +283,6 @@ function NotesPage() {
     navigate('/login');
   }
 
-function renderNoteSection(title, items) {
-    if (items.length === 0) {
-      return null;
-    }
-
-    const masonryBreakpoints = {
-      default: 4,
-      1400: 3,
-      1100: 2,
-      700: 1
-    };
-
-    return (
-      <section className="mb-4">
-        {title ? <div className="notes-section-title">{title}</div> : null}
-        {viewMode === 'grid' ? (
-          <Masonry
-            breakpointCols={masonryBreakpoints}
-            className="notes-masonry-grid"
-            columnClassName="notes-masonry-grid_column"
-          >
-            {items.map(renderAnimatedNote)}
-          </Masonry>
-        ) : (
-          <div className="notes-list">
-            {items.map(renderAnimatedNote)}
-          </div>
-        )}
-      </section>
-    );
-  }
-
-  function renderSharedSpace(title, items) {
-    const masonryBreakpoints = {
-      default: 4,
-      1400: 3,
-      1100: 2,
-      700: 1
-    };
-
-    return (
-      <section className="notes-shared-space">
-        <div className="notes-shared-space__header">
-          <div className="notes-shared-space__title">{title}</div>
-        </div>
-        {items.length > 0 ? (
-          viewMode === 'grid' ? (
-            <Masonry
-              breakpointCols={masonryBreakpoints}
-              className="notes-masonry-grid"
-              columnClassName="notes-masonry-grid_column"
-            >
-              {items.map(renderAnimatedNote)}
-            </Masonry>
-          ) : (
-            <div className="notes-list">
-              {items.map(renderAnimatedNote)}
-            </div>
-          )
-        ) : (
-          <div className="notes-shared-space__empty">Không có ghi chú trong khu vực này.</div>
-        )}
-      </section>
-    );
-  }
-
   return (
     <div className={`notes-shell note-font-${noteFontSize}`}>
       <NotesHeader
@@ -485,13 +328,23 @@ function renderNoteSection(title, items) {
               <>
                 {showShared ? (
                   <>
-                    {renderSharedSpace('Ghi chú của tôi', ownedSharedNotes)}
-                    {renderSharedSpace('Ghi chú được chia sẻ', receivedSharedNotes)}
+                    <section className="notes-shared-space">
+                      <div className="notes-shared-space__header">
+                        <div className="notes-shared-space__title">Ghi chú của tôi</div>
+                      </div>
+                      <NoteGrid items={ownedSharedNotes} viewMode={viewMode} renderItem={renderNote} emptyMessage="Không có ghi chú trong khu vực này." />
+                    </section>
+                    <section className="notes-shared-space">
+                      <div className="notes-shared-space__header">
+                        <div className="notes-shared-space__title">Ghi chú được chia sẻ</div>
+                      </div>
+                      <NoteGrid items={receivedSharedNotes} viewMode={viewMode} renderItem={renderNote} emptyMessage="Không có ghi chú trong khu vực này." />
+                    </section>
                   </>
                 ) : (
                   <>
-                    {renderNoteSection(pinnedNotes.length > 0 ? 'Đã ghim' : '', pinnedNotes)}
-                    {renderNoteSection(pinnedNotes.length > 0 ? 'Khác' : '', otherNotes)}
+                    <NoteGrid items={pinnedNotes} viewMode={viewMode} title={pinnedNotes.length > 0 ? 'Đã ghim' : ''} renderItem={renderNote} />
+                    <NoteGrid items={otherNotes} viewMode={viewMode} title={pinnedNotes.length > 0 ? 'Khác' : ''} renderItem={renderNote} />
                   </>
                 )}
               </>

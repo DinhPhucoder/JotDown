@@ -8,7 +8,7 @@ import {
   faSearch,
 } from '@fortawesome/free-solid-svg-icons';
 import { Dropdown } from 'react-bootstrap';
-import AppLogo from '../AppLogo';
+import AppLogo from '../../../components/AppLogo';
 
 function NotesHeader({
   search,

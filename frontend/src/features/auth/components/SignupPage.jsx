@@ -1,8 +1,7 @@
-import React from 'react';
 import { Container, Row, Col, Form, Button } from 'react-bootstrap';
 import { Mail, Lock, User, Camera, EyeOff } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import './Auth.css';
+import '../styles/Auth.css';
 
 const SignupPage = () => {
   return (

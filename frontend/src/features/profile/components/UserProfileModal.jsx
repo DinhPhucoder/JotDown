@@ -3,7 +3,7 @@ import { Modal, Button, Form, Tab, Row, Col, Nav } from 'react-bootstrap';
 import { User, Mail, PaintBucket, Shield, Camera, Lock, Eye, EyeOff, X, Type } from 'lucide-react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faBars } from '@fortawesome/free-solid-svg-icons';
-import { noteColorOptions } from '../../data/noteWorkspace';
+import { noteColorOptions } from '../../../data/constants';
 import './UserProfileModal.css';
 
 const noteFontSizeOptions = [

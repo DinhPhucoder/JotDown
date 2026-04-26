@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useTheme } from '../hooks/useTheme';
 import Features from '../components/landing/Features';
 import Footer from '../components/landing/Footer';
 import Header from '../components/landing/Header';
@@ -6,16 +6,7 @@ import Hero from '../components/landing/Hero';
 import MockNotesPreview from '../components/landing/MockNotesPreview';
 
 function LandingPage() {
-  const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'dark');
-
-  useEffect(() => {
-    document.documentElement.setAttribute('data-bs-theme', theme);
-    localStorage.setItem('theme', theme);
-  }, [theme]);
-
-  const toggleTheme = () => {
-    setTheme((previousTheme) => (previousTheme === 'dark' ? 'light' : 'dark'));
-  };
+  const { theme, toggleTheme } = useTheme();
 
   return (
     <div className="landing-app d-flex flex-column min-vh-100">
@@ -31,3 +22,4 @@ function LandingPage() {
 }
 
 export default LandingPage;
+

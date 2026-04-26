@@ -1,5 +1,5 @@
 import { Button, Form, Modal } from 'react-bootstrap';
-import { fontSizeOptions, noteColorOptions } from '../../data/noteWorkspace';
+import { fontSizeOptions, noteColorOptions } from '../../../data/constants';
 
 function NoteSettingsModal({ open, preferences, onClose, onUpdate }) {
   return (

@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Container, Row, Col, Form, Button, Alert, Spinner } from 'react-bootstrap';
 import { Mail, ArrowLeft } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
-import './Auth.css';
+import '../styles/Auth.css';
 
 const ForgotPasswordPage = () => {
   const [email, setEmail] = useState('');

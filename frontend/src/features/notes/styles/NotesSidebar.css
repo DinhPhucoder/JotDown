@@ -1,0 +1,91 @@
+/* ============================================================
+   NotesSidebar.css — Sidebar buttons, labels, inline actions
+   ============================================================ */
+
+.notes-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.notes-sidebar__section {
+  margin-top: 0.8rem;
+}
+
+.notes-sidebar__heading {
+  padding: 0 0.9rem;
+  margin-bottom: 0.75rem;
+  color: var(--bs-secondary-color);
+  font-size: 0.78rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+html[data-bs-theme='light'] .notes-sidebar__heading,
+html[data-bs-theme='light'] .notes-sidebar-btn.active .flex-grow-1 {
+  color: #2563eb;
+}
+
+@supports (-webkit-background-clip: text) or (background-clip: text) {
+  html[data-bs-theme='light'] .notes-sidebar__heading,
+  html[data-bs-theme='light'] .notes-sidebar-btn.active .flex-grow-1 {
+    background: var(--primary-gradient);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
+  }
+}
+
+.notes-sidebar-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  min-height: 3rem;
+  padding: 0.7rem 0.9rem;
+  color: var(--bs-body-color);
+  font-weight: 500;
+  background: transparent;
+  border-radius: 1rem;
+  transition: background-color 0.2s ease, transform 0.2s ease;
+}
+
+.notes-sidebar-btn:hover {
+  background: rgba(96, 165, 250, 0.12);
+  transform: translateX(2px);
+}
+
+.notes-sidebar-btn.active {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.18), rgba(56, 189, 248, 0.1));
+  border: 1px solid rgba(96, 165, 250, 0.25);
+}
+
+.notes-sidebar-btn__icon {
+  width: 1rem;
+  text-align: center;
+}
+
+.notes-sidebar-actions {
+  display: inline-flex;
+  gap: 0.35rem;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.notes-sidebar-btn:hover .notes-sidebar-actions {
+  opacity: 1;
+}
+
+.notes-sidebar-create,
+.notes-sidebar-edit {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0 0.2rem;
+}
+
+.notes-sidebar-create .form-control,
+.notes-sidebar-edit .form-control {
+  min-height: 2.8rem;
+}
