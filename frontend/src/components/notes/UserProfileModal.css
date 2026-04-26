@@ -1,5 +1,83 @@
 /* UserProfileModal.css */
 
+/* Profile Image Picker (giống SignupPage) */
+.profile-modal .profile-image-picker {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    cursor: pointer;
+}
+
+.profile-modal .profile-image-circle {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background-color: var(--bs-tertiary-bg, #e2e8f0);
+    border: 2px dashed rgba(148, 163, 184, 0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.profile-modal .profile-image-circle:hover {
+    border-color: #4f46e5;
+    box-shadow: 0 0 20px rgba(79, 70, 229, 0.15);
+}
+
+.profile-modal .profile-placeholder-icon {
+    color: #94a3b8;
+}
+
+.profile-modal .profile-image-overlay {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 36px;
+    background: linear-gradient(transparent, rgba(79, 70, 229, 0.85));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.profile-modal .profile-image-circle:hover .profile-image-overlay {
+    opacity: 1;
+}
+
+.profile-modal .profile-image-label {
+    margin-top: 6px;
+    font-size: 0.8rem;
+    color: #94a3b8;
+    transition: color 0.3s ease;
+}
+
+.profile-modal .profile-image-picker:hover .profile-image-label {
+    color: #4f46e5;
+}
+
+/* Font size slider */
+.profile-font-slider::-webkit-slider-runnable-track {
+    background: linear-gradient(90deg, #0b5cff, #7c3aed) !important;
+    height: 6px;
+    border-radius: 3px;
+}
+
+.profile-font-slider::-webkit-slider-thumb {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 0 6px rgba(79, 70, 229, 0.4);
+    border: 2px solid #4f46e5;
+    cursor: pointer;
+}
+
 /* Panel sidebar mobile nằm BÊN TRONG Modal */
 .profile-mobile-overlay {
     position: absolute;
@@ -152,4 +230,49 @@ html[data-bs-theme="dark"] .profile-camera-btn {
     background-color: #475569;
     border-color: #334155;
     color: white;
+}
+
+/* Button styles — phong cách Auth (gradient + glow) */
+.profile-modal .btn-primary {
+    background: linear-gradient(135deg, #0b5cff 0%, #1f58ff 45%, #7c3aed 100%) !important;
+    border: none !important;
+    border-radius: 10px !important;
+    font-weight: 600 !important;
+    color: #fff !important;
+    box-shadow: 0 0 18px rgba(49, 105, 255, 0.35);
+    transition: all 0.3s ease !important;
+}
+
+.profile-modal .btn-primary:hover {
+    box-shadow: 0 0 28px rgba(74, 108, 255, 0.6) !important;
+    transform: translateY(-1px);
+}
+
+.profile-modal .btn-outline-primary {
+    background: transparent !important;
+    border: 2px solid #4f46e5 !important;
+    border-radius: 10px !important;
+    font-weight: 600 !important;
+    color: #4f46e5 !important;
+    transition: all 0.3s ease !important;
+}
+
+.profile-modal .btn-outline-primary:hover {
+    background: linear-gradient(135deg, #0b5cff 0%, #1f58ff 45%, #7c3aed 100%) !important;
+    border-color: transparent !important;
+    color: #fff !important;
+    box-shadow: 0 0 24px rgba(49, 105, 255, 0.45);
+}
+
+.profile-modal .btn-outline-secondary {
+    background: transparent !important;
+    border: 2px solid rgba(148, 163, 184, 0.4) !important;
+    border-radius: 10px !important;
+    font-weight: 600 !important;
+    transition: all 0.3s ease !important;
+}
+
+.profile-modal .btn-outline-secondary:hover {
+    border-color: rgba(148, 163, 184, 0.7) !important;
+    transform: translateY(-1px);
 }

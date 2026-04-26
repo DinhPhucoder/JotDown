@@ -55,6 +55,42 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* ── AppLogo (dùng chung cho auth / notes / landing) ── */
+.app-logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  text-decoration: none !important;
+  transition: opacity 0.2s ease;
+}
+
+.app-logo:hover {
+  opacity: 0.85;
+}
+
+.app-logo__name {
+  font-size: 1.35rem;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  line-height: 1;
+}
+
+.app-logo__jot,
+.app-logo__down {
+  background: linear-gradient(to right, #fff, #94a3b8);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+html[data-bs-theme="light"] .app-logo__jot,
+html[data-bs-theme="light"] .app-logo__down {
+  background: linear-gradient(135deg, #0f3b74 0%, #0b5cff 50%, #5b21b6 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
 h1,
 h2,
 h3,

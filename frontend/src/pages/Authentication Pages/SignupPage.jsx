@@ -17,23 +17,19 @@ const SignupPage = () => {
       </Link>
 
       <Row className="g-0 min-vh-100">
-        <Col lg={6} className="d-none d-lg-flex auth-branding">
+        <Col lg={7} className="d-none d-lg-flex auth-branding">
           <div className="branding-content">
-            <h2> Jot <span>Down</span> <br /> <span>Nghĩ gì</span> ghi nấy...</h2>
+            <h2> Jot Down <br />Nơi mọi ý tưởng lớn <br />bắt đầu</h2>
             <p className="lead">Đừng để những suy nghĩ vụt mất. Ghi chép nhanh chóng, đồng bộ an toàn và quản lý tri thức của bạn một cách khoa học nhất.</p>
           </div>
         </Col>
 
-        <Col lg={6} className="auth-form-container">
+        <Col lg={5} className="auth-form-container">
           <div className="auth-card">
             <div className="auth-header mb-4">
               <h1 className="fw-bold">Đăng ký</h1>
               <p className="text-secondary">Bắt đầu không gian ghi chú của riêng bạn ngay hôm nay</p>
             </div>
-
-
-
-
 
             {/* Chọn ảnh đại diện */}
             <div className="profile-image-picker mb-4">

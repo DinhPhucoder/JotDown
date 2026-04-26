@@ -96,6 +96,14 @@ function NotesPage() {
     window.localStorage.setItem('theme', theme);
   }, [theme]);
 
+  // Khôi phục font size đã lưu khi app khởi động
+  useEffect(() => {
+    const savedFontSize = localStorage.getItem('app-font-size');
+    if (savedFontSize) {
+      document.documentElement.style.fontSize = savedFontSize + 'px';
+    }
+  }, []);
+
   useEffect(() => {
     saveNoteWorkspace({
       notes,
@@ -544,6 +552,8 @@ function renderNoteSection(title, items) {
       <UserProfileModal
         open={profileOpen}
         onClose={() => setProfileOpen(false)}
+        theme={theme}
+        onToggleTheme={setTheme}
       />
 
       <Modal show={Boolean(unlockingNote)} onHide={handleCancelUnlock} centered dialogClassName="note-lock-modal">

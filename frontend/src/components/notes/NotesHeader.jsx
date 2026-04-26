@@ -8,11 +8,9 @@ import {
   faRightFromBracket,
   faSearch,
   faSun,
-  faPenToSquare
 } from '@fortawesome/free-solid-svg-icons';
 import { Dropdown } from 'react-bootstrap';
-import { Link } from 'react-router-dom';
-import BrandLogo from '../BrandLogo';
+import AppLogo from '../AppLogo';
 
 function NotesHeader({
   search,
@@ -57,9 +55,7 @@ function NotesHeader({
             <FontAwesomeIcon icon={faBars} />
           </button>
 
-          <Link to="/notes" className="text-decoration-none">
-            <BrandLogo size={34} />
-          </Link>
+            <AppLogo to="/notes" size={45} />
         </div>
 
         <div className="notes-search">
@@ -100,17 +96,9 @@ function NotesHeader({
             </Dropdown.Toggle>
             <Dropdown.Menu className="notes-account-menu">
               <Dropdown.Header>{userName}</Dropdown.Header>
-              <Dropdown.Item onClick={onOpenSettings}>
-                <FontAwesomeIcon icon={faGear} fixedWidth className="me-2" />
-                Cai dat
-              </Dropdown.Item>
               <Dropdown.Item onClick={onOpenProfile}>
-                <FontAwesomeIcon icon={faPenToSquare} fixedWidth className="me-2" />
-                Sửa hồ sơ
-              </Dropdown.Item>
-              <Dropdown.Item onClick={onToggleTheme}>
-                <FontAwesomeIcon icon={theme === 'dark' ? faSun : faMoon} fixedWidth className="me-2" />
-                {theme === 'dark' ? 'Che do sang' : 'Che do toi'}
+                <FontAwesomeIcon icon={faGear} fixedWidth className="me-2" />
+                Cài đặt
               </Dropdown.Item>
               <Dropdown.Divider />
               <Dropdown.Item onClick={onLogout}>

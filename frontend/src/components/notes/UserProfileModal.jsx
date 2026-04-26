@@ -1,11 +1,21 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Modal, Button, Form, Tab, Row, Col, Nav } from 'react-bootstrap';
-import { User, Mail, PaintBucket, Shield, Globe, Camera, BookText, Lock, Eye, EyeOff, Menu, X } from 'lucide-react';
+import { User, Mail, PaintBucket, Shield, Globe, Camera, BookText, Lock, Eye, EyeOff, Menu, X, Type } from 'lucide-react';
 import './UserProfileModal.css';
 
-function UserProfileModal({ open, onClose }) {
+function UserProfileModal({ open, onClose, theme, onToggleTheme }) {
     const [activeTab, setActiveTab] = useState('profile');
-    const [theme, setTheme] = useState('light');
+
+    // Font size: đọc từ localStorage, mặc định 16px
+    const [fontSize, setFontSize] = useState(() => {
+        return parseInt(localStorage.getItem('app-font-size')) || 16;
+    });
+
+    // Áp dụng font size lên document khi thay đổi
+    useEffect(() => {
+        document.documentElement.style.fontSize = fontSize + 'px';
+        localStorage.setItem('app-font-size', fontSize);
+    }, [fontSize]);
 
     const [formData, setFormData] = useState({
         displayName: 'Thomas Muller',
@@ -145,13 +155,19 @@ function UserProfileModal({ open, onClose }) {
                                     <h6 className="fw-bold mb-4">Thông tin Hồ sơ</h6>
 
                                     <div className="d-flex align-items-center gap-4 mb-4">
-                                        <div className="position-relative">
-                                            <div className="profile-avatar">
-                                                {formData.displayName.charAt(0).toUpperCase()}
+                                        <div className="profile-image-picker">
+                                            <div className="profile-image-circle">
+                                                <User size={40} className="profile-placeholder-icon" />
+                                                <div className="profile-image-overlay">
+                                                    <Camera size={20} />
+                                                </div>
                                             </div>
-                                            <button type="button" className="btn btn-light position-absolute bottom-0 end-0 rounded-circle shadow-sm profile-camera-btn">
-                                                <Camera size={14} />
-                                            </button>
+                                            <p className="profile-image-label mb-0">Thay đổi</p>
+                                            <input
+                                                type="file"
+                                                accept="image/jpeg,image/png,image/webp"
+                                                hidden
+                                            />
                                         </div>
                                         <div>
                                             <h5 className="mb-1 fw-semibold">{formData.displayName}</h5>
@@ -197,24 +213,6 @@ function UserProfileModal({ open, onClose }) {
                                             </Form.Text>
                                         </Form.Group>
 
-                                        <Form.Group className="mb-4">
-                                            <Form.Label className="small fw-semibold">Tiểu sử</Form.Label>
-                                            <div className="position-relative">
-                                                <span className="position-absolute text-secondary" style={{ left: '12px', top: '14px', zIndex: 10 }}>
-                                                    <BookText size={18} />
-                                                </span>
-                                                <Form.Control
-                                                    as="textarea"
-                                                    rows={3}
-                                                    name="bio"
-                                                    value={formData.bio}
-                                                    onChange={handleFormChange}
-                                                    placeholder="Giới thiệu nhanh về bạn..."
-                                                    style={{ paddingLeft: '40px' }}
-                                                />
-                                            </div>
-                                        </Form.Group>
-
                                         <div className="d-flex justify-content-end">
                                             <Button variant="primary">Lưu hồ sơ</Button>
                                         </div>
@@ -237,25 +235,32 @@ function UserProfileModal({ open, onClose }) {
                                                 role="switch"
                                                 id="theme-switch"
                                                 checked={theme === 'dark'}
-                                                onChange={(e) => setTheme(e.target.checked ? 'dark' : 'light')}
+                                                onChange={(e) => onToggleTheme(e.target.checked ? 'dark' : 'light')}
                                             />
                                         </div>
                                     </div>
 
                                     <div className="p-3 border rounded-3">
-                                        <div className="d-flex align-items-center gap-2 mb-3">
-                                            <Globe size={18} />
-                                            <h6 className="mb-0 fw-semibold">Ngôn ngữ</h6>
+                                        <div className="d-flex align-items-center gap-2 mb-2">
+                                            <Type size={18} />
+                                            <h6 className="mb-0 fw-semibold">Kích cỡ chữ</h6>
                                         </div>
-                                        <p className="text-secondary small mb-3">Tuỳ chỉnh ngôn ngữ cho các chức năng trong app.</p>
-                                        <Form.Select
-                                            name="language"
-                                            value={formData.language}
-                                            onChange={handleFormChange}
-                                        >
-                                            <option value="vi">Tiếng Việt (Việt Nam)</option>
-                                            <option value="en">English (US)</option>
-                                        </Form.Select>
+                                        <p className="text-secondary small mb-3">Điều chỉnh kích cỡ chữ cho toàn bộ ứng dụng.</p>
+                                        <div className="d-flex align-items-center gap-3">
+                                            <span className="small text-secondary" style={{ fontSize: '12px' }}>A</span>
+                                            <Form.Range
+                                                min={12}
+                                                max={22}
+                                                step={1}
+                                                value={fontSize}
+                                                onChange={(e) => setFontSize(Number(e.target.value))}
+                                                className="profile-font-slider"
+                                            />
+                                            <span className="text-secondary" style={{ fontSize: '20px', fontWeight: 600 }}>A</span>
+                                        </div>
+                                        <div className="text-center mt-2">
+                                            <span className="badge bg-primary bg-opacity-10 text-primary fw-semibold">{fontSize}px</span>
+                                        </div>
                                     </div>
                                 </Tab.Pane>
 
