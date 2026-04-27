@@ -54,7 +54,8 @@ Tất cả API phải trả về định dạng JSON thống nhất sử dụng 
 * **Naming Conventions:**
   * **Table:** Số nhiều, snake_case (VD: `notes`, `user_roles`).
   * **Column:** Số ít, snake_case (VD: `title`, `created_at`).
-  * **Model:** Số ít, PascalCase (VD: `Note`, `UserRole`).
+* **Model:** Số ít, PascalCase (VD: `Note`, `UserRole`).
+* **Sử dụng Eloquent ORM:** Ưu tiên sử dụng Eloquent Model cho tất cả các thao tác truy vấn dữ liệu. Tuyệt đối không dùng SQL thuần hoặc Query Builder (`DB::table`) trừ những trường hợp đặc biệt phức tạp cần tối ưu hiệu năng (phải thông báo cho Leader).
 * **Soft Deletes:** Ưu tiên dùng Soft Deletes (`Illuminate\Database\Eloquent\SoftDeletes`) thay vì xóa cứng dữ liệu quan trọng.
 
 ---
