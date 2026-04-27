@@ -29,7 +29,7 @@ const SignupPage = () => {
 
             <div className="profile-image-picker mb-2">
               <div className="profile-image-circle">
-                <User size={40} className="profile-placeholder-icon" />
+                <User size={35} className="profile-placeholder-icon" />
                 <div className="profile-image-overlay">
                   <Camera size={20} />
                 </div>

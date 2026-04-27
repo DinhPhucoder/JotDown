@@ -183,8 +183,8 @@ function NotesPage() {
   function handleToggleLabel(labelName) {
     setSelectedLabels((currentLabels) =>
       currentLabels.includes(labelName)
-        ? currentLabels.filter((item) => item !== labelName)
-        : [...currentLabels, labelName],
+        ? []
+        : [labelName],
     );
     setShowShared(false);
   }
@@ -292,6 +292,7 @@ function NotesPage() {
         onViewModeChange={setViewMode}
         userName={user.displayName}
         isVerified={user.isVerified}
+        selectedLabel={selectedLabels.length > 0 ? selectedLabels[0] : null}
         onLogout={handleOpenLogoutConfirm}
         onOpenSettings={() => setSettingsOpen(true)}
         onOpenProfile={() => setProfileOpen(true)}

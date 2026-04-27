@@ -514,8 +514,8 @@ html[data-bs-theme="light"] .auth-card {
 }
 
 .profile-image-circle {
-  width: 108px;
-  height: 108px;
+  width: 80px;
+  height: 80px;
   border-radius: 50%;
   background-color: var(--auth-input-bg);
   border: 1px dashed var(--auth-profile-border);
@@ -562,7 +562,7 @@ html[data-bs-theme="light"] .auth-card {
 }
 
 .profile-image-label {
-  margin-top: 10px;
+  margin-top: 5px;
   font-size: 0.9rem;
   color: var(--auth-text-gray);
 }

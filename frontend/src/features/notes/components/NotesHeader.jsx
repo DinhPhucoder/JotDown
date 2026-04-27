@@ -17,6 +17,7 @@ function NotesHeader({
   onViewModeChange,
   userName,
   isVerified,
+  selectedLabel,
   onLogout,
   onOpenSettings,
   onToggleMobileSidebar,
@@ -51,7 +52,13 @@ function NotesHeader({
             <FontAwesomeIcon icon={faBars} />
           </button>
 
+          {selectedLabel ? (
+            <h2 className="mb-0 fs-5 text-truncate" style={{ maxWidth: '200px' }} title={selectedLabel}>
+              {selectedLabel}
+            </h2>
+          ) : (
             <AppLogo to="/notes" size={45} />
+          )}
         </div>
 
         <div className="notes-search">

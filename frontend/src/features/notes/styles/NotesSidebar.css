@@ -42,18 +42,24 @@ html[data-bs-theme='light'] .notes-sidebar-btn.active .flex-grow-1 {
   display: flex;
   align-items: center;
   gap: 0.8rem;
-  min-height: 3rem;
-  padding: 0.7rem 0.9rem;
+  min-height: 3.2rem;
+  padding: 0.7rem 1.1rem;
   color: var(--bs-body-color);
   font-weight: 500;
   background: transparent;
-  border-radius: 1rem;
+  border-radius: 12px;
   transition: background-color 0.2s ease, transform 0.2s ease;
+}
+
+.notes-sidebar-btn .flex-grow-1 {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .notes-sidebar-btn:hover {
   background: rgba(96, 165, 250, 0.12);
-  transform: translateX(2px);
+  transform: translateX(3px);
 }
 
 .notes-sidebar-btn.active {

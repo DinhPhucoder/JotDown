@@ -15,12 +15,14 @@
   transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
   transform-origin: left center;
   width: 25%;
+  min-width: 240px;
+  max-width: 300px;
   opacity: 1;
   visibility: visible;
 }
 
 .notes-sidebar-aside.collapsed {
-  margin-left: -25%;
+  margin-left: -300px;
   opacity: 0;
   visibility: hidden;
   pointer-events: none;
@@ -28,16 +30,18 @@
 
 @media (min-width: 1200px) {
   .notes-sidebar-aside.collapsed {
-    margin-left: -25%;
+    margin-left: -300px;
   }
 }
 
 @media (min-width: 1400px) {
   .notes-sidebar-aside {
-    width: 16.66666667%;
+    width: 20%;
+    min-width: 260px;
+    max-width: 320px;
   }
   .notes-sidebar-aside.collapsed {
-    margin-left: -16.66666667%;
+    margin-left: -320px;
   }
 }
 

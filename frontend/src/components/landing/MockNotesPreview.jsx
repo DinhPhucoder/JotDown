@@ -24,20 +24,13 @@ const MockNotesPreview = () => {
           scrollTrigger: {
             trigger: containerRef.current,
             start: 'top 85%',
+          },
+          onComplete: function() {
+            // Clear transform to allow CSS hover effects to work
+            gsap.set('.mock-note-card', { clearProps: 'transform' });
           }
         }
       );
-
-      // Smooth and stable floating animation
-      gsap.to('.mock-note-card', {
-        y: -12,
-        duration: 2.5,
-        repeat: -1,
-        yoyo: true,
-        ease: 'sine.inOut',
-        stagger: 0.3,
-        delay: 1.2
-      });
     }, containerRef);
 
     return () => ctx.revert();
@@ -45,6 +38,20 @@ const MockNotesPreview = () => {
 
   return (
     <section ref={containerRef} className="container position-relative pb-5 mock-notes-section" style={{ marginTop: '50px', zIndex: 0 }}>
+      {/* Thêm CSS hover cho thẻ mock-note-card nhẹ nhàng hơn thay vì GSAP float liên tục */}
+      <style>
+        {`
+          .mock-note-card {
+            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.4s ease;
+            will-change: transform;
+          }
+          .mock-note-card:hover {
+            transform: translateY(-8px) scale(1.02);
+            box-shadow: 0 15px 30px rgba(0,0,0,0.4) !important;
+            z-index: 10;
+          }
+        `}
+      </style>
       <div className="row justify-content-center g-4">
         {/* Pinned Note */}
         <div className="col-md-4 col-sm-6">

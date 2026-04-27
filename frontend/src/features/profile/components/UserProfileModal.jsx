@@ -7,9 +7,9 @@ import { noteColorOptions } from '../../../data/constants';
 import './UserProfileModal.css';
 
 const noteFontSizeOptions = [
-    { value: 'small', label: 'Nho', preview: 'A-' },
-    { value: 'medium', label: 'Binh thuong', preview: 'A' },
-    { value: 'large', label: 'To', preview: 'A+' },
+    { value: 'small', label: 'Nhỏ', preview: 'A-' },
+    { value: 'medium', label: 'Trung bình', preview: 'A' },
+    { value: 'large', label: 'Lớn', preview: 'A+' },
 ];
 
 function UserProfileModal({ open, onClose, theme, onToggleTheme, preferences, onUpdatePreferences }) {

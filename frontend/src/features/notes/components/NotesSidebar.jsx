@@ -27,7 +27,7 @@ function SidebarButton({ active, icon, label, onClick, trailing }) {
       <span className="notes-sidebar-btn__icon">
         <FontAwesomeIcon icon={icon} />
       </span>
-      <span className="flex-grow-1 text-start text-truncate">{label}</span>
+      <span className="flex-grow-1 text-start" title={label}>{label}</span>
       {trailing}
     </div>
   );
