@@ -1,76 +1,47 @@
-import React, { useState } from 'react';
-import { Container, Row, Col, Form, Button, Alert, Spinner } from 'react-bootstrap';
+import React from 'react';
+import { Container, Row, Col, Form, Button } from 'react-bootstrap';
 import { Mail, ArrowLeft } from 'lucide-react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import './Auth.css';
 
 const ForgotPasswordPage = () => {
-  const [email, setEmail] = useState('');
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
-  const [loading, setLoading] = useState(false);
-  const navigate = useNavigate();
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError('');
-    setSuccess('');
-    setLoading(true);
-
-    try {
-      const response = await fetch('/api/auth/forgot-password', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || 'Error sending request');
-      }
-
-      setSuccess('OTP sent! Redirecting to reset page...');
-      setTimeout(() => navigate(`/reset-password?email=${encodeURIComponent(email)}`), 1500);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   return (
     <Container fluid className="p-0 auth-wrapper">
-      <Link to="/landing" className="auth-logo">
+      {/* Logo */}
+      <Link to="/landing" className="auth-logo text-decoration-none">
         <img src="/Logo_JotDown.png" alt="JotDown" />
         <span className="brand-name">JotDown</span>
       </Link>
 
       <Row className="g-0 min-vh-100">
+        {/* Branding */}
         <Col lg={7} className="d-none d-lg-flex auth-branding">
           <div className="branding-content">
             <h2> Jot Down <br />Nơi mọi ý tưởng lớn <br />bắt đầu</h2>
-            <p className="lead">Đừng để những suy nghĩ vụt mất. Ghi chép nhanh chóng, đồng bộ an toàn và quản lý tri thức của bạn một cách khoa học nhất.</p>
+            <p className="lead">
+              Đừng để những suy nghĩ vụt mất. Ghi chép nhanh chóng, đồng bộ an toàn và quản lý tri thức của bạn một cách khoa học nhất.
+            </p>
           </div>
         </Col>
 
+        {/* Cột Form */}
         <Col lg={5} className="auth-form-container">
           <div className="auth-card">
+            {/* Nút Trở về */}
             <Link to="/login" className="d-flex align-items-center mb-4 text-decoration-none auth-link">
               <ArrowLeft size={18} className="me-2" /> Trở về Đăng nhập
             </Link>
 
+            {/* Tiêu đề */}
             <div className="auth-header mb-5">
               <h1 className="fw-bold">Quên mật khẩu ?</h1>
-              <p className="text-secondary">Vui lòng nhập địa chỉ email của bạn, chúng tôi sẽ gửi liên kết để đặt lại mật khẩu</p>
+              <p className="text-secondary">
+                Vui lòng nhập địa chỉ email của bạn, chúng tôi sẽ gửi liên kết để đặt lại mật khẩu
+              </p>
             </div>
 
-            <Form className="auth-form" onSubmit={handleSubmit}>
-              {error && <Alert variant="danger">{error}</Alert>}
-              {success && <Alert variant="success">{success}</Alert>}
-
+            {/* Form Giao diện */}
+            <Form className="auth-form">
               <Form.Group className="mb-4" controlId="email">
                 <Form.Label>Email</Form.Label>
                 <div className="input-wrapper">
@@ -78,17 +49,16 @@ const ForgotPasswordPage = () => {
                   <Form.Control
                     type="email"
                     placeholder="name@example.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
+                    style={{ cursor: 'text' }}
                   />
                 </div>
               </Form.Group>
 
-              <Button variant="primary" type="submit" className="w-100" disabled={loading}>
-                {loading ? <Spinner as="span" animation="border" size="sm" role="status" aria-hidden="true" /> : 'Gửi liên kết'}
+              <Button variant="primary" type="button" className="w-100">
+                Gửi liên kết
               </Button>
             </Form>
+
           </div>
         </Col>
       </Row>
