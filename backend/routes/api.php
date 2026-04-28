@@ -2,6 +2,8 @@
 
 use Illuminate\Support\Facades\Route;
 use Illuminate\Http\Request;
+use App\Http\Controllers\NoteController;
+use App\Http\Controllers\LabelController;
 
 /*
 |--------------------------------------------------------------------------
@@ -25,3 +27,6 @@ Route::get('/ping', function () {
         'time' => now()
     ]);
 });
+
+Route::apiResource('notes', NoteController::class);
+Route::apiResource('labels', LabelController::class);

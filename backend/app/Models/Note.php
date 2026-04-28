@@ -1,18 +1,15 @@
 <?php
 
-declare(strict_types=1);
-
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use App\Models\User;
+use App\Models\Label;
 
-final class Note extends Model
+class Note extends Model
 {
-    use HasFactory, SoftDeletes;
+    use SoftDeletes;
 
     protected $fillable = [
         'user_id',
@@ -21,33 +18,24 @@ final class Note extends Model
         'color',
         'is_pinned',
         'pinned_at',
-        'is_locked',
-        'lock_password',
-        'labels',
-        'images',
-        'version',
+        'password',
+        'is_protected',
+        'version'
     ];
 
     protected $casts = [
         'is_pinned' => 'boolean',
-        'is_locked' => 'boolean',
-        'labels' => 'array',
-        'images' => 'array',
+        'is_protected' => 'boolean',
         'pinned_at' => 'datetime',
-        'version' => 'integer',
     ];
 
-    protected $hidden = [
-        'lock_password',
-    ];
-
-    public function user(): BelongsTo
+    public function user()
     {
         return $this->belongsTo(User::class);
     }
 
-    public function shares(): HasMany
+    public function labels()
     {
-        return $this->hasMany(NoteShare::class);
+        return $this->belongsToMany(Label::class);
     }
 }
