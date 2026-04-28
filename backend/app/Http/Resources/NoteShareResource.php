@@ -1,0 +1,27 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Http\Resources;
+
+use Illuminate\Http\Request;
+use Illuminate\Http\Resources\Json\JsonResource;
+
+class NoteShareResource extends JsonResource
+{
+    public function toArray(Request $request): array
+    {
+        return [
+            'id' => $this->id,
+            'note_id' => $this->note_id,
+            'sender_id' => $this->sender_id,
+            'receiver' => [
+                'id' => $this->receiver->id,
+                'name' => $this->receiver->name,
+                'email' => $this->receiver->email,
+            ],
+            'permission' => $this->permission,
+            'created_at' => $this->created_at?->toIso8601String(),
+        ];
+    }
+}

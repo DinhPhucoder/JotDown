@@ -11,6 +11,7 @@ import {
 } from '@fortawesome/free-solid-svg-icons'; 
 import NoteCollaboratorsModal from './NoteCollaboratorsModal';
 import NoteDeleteConfirmDialog from './NoteDeleteConfirmDialog';
+import TiptapEditor from './TiptapEditor';
 
 const collaboratorEmailSuggestions = [
   'dinhphan1209@gmail.com',
@@ -521,12 +522,10 @@ function NoteEditorModal({
             value={title}
             onChange={(event) => setTitle(event.target.value)}
           />
-          <textarea
-            className="note-editor__content"
-            rows={9}
+          <TiptapEditor
+            content={content}
+            onChange={setContent}
             placeholder="Nội dung ghi chú..."
-            value={content}
-            onChange={(event) => setContent(event.target.value)}
           />
 
           <input
