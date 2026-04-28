@@ -601,7 +601,7 @@ html[data-bs-theme="light"] .auth-card {
   margin-bottom: 30px;
 }
 
-.otp-field {
+.auth-wrapper .otp-field {
   width: 45px !important;
   height: 55px !important;
   text-align: center !important;
