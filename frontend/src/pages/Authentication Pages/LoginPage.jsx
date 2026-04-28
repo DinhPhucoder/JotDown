@@ -13,10 +13,7 @@ const LoginPage = () => {
       {/* Logo và brand name */}
       <Link to="/landing" className="auth-logo">
         <img src="/Logo_JotDown.png" alt="JotDown" />
-        <span className="brand-name">
-          <span className="brand-jot">Jot</span>
-          <span className="brand-down">Down</span>
-        </span>
+        <span className="brand-name">JotDown</span>
       </Link>
 
       <Row className="g-0 min-vh-100">

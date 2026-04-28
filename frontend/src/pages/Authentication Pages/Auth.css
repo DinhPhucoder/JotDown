@@ -99,18 +99,13 @@ html[data-bs-theme="light"] .auth-wrapper .text-secondary {
   font-weight: 800;
   letter-spacing: 1px;
   line-height: 1;
-}
-
-.auth-logo .brand-jot,
-.auth-logo .brand-down {
   background: linear-gradient(to right, #fff, #94a3b8);
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
-html[data-bs-theme="light"] .auth-logo .brand-jot,
-html[data-bs-theme="light"] .auth-logo .brand-down {
+html[data-bs-theme="light"] .auth-logo .brand-name {
   background: linear-gradient(135deg, #0f3b74 0%, #0b5cff 50%, #5b21b6 100%);
   -webkit-background-clip: text;
   background-clip: text;
