@@ -6,7 +6,30 @@ import { toast } from 'sonner';
 import './Auth.css';
 
 const LoginPage = () => {
+  const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    const form = e.target;
+    const email = form.email.value.trim();
+    const password = form.password.value;
+
+    // Validation
+    if (!email) return toast.warning('Vui lòng nhập email');
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return toast.warning('Email không hợp lệ');
+    if (!password) return toast.warning('Vui lòng nhập mật khẩu');
+    if (password.length < 8) return toast.warning('Mật khẩu phải có ít nhất 8 ký tự');
+
+    // Giả lập gọi API
+    setLoading(true);
+    setTimeout(() => {
+      setLoading(false);
+      toast.success('Đăng nhập thành công!');
+      navigate('/notes');
+    }, 1500);
+  };
 
   return (
     <Container fluid className="p-0 auth-wrapper">
@@ -31,15 +54,16 @@ const LoginPage = () => {
               <p className='text-secondary'>Chào mừng trở lại! Vui lòng nhập thông tin của bạn</p>
             </div>
 
-            <Form className="auth-form">
+            <Form className="auth-form" onSubmit={handleSubmit} noValidate>
               <Form.Group className="mb-4" controlId="email">
                 <Form.Label>Email</Form.Label>
                 <div className="input-wrapper">
                   <Mail className="input-icon" size={20} />
                   <Form.Control
-                    type="email"
+                    type="text"
                     name="email"
                     placeholder="name@example.com"
+                    disabled={loading}
                   />
                 </div>
               </Form.Group>
@@ -52,6 +76,7 @@ const LoginPage = () => {
                     type={showPassword ? 'text' : 'password'}
                     name="password"
                     placeholder="••••••••"
+                    disabled={loading}
                   />
                   <button
                     type="button"
@@ -70,8 +95,8 @@ const LoginPage = () => {
                 </Link>
               </div>
 
-              <Button variant="primary" type="submit" className="w-100">
-                Đăng nhập
+              <Button variant="primary" type="submit" className="w-100" disabled={loading}>
+                {loading ? <Spinner animation="border" size="sm" /> : 'Đăng nhập'}
               </Button>
             </Form>
 

@@ -1,21 +1,40 @@
-import React, { useState } from 'react';
-import { Container, Row, Col, Form, Button } from 'react-bootstrap';
+import React, { useState, useEffect } from 'react';
+import { Container, Row, Col, Form, Button, Spinner } from 'react-bootstrap';
 import { ShieldCheck, ArrowLeft } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
 import './Auth.css';
 
 const OtpVerificationPage = () => {
   const navigate = useNavigate();
-  // Khởi tạo state cho 6 ô OTP
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
+  const [loading, setLoading] = useState(false);
+  const [countdown, setCountdown] = useState(60);
+  const [canResend, setCanResend] = useState(false);
+
+  // Đếm ngược 60s
+  useEffect(() => {
+    if (countdown <= 0) {
+      setCanResend(true);
+      return;
+    }
+    const timer = setTimeout(() => setCountdown(prev => prev - 1), 1000);
+    return () => clearTimeout(timer);
+  }, [countdown]);
+
+  const handleResend = () => {
+    setCanResend(false);
+    setCountdown(60);
+    toast.success('Đã gửi lại mã xác thực!');
+  };
 
   const handleOtpChange = (index, value) => {
-    if (value.length > 1) return; // Chỉ lấy 1 ký tự
+    // Chỉ cho phép nhập số
+    if (value && !/^\d$/.test(value)) return;
     const newOtp = [...otp];
     newOtp[index] = value;
     setOtp(newOtp);
 
-    // Tự động focus sang ô kế tiếp nếu nhập xong
     if (value && index < 5) {
       const nextInput = document.getElementById(`otp-input-${index + 1}`);
       if (nextInput) nextInput.focus();
@@ -23,7 +42,6 @@ const OtpVerificationPage = () => {
   };
 
   const handleKeyDown = (index, e) => {
-    // Xoá lùi và focus về ô trước đó
     if (e.key === 'Backspace' && !otp[index] && index > 0) {
       const prevInput = document.getElementById(`otp-input-${index - 1}`);
       if (prevInput) prevInput.focus();
@@ -33,10 +51,16 @@ const OtpVerificationPage = () => {
   const handleSubmit = (e) => {
     e.preventDefault();
     const otpValue = otp.join('');
-    console.log('Verifying OTP:', otpValue);
-    // TODO: Bổ sung logic API
-    // Giả sử thành công:
-    // navigate('/login');
+
+    if (otpValue.length < 6) return toast.warning('Vui lòng nhập đủ 6 chữ số');
+    if (!/^\d{6}$/.test(otpValue)) return toast.warning('Mã OTP chỉ chứa chữ số');
+
+    setLoading(true);
+    setTimeout(() => {
+      setLoading(false);
+      toast.success('Xác thực thành công!');
+      navigate('/login');
+    }, 1500);
   };
 
   return (
@@ -61,56 +85,61 @@ const OtpVerificationPage = () => {
         {/* Cột Form */}
         <Col lg={5} className="auth-form-container">
           <div className="auth-card">
-            <div className="otp-verification-step">
-              <div className="otp-header text-center mb-5">
-                <div className="otp-icon-wrapper d-inline-flex justify-content-center align-items-center mb-3" style={{
-                  width: '64px', height: '64px', borderRadius: '50%', backgroundColor: 'var(--bs-primary-bg-subtle)'
-                }}>
-                  <ShieldCheck size={32} className="text-primary" />
-                </div>
-                <h2 className="fw-bold mb-3">Xác thực Email</h2>
-                <p className="text-secondary">
-                  Chúng tôi đã gửi mã 6 chữ số đến <br />
-                  <strong className="text-body mt-1 d-inline-block">name@example.com</strong>
-                </p>
+            <div className="otp-header text-center mb-5">
+              <div className="otp-icon-wrapper d-inline-flex justify-content-center align-items-center mb-3" style={{
+                width: '64px', height: '64px', borderRadius: '50%', backgroundColor: 'var(--bs-primary-bg-subtle)'
+              }}>
+                <ShieldCheck size={32} className="text-primary" />
+              </div>
+              <h2 className="fw-bold mb-3">Xác thực Email</h2>
+              <p className="text-secondary">
+                Chúng tôi đã gửi mã 6 chữ số đến <br />
+                <strong className="text-body mt-1 d-inline-block">name@example.com</strong>
+              </p>
+            </div>
+
+            <Form onSubmit={handleSubmit} noValidate>
+              <div className="d-flex justify-content-between mb-4 gap-2">
+                {otp.map((digit, index) => (
+                  <Form.Control
+                    key={index}
+                    id={`otp-input-${index}`}
+                    className="text-center fw-bold"
+                    type="text"
+                    inputMode="numeric"
+                    maxLength={1}
+                    value={digit}
+                    onChange={(e) => handleOtpChange(index, e.target.value)}
+                    onKeyDown={(e) => handleKeyDown(index, e)}
+                    disabled={loading}
+                    autoComplete="off"
+                    style={{ width: '48px', height: '56px', fontSize: '1.25rem' }}
+                  />
+                ))}
               </div>
 
-              <Form onSubmit={handleSubmit}>
-                <div className="d-flex justify-content-between mb-4 gap-2">
-                  {otp.map((digit, index) => (
-                    <Form.Control
-                      key={index}
-                      id={`otp-input-${index}`}
-                      className="text-center fw-bold"
-                      type="text"
-                      inputMode="numeric"
-                      pattern="[0-9]*"
-                      maxLength={1}
-                      value={digit}
-                      onChange={(e) => handleOtpChange(index, e.target.value)}
-                      onKeyDown={(e) => handleKeyDown(index, e)}
-                      style={{ width: '48px', height: '56px', fontSize: '1.25rem' }}
-                    />
-                  ))}
-                </div>
+              <Button variant="primary" type="submit" className="w-100 mb-4" disabled={loading}>
+                {loading ? <Spinner animation="border" size="sm" /> : 'Xác thực & Hoàn tất'}
+              </Button>
+            </Form>
 
-                <Button variant="primary" type="submit" className="w-100 mb-4">
-                  Xác thực & Hoàn tất
-                </Button>
-              </Form>
+            <div className="text-center mb-4">
+              {canResend ? (
+                <>
+                  <span className="text-secondary">Chưa nhận được mã? </span>
+                  <button className="btn btn-link p-0 text-decoration-none fw-semibold" onClick={handleResend}>
+                    Gửi lại mã
+                  </button>
+                </>
+              ) : (
+                <span className="text-secondary">Gửi lại mã sau <strong className="text-primary">{countdown}s</strong></span>
+              )}
+            </div>
 
-              <div className="text-center mb-4">
-                <span className="text-secondary">Chưa nhận được mã? </span>
-                <button className="btn btn-link p-0 text-decoration-none fw-semibold">
-                  Gửi lại mã
-                </button>
-              </div>
-
-              <div className="text-center">
-                <button onClick={() => navigate(-1)} className="btn btn-link p-0 text-decoration-none text-secondary d-inline-flex align-items-center gap-2">
-                  <ArrowLeft size={16} /> Quay lại
-                </button>
-              </div>
+            <div className="text-center">
+              <button onClick={() => navigate(-1)} className="btn btn-link p-0 text-decoration-none text-secondary d-inline-flex align-items-center gap-2">
+                <ArrowLeft size={16} /> Quay lại
+              </button>
             </div>
           </div>
         </Col>
