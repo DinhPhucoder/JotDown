@@ -21,11 +21,20 @@ Route::get('/health', function () {
 });
 
 Route::get('/ping', function () {
-    return response()->json([
-        'status' => 'alive', 
-        'message' => 'Render instance is awake!', 
-        'time' => now()
-    ]);
+    try {
+        \Illuminate\Support\Facades\DB::select('SELECT 1');
+        return response()->json([
+            'status' => 'alive', 
+            'message' => 'Render & Aiven are awake!', 
+            'time' => now()
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'status' => 'error',
+            'message' => 'Render is awake, but Aiven connection failed!',
+            'error' => $e->getMessage()
+        ], 500);
+    }
 });
 
 Route::apiResource('notes', NoteController::class);
