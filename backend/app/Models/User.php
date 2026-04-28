@@ -2,20 +2,20 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Laravel\Sanctum\HasApiTokens;
 
-#[Fillable(['name', 'email', 'password'])]
-#[Hidden(['password', 'remember_token'])]
+#[Fillable(['name', 'email', 'password', 'avatar', 'preferences', 'otp', 'otp_expires_at'])]
+#[Hidden(['password', 'remember_token', 'otp'])]
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
-    use HasFactory, Notifiable;
+    use HasApiTokens, HasFactory, Notifiable;
 
     /**
      * Get the attributes that should be cast.
@@ -26,7 +26,43 @@ class User extends Authenticatable
     {
         return [
             'email_verified_at' => 'datetime',
+            'otp_expires_at' => 'datetime',
             'password' => 'hashed',
+            'preferences' => 'array',
         ];
+    }
+
+    /**
+     * Generate a 6-digit OTP and set expiry (5 minutes).
+     */
+    public function generateOtp(): string
+    {
+        $otp = str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+        $this->update([
+            'otp' => $otp,
+            'otp_expires_at' => now()->addMinutes(5),
+        ]);
+        return $otp;
+    }
+
+    /**
+     * Verify a given OTP code.
+     */
+    public function verifyOtp(string $code): bool
+    {
+        return $this->otp === $code
+            && $this->otp_expires_at
+            && $this->otp_expires_at->isFuture();
+    }
+
+    /**
+     * Clear OTP after successful verification.
+     */
+    public function clearOtp(): void
+    {
+        $this->update([
+            'otp' => null,
+            'otp_expires_at' => null,
+        ]);
     }
 }
