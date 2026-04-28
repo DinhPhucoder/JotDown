@@ -221,6 +221,12 @@ html[data-bs-theme="light"] .branding-content .lead {
   background-color: var(--auth-input-focus-bg) !important;
 }
 
+/* OTP input fields - override padding vì không có icon bên trái */
+.auth-wrapper .otp-header ~ form .form-control {
+  padding: 8px !important;
+  text-align: center;
+}
+
 .input-wrapper {
   position: relative;
 }

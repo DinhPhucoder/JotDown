@@ -35,9 +35,12 @@ const OtpVerificationPage = () => {
     newOtp[index] = value;
     setOtp(newOtp);
 
+    // Delay focus để React kịp render giá trị
     if (value && index < 5) {
-      const nextInput = document.getElementById(`otp-input-${index + 1}`);
-      if (nextInput) nextInput.focus();
+      setTimeout(() => {
+        const nextInput = document.getElementById(`otp-input-${index + 1}`);
+        if (nextInput) nextInput.focus();
+      }, 0);
     }
   };
 
