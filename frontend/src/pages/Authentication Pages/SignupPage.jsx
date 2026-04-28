@@ -6,6 +6,15 @@ import { toast } from 'sonner';
 import './Auth.css';
 
 const SignupPage = () => {
+  const [showPasswords, setShowPasswords] = useState({ password: false, confirmPassword: false });
+
+  const togglePasswordVisibility = (field) => {
+    setShowPasswords(prev => ({
+      ...prev,
+      [field]: !prev[field]
+    }));
+  };
+
   return (
     <Container fluid className="p-0 auth-wrapper">
       <Link to="/landing" className="auth-logo">
@@ -77,7 +86,7 @@ const SignupPage = () => {
                 <div className="input-wrapper">
                   <Lock className="input-icon" size={20} />
                   <Form.Control
-                    type="password"
+                    type={showPasswords.password ? 'text' : 'password'}
                     name="password"
                     placeholder="••••••••"
                   />
@@ -85,8 +94,9 @@ const SignupPage = () => {
                     type="button"
                     className="password-toggle-btn"
                     tabIndex={-1}
+                    onClick={() => togglePasswordVisibility('password')}
                   >
-                    <EyeOff size={18} />
+                    {showPasswords.password ? <Eye size={18} /> : <EyeOff size={18} />}
                   </button>
                 </div>
               </Form.Group>
@@ -96,7 +106,7 @@ const SignupPage = () => {
                 <div className="input-wrapper">
                   <Lock className="input-icon" size={20} />
                   <Form.Control
-                    type="password"
+                    type={showPasswords.confirmPassword ? 'text' : 'password'}
                     name="confirmPassword"
                     placeholder="••••••••"
                   />
@@ -104,8 +114,9 @@ const SignupPage = () => {
                     type="button"
                     className="password-toggle-btn"
                     tabIndex={-1}
+                    onClick={() => togglePasswordVisibility('confirmPassword')}
                   >
-                    <EyeOff size={18} />
+                    {showPasswords.confirmPassword ? <Eye size={18} /> : <EyeOff size={18} />}
                   </button>
                 </div>
               </Form.Group>

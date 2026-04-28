@@ -6,6 +6,8 @@ import { toast } from 'sonner';
 import './Auth.css';
 
 const LoginPage = () => {
+  const [showPassword, setShowPassword] = useState(false);
+
   return (
     <Container fluid className="p-0 auth-wrapper">
       {/* Logo và brand name */}
@@ -50,7 +52,7 @@ const LoginPage = () => {
                 <div className="input-wrapper">
                   <Lock className="input-icon" size={20} />
                   <Form.Control
-                    type="password"
+                    type={showPassword ? 'text' : 'password'}
                     name="password"
                     placeholder="••••••••"
                   />
@@ -58,8 +60,9 @@ const LoginPage = () => {
                     type="button"
                     className="password-toggle-btn"
                     tabIndex={-1}
+                    onClick={() => setShowPassword(!showPassword)}
                   >
-                    < EyeOff size={18} />
+                    {showPassword ? <Eye size={18} /> : <EyeOff size={18} />}
                   </button>
                 </div>
               </Form.Group>
