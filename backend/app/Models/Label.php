@@ -2,18 +2,23 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use App\Models\Note;
 
 class Label extends Model
 {
+    use HasFactory;
+
+    public $timestamps = false;
+
     protected $fillable = [
-        'name',
-        'color'
+        'user_id',
+        'name'
     ];
 
     public function notes()
     {
-        return $this->belongsToMany(Note::class);
+        return $this->belongsToMany(Note::class, 'note_labels');
     }
 }

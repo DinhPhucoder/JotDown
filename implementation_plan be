@@ -1,0 +1,212 @@
+# Kế Hoạch Chuẩn Bị: Cộng Tác & PWA Offline
+
+Kế hoạch các công việc có thể thực hiện **song song** trong khi đợi team hoàn thiện MVP (Auth + Note CRUD).
+
+## Quyết Định Đã Chốt
+
+| Hạng mục | Quyết định |
+|----------|-----------|
+| **WebSocket** | **Pusher** (thay vì Laravel Reverb — không phù hợp Render Free Plan) |
+| **Conflict Strategy** | **Last Write Wins (LWW)** kết hợp `timestamp` + `version` |
+| **Email Service** | **Resend** |
+| **Text Editor (FE)** | ⚠️ Chưa có — cần hỏi team FE. Gợi ý: **TipTap** (hỗ trợ Collaboration tốt) |
+
+---
+
+## Phân Tích Schema Hiện Tại
+
+| Bảng / Thành phần | Trạng thái | Ghi chú |
+|------|-----------|---------|
+| `note_shares` | ✅ Đã có | `sender_id`, `receiver_id`, `permission` (READ/EDIT), unique constraint |
+| `sync_queue` | ✅ Đã có | `user_id`, `action` (CREATE/UPDATE/DELETE), `entity_id`, `payload` |
+| `notes.version` | ✅ Đã có | Trường `version` (unsigned int) - hỗ trợ LWW conflict detection |
+| Trigger `tr_PreventSelfSharing` | ✅ Đã có | Ngăn user share cho chính mình |
+| Procedure `sp_ShareNoteWithValidation` | ✅ Đã có | Logic share có kiểm tra hợp lệ |
+| Procedure `sp_BulkSyncQueue` | ✅ Đã có | Xử lý đồng bộ hàng loạt |
+
+---
+
+## Giai Đoạn 1: Có Thể Làm Ngay (Không phụ thuộc MVP)
+
+### 1.1. Tạo Eloquent Models cho các bảng liên quan
+
+- **`NoteShare` Model**: Khai báo relationships (`belongsTo Note`, `belongsTo User as sender`, `belongsTo User as receiver`), fillable, casts cho enum `permission`.
+- **`SyncQueue` Model**: Khai báo relationships, fillable, casts cho enum `action` và json `payload`.
+- Bổ sung relationships vào **`Note` Model** (nếu chưa có): `hasMany NoteShare`, `sharedWith()`.
+- Bổ sung relationships vào **`User` Model** (nếu chưa có): `sharedNotes()`, `receivedShares()`.
+
+### 1.2. Tạo Form Requests (Validation Layer)
+
+- **`ShareNoteRequest`**: Validate `email` (required, exists:users), `permission` (required, in:READ,EDIT).
+- **`SyncRequest`**: Validate `changes` (required, array), mỗi item validate `action`, `entity_id`, `payload`.
+
+### 1.3. Tạo API Resources (Response Format)
+
+- **`NoteShareResource`**: Format response khi trả về thông tin share (bao gồm thông tin user được share).
+- **`SyncResultResource`**: Format response sau khi đồng bộ (số lượng thành công, thất bại, conflict).
+
+### 1.4. Cấu Hình Email (Resend)
+
+- Cài package: `composer require resend/resend-laravel`
+- Cập nhật `.env`:
+  ```env
+  MAIL_MAILER=resend
+  RESEND_API_KEY=re_xxxxxxxxxx
+  ```
+- Tạo **`NoteSharedMail`** (`php artisan make:mail NoteSharedMail`): Template email thông báo "User A đã chia sẻ ghi chú XYZ với bạn".
+
+### 1.5. Cài Đặt & Cấu Hình Pusher (WebSocket)
+
+#### Tại sao chọn Pusher thay vì Laravel Reverb?
+- Render Free Plan chỉ cho phép 1 process → không thể chạy Reverb song song với Apache.
+- Pusher miễn phí: **200k messages/ngày**, **100 concurrent connections** — đủ dùng cho dự án học tập.
+- BE chỉ cần broadcast event qua Pusher API, không cần chạy WebSocket server riêng.
+
+#### Các bước cài đặt:
+1. Đăng ký tài khoản tại [pusher.com](https://pusher.com), tạo một Channels App.
+2. Cài package Laravel:
+   ```bash
+   composer require pusher/pusher-php-server
+   ```
+3. Cập nhật `.env`:
+   ```env
+   BROADCAST_CONNECTION=pusher
+   PUSHER_APP_ID=your_app_id
+   PUSHER_APP_KEY=your_app_key
+   PUSHER_APP_SECRET=your_app_secret
+   PUSHER_APP_CLUSTER=ap1
+   ```
+4. Cập nhật `config/broadcasting.php` (đảm bảo driver `pusher` đã được cấu hình).
+5. Tạo các **Event classes** (implements `ShouldBroadcast`):
+   - **`NoteUpdated`**: Broadcast khi nội dung ghi chú thay đổi → Channel: `private-note.{noteId}`
+   - **`UserJoinedNote`**: Broadcast khi có người mở ghi chú đang được share.
+   - **`NoteShared`**: Broadcast khi có ghi chú mới được share cho user → Channel: `private-user.{userId}`
+6. Tạo **Channel authorization** trong `routes/channels.php`:
+   ```php
+   Broadcast::channel('note.{noteId}', function ($user, $noteId) {
+       // Chỉ chủ sở hữu hoặc người được share mới join được
+       return $user->id === Note::find($noteId)?->user_id
+           || NoteShare::where('note_id', $noteId)
+               ->where('receiver_id', $user->id)
+               ->exists();
+   });
+   ```
+
+#### Phía FE (React):
+- Cài `pusher-js` và `laravel-echo`:
+  ```bash
+  npm install pusher-js laravel-echo
+  ```
+- Khởi tạo Echo trong file config FE:
+  ```javascript
+  import Echo from 'laravel-echo';
+  import Pusher from 'pusher-js';
+  window.Pusher = Pusher;
+
+  const echo = new Echo({
+      broadcaster: 'pusher',
+      key: import.meta.env.VITE_PUSHER_APP_KEY,
+      cluster: import.meta.env.VITE_PUSHER_APP_CLUSTER,
+      forceTLS: true,
+  });
+  ```
+
+---
+
+## Giai Đoạn 2: Cần MVP Auth Hoạt Động (Sanctum Token)
+
+### 2.1. Viết API Controller cho Share
+
+- **`NoteShareController`**:
+  - `POST /api/v1/notes/{note}/share`: Chia sẻ ghi chú (gọi `sp_ShareNoteWithValidation` hoặc dùng Eloquent).
+  - `GET /api/v1/notes/shared-with-me`: Danh sách ghi chú được chia sẻ cho mình.
+  - `PUT /api/v1/notes/{note}/shares/{share}`: Cập nhật quyền (READ → EDIT hoặc ngược lại).
+  - `DELETE /api/v1/notes/{note}/shares/{share}`: Thu hồi quyền chia sẻ.
+- Áp middleware `auth:sanctum` cho tất cả các route.
+- Khi share thành công → Gửi email qua Resend + Broadcast event `NoteShared`.
+
+### 2.2. Viết API Controller cho Sync (Offline)
+
+- **`SyncController`**:
+  - `POST /api/v1/sync/push`: Nhận các thay đổi offline từ FE, xử lý conflict bằng LWW (`version` + `updated_at`).
+  - `GET /api/v1/sync/pull?since={timestamp}`: Trả về các thay đổi từ server kể từ thời điểm cuối cùng FE đồng bộ.
+
+### 2.3. Viết Authorization (Policy)
+
+- **`NoteSharePolicy`**: Chỉ chủ sở hữu ghi chú mới được share. Người được share quyền EDIT mới được sửa nội dung.
+
+---
+
+## Giai Đoạn 3: Cần Note CRUD API Hoạt Động
+
+### 3.1. Tích Hợp Pusher Vào Note Update Flow
+
+- Khi API `PUT /api/v1/notes/{id}` được gọi → Broadcast Event `NoteUpdated` qua Pusher.
+- FE nhận event qua Laravel Echo và cập nhật nội dung real-time.
+- **LWW Logic**: So sánh `version` trong request với `version` trong DB:
+  - Nếu `request.version >= db.version` → Chấp nhận thay đổi, tăng `version` lên 1.
+  - Nếu `request.version < db.version` → Trả về conflict response kèm bản mới nhất từ server.
+
+### 3.2. Cấu Hình PWA & Service Worker (Phía FE)
+
+- Tạo file `manifest.json` cho PWA.
+- Viết Service Worker: Cache API responses (`GET /api/v1/notes`) vào IndexedDB.
+- Khi offline: FE đọc từ IndexedDB. Khi có mạng lại: FE gọi `POST /api/v1/sync/push` để đẩy thay đổi lên server.
+
+### 3.3. LWW Conflict Resolution Flow
+
+```
+Client A (offline) sửa Note #1 (version=3) → lưu vào IndexedDB
+Client B (online) sửa Note #1 (version=3) → server chấp nhận → version=4
+Client A có mạng lại → push version=3 lên server
+Server thấy 3 < 4 → trả về conflict + bản mới nhất (version=4)
+FE hiển thị: "Ghi chú đã được cập nhật bởi người khác. Giữ bản của bạn hay bản mới?"
+```
+
+---
+
+## Thứ Tự Ưu Tiên Thực Hiện
+
+```
+Giai đoạn 1 (Làm ngay — không đợi ai)
+  ├── 1.1 Eloquent Models (NoteShare, SyncQueue)
+  ├── 1.2 Form Requests (ShareNoteRequest, SyncRequest)  
+  ├── 1.3 API Resources (NoteShareResource, SyncResultResource)
+  ├── 1.4 Cấu hình Resend + NoteSharedMail
+  └── 1.5 Cài đặt Pusher + Events + Channels
+
+Giai đoạn 2 (Khi Auth xong)
+  ├── 2.1 NoteShareController (CRUD share + gửi email + broadcast)
+  ├── 2.2 SyncController (push/pull với LWW)
+  └── 2.3 NoteSharePolicy (authorization)
+
+Giai đoạn 3 (Khi Note CRUD xong)
+  ├── 3.1 Tích hợp Pusher vào Note Update
+  ├── 3.2 PWA & Service Worker (FE)
+  └── 3.3 LWW Conflict Resolution
+```
+
+## Biến Môi Trường Cần Thêm
+
+Các biến sau cần được thêm vào `.env.example` và Render Dashboard:
+
+```env
+# Pusher (WebSocket)
+BROADCAST_CONNECTION=pusher
+PUSHER_APP_ID=
+PUSHER_APP_KEY=
+PUSHER_APP_SECRET=
+PUSHER_APP_CLUSTER=ap1
+
+# Resend (Email)
+MAIL_MAILER=resend
+RESEND_API_KEY=
+```
+
+## Action Items Cho Team Leader
+
+- [ ] Hỏi team FE về Text Editor (gợi ý TipTap cho collaboration).
+- [ ] Đăng ký tài khoản Pusher và lấy API keys.
+- [ ] Đăng ký tài khoản Resend và lấy API key.
+- [ ] Thêm các biến Pusher/Resend vào Render Dashboard.
+- [ ] Thêm `VITE_PUSHER_APP_KEY` và `VITE_PUSHER_APP_CLUSTER` vào Vercel Dashboard.

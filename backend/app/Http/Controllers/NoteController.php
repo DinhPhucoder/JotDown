@@ -3,6 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\Note;
+use App\Http\Requests\StoreNoteRequest;
+use App\Http\Requests\UpdateNoteRequest;
+use App\Http\Requests\AttachLabelsRequest;
+use App\Http\Requests\DetachLabelsRequest;
 use Illuminate\Http\Request;
 
 class NoteController extends Controller
@@ -16,13 +20,14 @@ class NoteController extends Controller
     }
 
     //  CREATE
-    public function store(Request $request)
+    public function store(StoreNoteRequest $request)
     {
         $note = Note::create([
             'user_id' => 1, // tạm thời
-            'title' => $request->title,
-            'content' => $request->content,
-            'color' => $request->color ?? '#ffffff',
+            'title' => $request->validated('title'),
+            'content' => $request->validated('content'),
+            'color' => $request->validated('color') ?? '#ffffff',
+            'version' => 1,
         ]);
 
         return response()->json($note, 201);
@@ -35,16 +40,16 @@ class NoteController extends Controller
     }
 
     // UPDATE
-    public function update(Request $request, $id)
+    public function update(UpdateNoteRequest $request, $id)
     {
         $note = Note::findOrFail($id);
 
         $note->update([
-            'title' => $request->title ?? $note->title,
-            'content' => $request->content ?? $note->content,
-            'color' => $request->color ?? $note->color,
-            'is_pinned' => $request->is_pinned ?? $note->is_pinned,
-            'pinned_at' => $request->is_pinned ? now() : null,
+            'title' => $request->validated('title') ?? $note->title,
+            'content' => $request->validated('content') ?? $note->content,
+            'color' => $request->validated('color') ?? $note->color,
+            'is_pinned' => $request->validated('is_pinned') ?? $note->is_pinned,
+            'pinned_at' => $request->validated('is_pinned') ? now() : null,
             'version' => $note->version + 1
         ]);
 
@@ -59,6 +64,32 @@ class NoteController extends Controller
 
         return response()->json([
             'message' => 'Deleted successfully'
+        ]);
+    }
+
+    // ATTACH LABELS
+    public function attachLabels(AttachLabelsRequest $request, $id)
+    {
+        $note = Note::findOrFail($id);
+        
+        $note->labels()->syncWithoutDetaching($request->validated('label_ids'));
+
+        return response()->json([
+            'message' => 'Labels attached successfully',
+            'data' => $note->load('labels')
+        ]);
+    }
+
+    // DETACH LABELS
+    public function detachLabels(DetachLabelsRequest $request, $id)
+    {
+        $note = Note::findOrFail($id);
+        
+        $note->labels()->detach($request->validated('label_ids'));
+
+        return response()->json([
+            'message' => 'Labels detached successfully',
+            'data' => $note->load('labels')
         ]);
     }
 }

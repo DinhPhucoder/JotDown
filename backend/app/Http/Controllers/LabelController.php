@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\Label;
+use App\Http\Requests\StoreLabelRequest;
+use App\Http\Requests\UpdateLabelRequest;
 use Illuminate\Http\Request;
 
 class LabelController extends Controller
@@ -14,24 +16,23 @@ class LabelController extends Controller
     }
 
     // CREATE
-    public function store(Request $request)
+    public function store(StoreLabelRequest $request)
     {
         $label = Label::create([
-            'name' => $request->name,
-            'color' => $request->color
+            'user_id' => 1,
+            'name' => $request->validated('name'),
         ]);
 
         return response()->json($label, 201);
     }
 
     //  UPDATE
-    public function update(Request $request, $id)
+    public function update(UpdateLabelRequest $request, $id)
     {
         $label = Label::findOrFail($id);
 
         $label->update([
-            'name' => $request->name ?? $label->name,
-            'color' => $request->color ?? $label->color
+            'name' => $request->validated('name') ?? $label->name,
         ]);
 
         return $label;
@@ -40,7 +41,8 @@ class LabelController extends Controller
     // DELETE
     public function destroy($id)
     {
-        Label::destroy($id);
+        $label = Label::findOrFail($id);
+        $label->delete();
 
         return response()->json([
             'message' => 'Deleted'

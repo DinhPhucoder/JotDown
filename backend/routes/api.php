@@ -30,3 +30,7 @@ Route::get('/ping', function () {
 
 Route::apiResource('notes', NoteController::class);
 Route::apiResource('labels', LabelController::class);
+
+// Label attachment routes
+Route::post('/notes/{note}/labels/attach', [NoteController::class, 'attachLabels']);
+Route::post('/notes/{note}/labels/detach', [NoteController::class, 'detachLabels']);

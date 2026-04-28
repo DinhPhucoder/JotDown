@@ -2,14 +2,16 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Models\User;
 use App\Models\Label;
+use App\Models\NoteShare;
 
 class Note extends Model
 {
-    use SoftDeletes;
+    use HasFactory, SoftDeletes;
 
     protected $fillable = [
         'user_id',
@@ -34,8 +36,13 @@ class Note extends Model
         return $this->belongsTo(User::class);
     }
 
+    public function shares()
+    {
+        return $this->hasMany(NoteShare::class);
+    }
+
     public function labels()
     {
-        return $this->belongsToMany(Label::class);
+        return $this->belongsToMany(Label::class, 'note_labels');
     }
 }
