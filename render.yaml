@@ -6,7 +6,6 @@ services:
     dockerContext: backend
     dockerfilePath: backend/Dockerfile
     healthCheckPath: /up
-    preDeployCommand: php artisan migrate --force
     autoDeployTrigger: commit
     buildFilter:
       paths:

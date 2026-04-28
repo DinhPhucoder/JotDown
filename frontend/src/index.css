@@ -59,7 +59,6 @@ body {
 .app-logo {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
   text-decoration: none !important;
   transition: opacity 0.2s ease;
 }

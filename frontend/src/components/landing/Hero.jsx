@@ -26,7 +26,6 @@ const Hero = () => {
       }, 100);
     };
 
-    // Bắt đầu hiệu ứng đánh máy sau khi hiệu ứng GSAP hoàn tất (1.2s)
     const timeout = setTimeout(startTyping, 1200);
 
     return () => {

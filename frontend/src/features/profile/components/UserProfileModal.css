@@ -1,0 +1,423 @@
+/* UserProfileModal.css */
+
+/* Profile Image Picker (giống SignupPage) */
+.profile-modal .profile-image-picker {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    cursor: pointer;
+}
+
+.profile-modal .profile-image-circle {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background-color: var(--bs-tertiary-bg, #e2e8f0);
+    border: 2px dashed rgba(148, 163, 184, 0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.profile-modal .profile-image-circle:hover {
+    border-color: #4f46e5;
+    box-shadow: 0 0 20px rgba(79, 70, 229, 0.15);
+}
+
+.profile-modal .profile-placeholder-icon {
+    color: #94a3b8;
+}
+
+.profile-modal .profile-image-overlay {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 36px;
+    background: linear-gradient(transparent, rgba(79, 70, 229, 0.85));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.profile-modal .profile-image-circle:hover .profile-image-overlay {
+    opacity: 1;
+}
+
+.profile-modal .profile-image-label {
+    font-size: 0.8rem;
+    color: #94a3b8;
+    transition: color 0.3s ease;
+}
+
+.profile-modal .profile-image-picker:hover .profile-image-label {
+    color: #4f46e5;
+}
+
+/* Note color config */
+.profile-note-colors {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+}
+
+.profile-note-color-swatch {
+    width: 2rem;
+    height: 2rem;
+    border-radius: 999px;
+    border: 2px solid transparent;
+    box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.35);
+    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.profile-note-color-swatch:hover {
+    transform: translateY(-1px);
+}
+
+.profile-note-color-swatch.active {
+    border-color: #4f46e5;
+    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.18);
+}
+
+/* Font size presets */
+.profile-font-size-options {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.6rem;
+}
+
+.profile-font-size-option {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.25rem;
+    min-height: 3.25rem;
+    border: 1px solid rgba(148, 163, 184, 0.35);
+    border-radius: 10px;
+    background: rgba(248, 250, 252, 0.85);
+    color: #334155;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.profile-font-size-option:hover {
+    transform: translateY(-1px);
+    border-color: rgba(79, 70, 229, 0.5);
+}
+
+.profile-font-size-option.active {
+    border-color: #4f46e5;
+    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.16);
+}
+
+.profile-font-size-option__preview {
+    font-weight: 700;
+    line-height: 1;
+}
+
+.profile-font-size-option__label {
+    font-size: 0.72rem;
+    font-weight: 600;
+}
+
+.profile-font-size-option:nth-child(1) .profile-font-size-option__preview {
+    font-size: 0.82rem;
+}
+
+.profile-font-size-option:nth-child(2) .profile-font-size-option__preview {
+    font-size: 0.98rem;
+}
+
+.profile-font-size-option:nth-child(3) .profile-font-size-option__preview {
+    font-size: 1.14rem;
+}
+
+/* Panel sidebar mobile nằm BÊN TRONG Modal */
+.profile-mobile-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.35);
+    z-index: 100;
+    animation: fadeIn 0.2s ease;
+}
+
+.profile-mobile-panel {
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 240px;
+    background: var(--bs-body-bg, #fff);
+    padding: 16px;
+    box-shadow: 4px 0 12px rgba(0, 0, 0, 0.15);
+    animation: slideIn 0.25s ease;
+    overflow-y: auto;
+}
+
+@keyframes slideIn {
+    from { transform: translateX(-100%); }
+    to { transform: translateX(0); }
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.profile-hamburger-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px 8px;
+}
+
+.profile-modal .modal-content {
+    overflow: hidden;
+    border-radius: 12px;
+    border: none;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+    height: 550px;
+    display: flex;
+    flex-direction: column;
+}
+
+.profile-modal .modal-body {
+    flex: 1;
+    overflow: hidden;
+}
+
+.profile-sidebar {
+    height: 100%;
+    overflow-y: auto;
+}
+
+.profile-content {
+    height: 100%;
+    overflow-y: auto;
+}
+
+.profile-input-icon {
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 10;
+    color: #64748b;
+    pointer-events: none;
+}
+
+.profile-input-icon--right {
+    left: auto;
+    right: 12px;
+    cursor: pointer;
+    pointer-events: auto;
+}
+
+.profile-input-control {
+    min-height: 44px;
+    padding-left: 40px;
+    border-radius: 10px;
+    border: 1px solid rgba(148, 163, 184, 0.4);
+    background: rgba(255, 255, 255, 0.92);
+    color: #0f172a;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+}
+
+.profile-input-control::placeholder {
+    color: #94a3b8;
+}
+
+.profile-input-control:focus {
+    border-color: rgba(79, 70, 229, 0.55);
+    box-shadow: 0 0 0 0.2rem rgba(79, 70, 229, 0.14);
+    background: #ffffff;
+}
+
+.profile-input-control--with-trailing-icon {
+    padding-right: 40px;
+}
+
+.profile-input-control:disabled,
+.profile-input-control[readonly] {
+    background: rgba(241, 245, 249, 0.9);
+    color: #64748b;
+    opacity: 1;
+}
+
+html[data-bs-theme="dark"] .profile-input-control {
+    border-color: rgba(100, 116, 139, 0.5);
+    background: rgba(15, 23, 42, 0.55);
+    color: #e2e8f0;
+}
+
+html[data-bs-theme="dark"] .profile-input-control::placeholder {
+    color: #94a3b8;
+}
+
+html[data-bs-theme="dark"] .profile-input-control:focus {
+    border-color: rgba(129, 140, 248, 0.7);
+    box-shadow: 0 0 0 0.2rem rgba(129, 140, 248, 0.2);
+    background: rgba(15, 23, 42, 0.78);
+    color: #f8fafc;
+}
+
+html[data-bs-theme="dark"] .profile-input-control:disabled,
+html[data-bs-theme="dark"] .profile-input-control[readonly] {
+    background: rgba(30, 41, 59, 0.7);
+    color: #cbd5e1;
+}
+
+html[data-bs-theme="dark"] .profile-input-icon {
+    color: #94a3b8;
+}
+
+/* Custom Scrollbar for inner tabs */
+.profile-sidebar::-webkit-scrollbar,
+.profile-content::-webkit-scrollbar {
+    width: 6px;
+}
+
+.profile-sidebar::-webkit-scrollbar-thumb,
+.profile-content::-webkit-scrollbar-thumb {
+    background-color: #cbd5e1;
+    border-radius: 4px;
+}
+
+html[data-bs-theme="dark"] .profile-sidebar::-webkit-scrollbar-thumb,
+html[data-bs-theme="dark"] .profile-content::-webkit-scrollbar-thumb {
+    background-color: #475569;
+}
+
+.profile-nav .nav-link {
+    color: #475569;
+    font-weight: 500;
+    padding: 10px 16px;
+    transition: all 0.2s ease;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+.profile-nav .nav-link:hover {
+    background-color: #f1f5f9;
+    color: #0f172a;
+}
+
+.profile-nav .nav-link.active {
+    background-color: var(--auth-primary, #4f46e5) !important;
+    color: white !important;
+}
+
+.profile-avatar {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background-color: #e2e8f0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2.2rem;
+    color: #64748b;
+    font-weight: 600;
+}
+
+.profile-camera-btn {
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #e2e8f0;
+}
+
+/* Fix CSS when bootstrap light theme is active */
+html[data-bs-theme="dark"] .profile-sidebar {
+    background-color: #1e293b !important;
+}
+
+html[data-bs-theme="dark"] .profile-nav .nav-link {
+    color: #cbd5e1;
+}
+
+html[data-bs-theme="dark"] .profile-nav .nav-link:hover {
+    background-color: #334155;
+    color: white;
+}
+
+html[data-bs-theme="dark"] .border-end,
+html[data-bs-theme="dark"] .border-bottom,
+html[data-bs-theme="dark"] .border {
+    border-color: #334155 !important;
+}
+
+html[data-bs-theme="dark"] .profile-avatar {
+    background-color: #334155;
+    color: #f8fafc;
+}
+
+html[data-bs-theme="dark"] .profile-camera-btn {
+    background-color: #475569;
+    border-color: #334155;
+    color: white;
+}
+
+html[data-bs-theme="dark"] .profile-font-size-option {
+    background: rgba(15, 23, 42, 0.72);
+    border-color: rgba(148, 163, 184, 0.28);
+    color: #e2e8f0;
+}
+
+html[data-bs-theme="dark"] .profile-font-size-option.active {
+    border-color: #818cf8;
+    box-shadow: 0 0 0 3px rgba(129, 140, 248, 0.2);
+}
+
+/* Button styles — phong cách Auth (gradient + glow) */
+.profile-modal .btn-primary {
+    background: linear-gradient(135deg, #0b5cff 0%, #1f58ff 45%, #7c3aed 100%) !important;
+    border: none !important;
+    border-radius: 10px !important;
+    font-weight: 600 !important;
+    color: #fff !important;
+    box-shadow: 0 0 18px rgba(49, 105, 255, 0.35);
+    transition: all 0.3s ease !important;
+}
+
+.profile-modal .btn-primary:hover {
+    box-shadow: 0 0 28px rgba(74, 108, 255, 0.6) !important;
+    transform: translateY(-1px);
+}
+
+.profile-modal .btn-outline-primary {
+    background: transparent !important;
+    border: 2px solid #4f46e5 !important;
+    border-radius: 10px !important;
+    font-weight: 600 !important;
+    color: #4f46e5 !important;
+    transition: all 0.3s ease !important;
+}
+
+.profile-modal .btn-outline-primary:hover {
+    background: linear-gradient(135deg, #0b5cff 0%, #1f58ff 45%, #7c3aed 100%) !important;
+    border-color: transparent !important;
+    color: #fff !important;
+    box-shadow: 0 0 24px rgba(49, 105, 255, 0.45);
+}
+
+.profile-modal .btn-outline-secondary {
+    background: transparent !important;
+    border: 2px solid rgba(148, 163, 184, 0.4) !important;
+    border-radius: 10px !important;
+    font-weight: 600 !important;
+    transition: all 0.3s ease !important;
+}
+
+.profile-modal .btn-outline-secondary:hover {
+    border-color: rgba(148, 163, 184, 0.7) !important;
+    transform: translateY(-1px);
+}

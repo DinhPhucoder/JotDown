@@ -1,10 +1,7 @@
 import { useEffect } from 'react';
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import { Toaster } from 'sonner';
-import ForgotPasswordPage from './pages/Authentication Pages/ForgotPasswordPage';
-import LoginPage from './pages/Authentication Pages/LoginPage';
-import SignupPage from './pages/Authentication Pages/SignupPage';
-import OtpVerificationPage from './pages/Authentication Pages/OtpVerificationPage';
+import { ForgotPasswordPage, LoginPage, SignupPage, OtpVerificationPage } from './features/auth';
 import LandingPage from './pages/LandingPage';
 import NotesPage from './pages/NotesPage';
 import NotFoundPage from './pages/NotFoundPage';

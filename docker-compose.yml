@@ -26,7 +26,7 @@ services:
       dockerfile: Dockerfile
     volumes:
       - ./backend:/var/www/html
-    command: sh -c "composer install && php artisan key:generate --force && php artisan migrate --force && apache2-foreground"
+    command: sh -c "composer install && (grep -q 'APP_KEY=base64' .env || php artisan key:generate) && php artisan migrate --force && apache2-foreground"
     environment:
       - DB_CONNECTION=mysql
       - DB_HOST=db
@@ -36,6 +36,12 @@ services:
       - DB_PASSWORD=root
     depends_on:
       - db
+
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
 
   db:
     image: mysql:8.0

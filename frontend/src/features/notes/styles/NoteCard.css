@@ -1,0 +1,261 @@
+/* ============================================================
+   NoteCard.css — Card, badges, chips, collaborator avatars,
+                  color variants, pin button
+   ============================================================ */
+
+.note-card {
+  position: relative;
+  width: 100%;
+  padding: 1.15rem;
+  margin-top: 0.5rem;
+  text-align: left;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  overflow: hidden;
+}
+
+.note-card:hover {
+  transform: translateY(-4px);
+  border-color: rgba(96, 165, 250, 0.4);
+  box-shadow: 0 20px 50px rgba(15, 23, 42, 0.24);
+}
+
+.note-card--list { padding-bottom: 1rem; }
+
+.note-card__header {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.6rem;
+}
+
+.note-card__title {
+  font-family: 'Google Sans Flex', sans-serif;
+  font-size: 1.15rem;
+  font-weight: 700;
+  line-height: 1.35;
+  color: var(--bs-emphasis-color);
+  width: 100%;
+}
+
+html[data-bs-theme='light'] .note-card__title {
+  color: #2563eb;
+}
+
+@supports (-webkit-background-clip: text) or (background-clip: text) {
+  html[data-bs-theme='light'] .note-card__title {
+    background: var(--primary-gradient);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
+  }
+}
+
+/* Media */
+.note-card__media {
+  display: grid;
+  gap: 0.25rem;
+  margin: -1.15rem -1.15rem 1rem;
+  overflow: hidden;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.16);
+}
+
+.note-card__media--1 { grid-template-columns: 1fr; }
+.note-card__media--2,
+.note-card__media--3 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+.note-card__media-item {
+  position: relative;
+  min-height: 9rem;
+  max-height: 12rem;
+  overflow: hidden;
+  background: rgba(15, 23, 42, 0.28);
+}
+
+.note-card__media--3 .note-card__media-item:first-child { grid-row: span 2; min-height: 12rem; }
+.note-card__media-item img { width: 100%; height: 100%; display: block; object-fit: cover; }
+.note-card__media--locked .note-card__media-item img { filter: blur(8px); transform: scale(1.05); user-select: none; }
+
+/* Meta badges */
+.note-card__meta-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  justify-content: flex-start;
+  width: 100%;
+}
+
+.note-meta-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-height: 1.65rem;
+  padding: 0 0.65rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  border: 1px solid transparent;
+}
+
+.note-meta-badge--pinned { color: #dbeafe; background: rgba(37, 99, 235, 0.34); border-color: rgba(96, 165, 250, 0.42); }
+.note-meta-badge--locked { color: #fee2e2; background: rgba(220, 38, 38, 0.28); border-color: rgba(248, 113, 113, 0.42); }
+.note-meta-badge--shared { color: #cffafe; background: rgba(8, 145, 178, 0.26); border-color: rgba(34, 211, 238, 0.36); }
+.note-meta-badge--offline { color: #fef3c7; background: rgba(217, 119, 6, 0.24); border-color: rgba(251, 191, 36, 0.42); }
+.note-meta-badge--permission { color: #e2e8f0; border-color: rgba(148, 163, 184, 0.5); }
+.note-meta-badge--permission-read { background: rgba(8, 47, 73, 0.42); border-color: rgba(56, 189, 248, 0.42); }
+.note-meta-badge--permission-edit { background: rgba(67, 20, 7, 0.42); border-color: rgba(251, 146, 60, 0.52); }
+
+html[data-bs-theme='light'] .note-meta-badge--pinned { color: #1e3a8a; background: rgba(59, 130, 246, 0.2); }
+html[data-bs-theme='light'] .note-meta-badge--locked { color: #991b1b; background: rgba(248, 113, 113, 0.2); }
+html[data-bs-theme='light'] .note-meta-badge--shared { color: #155e75; background: rgba(34, 211, 238, 0.18); }
+html[data-bs-theme='light'] .note-meta-badge--offline { color: #92400e; background: rgba(251, 191, 36, 0.18); }
+html[data-bs-theme='light'] .note-meta-badge--permission-read { color: #0c4a6e; background: rgba(186, 230, 253, 0.6); }
+html[data-bs-theme='light'] .note-meta-badge--permission-edit { color: #9a3412; background: rgba(254, 215, 170, 0.6); }
+
+/* Content */
+.note-card__content {
+  margin-top: 0.75rem;
+  color: var(--bs-secondary-color);
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-line-clamp: 4;
+  line-clamp: 4;
+  -webkit-box-orient: vertical;
+  white-space: pre-line;
+}
+
+.note-card--list .note-card__content { -webkit-line-clamp: 2; line-clamp: 2; }
+.note-card__content--locked { filter: blur(4px); user-select: none; }
+
+.note-card__image-more {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(2, 6, 23, 0.5);
+  color: #f8fafc;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+/* Chips */
+.note-card__chips { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 1rem; }
+
+.note-chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.9rem;
+  padding: 0 0.75rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+html[data-bs-theme='light'] .note-chip { background: rgba(15, 23, 42, 0.06); border-color: rgba(15, 23, 42, 0.08); }
+
+/* Collaborator avatars */
+.note-card__collaborators { display: flex; align-items: center; margin-top: 0.75rem; padding-left: 0.1rem; }
+.note-card__collaborators--top { margin-top: 1rem; }
+
+.note-card__avatar {
+  width: 1.9rem;
+  height: 1.9rem;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: -0.35rem;
+  border: 2px solid rgba(15, 23, 42, 0.78);
+  background: var(--primary-gradient);
+  color: #eef6ff;
+  font-family: 'Google Sans Flex', sans-serif;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  box-shadow: 0 6px 14px rgba(2, 6, 23, 0.35);
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+
+.note-card__avatar:first-child { margin-left: 0; }
+.note-card__avatar:hover { transform: translateY(-2px); box-shadow: 0 10px 18px rgba(15, 23, 42, 0.34); z-index: 1; }
+.note-card__avatar--more { background: rgba(148, 163, 184, 0.24); color: #e2e8f0; border-color: rgba(15, 23, 42, 0.72); }
+
+html[data-bs-theme='light'] .note-card__avatar { border-color: rgba(248, 250, 252, 0.95); color: #ffffff; box-shadow: 0 8px 16px rgba(30, 64, 175, 0.2); }
+html[data-bs-theme='light'] .note-card__avatar--more { background: rgba(15, 23, 42, 0.1); color: #0f172a; border-color: rgba(255, 255, 255, 0.96); }
+
+/* Footer */
+.note-card__footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 1rem;
+  padding-right: 2.6rem;
+  font-size: 0.8rem;
+  color: var(--bs-secondary-color);
+}
+
+.note-card__timestamp { display: inline-flex; align-items: center; gap: 0.45rem; }
+
+/* Pin button */
+.note-card__pin-corner {
+  position: absolute;
+  right: 0.95rem;
+  bottom: 0.85rem;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  color: rgba(226, 232, 240, 0.82);
+  background: rgba(15, 23, 42, 0.35);
+  transition: opacity 0.18s ease, visibility 0.18s ease, transform 0.2s ease, background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+  z-index: 2;
+}
+
+.note-card:hover .note-card__pin-corner,
+.note-card:focus-within .note-card__pin-corner { opacity: 1; visibility: visible; pointer-events: auto; }
+
+@media (hover: none) { .note-card__pin-corner { opacity: 1; visibility: visible; pointer-events: auto; } }
+
+.note-card__pin-corner:hover { transform: translateY(-1px); color: #ffffff; background: rgba(59, 130, 246, 0.28); }
+.note-card__pin-corner.active { color: #dbeafe; background: rgba(37, 99, 235, 0.35); border-color: rgba(96, 165, 250, 0.45); }
+
+html[data-bs-theme='light'] .note-card__pin-corner { color: rgba(30, 41, 59, 0.72); background: rgba(148, 163, 184, 0.18); }
+html[data-bs-theme='light'] .note-card__pin-corner:hover { color: #1d4ed8; background: rgba(59, 130, 246, 0.22); }
+html[data-bs-theme='light'] .note-card__pin-corner.active { color: #ffffff; background: var(--primary-gradient); border-color: rgba(255, 255, 255, 0.85); }
+
+/* Color variants */
+.note-card--default { background-image: linear-gradient(135deg, rgba(255,255,255,0.08), transparent 80%); }
+.note-card--yellow { background-image: linear-gradient(135deg, rgba(245,158,11,0.26), rgba(251,191,36,0.08)); }
+.note-card--green { background-image: linear-gradient(135deg, rgba(16,185,129,0.22), rgba(34,197,94,0.08)); }
+.note-card--blue { background-image: linear-gradient(135deg, rgba(59,130,246,0.22), rgba(14,165,233,0.08)); }
+.note-card--pink { background-image: linear-gradient(135deg, rgba(236,72,153,0.2), rgba(244,114,182,0.08)); }
+.note-card--purple { background-image: linear-gradient(135deg, rgba(139,92,246,0.22), rgba(168,85,247,0.08)); }
+.note-card--orange { background-image: linear-gradient(135deg, rgba(249,115,22,0.24), rgba(251,146,60,0.08)); }
+.note-card--teal { background-image: linear-gradient(135deg, rgba(13,148,136,0.22), rgba(45,212,191,0.08)); }
+
+html[data-bs-theme='light'] .note-card--default { background-image: linear-gradient(135deg, rgba(59,130,246,0.16), rgba(191,219,254,0.28)); }
+html[data-bs-theme='light'] .note-card--yellow { background-image: linear-gradient(135deg, rgba(245,158,11,0.34), rgba(253,224,71,0.18)); }
+html[data-bs-theme='light'] .note-card--green { background-image: linear-gradient(135deg, rgba(16,185,129,0.32), rgba(134,239,172,0.16)); }
+html[data-bs-theme='light'] .note-card--blue { background-image: linear-gradient(135deg, rgba(59,130,246,0.34), rgba(125,211,252,0.18)); }
+html[data-bs-theme='light'] .note-card--pink { background-image: linear-gradient(135deg, rgba(236,72,153,0.3), rgba(251,207,232,0.2)); }
+html[data-bs-theme='light'] .note-card--purple { background-image: linear-gradient(135deg, rgba(139,92,246,0.32), rgba(221,214,254,0.2)); }
+html[data-bs-theme='light'] .note-card--orange { background-image: linear-gradient(135deg, rgba(249,115,22,0.34), rgba(254,215,170,0.2)); }
+html[data-bs-theme='light'] .note-card--teal { background-image: linear-gradient(135deg, rgba(13,148,136,0.3), rgba(153,246,228,0.18)); }
+
+@media (max-width: 575.98px) {
+  .note-card__header { flex-direction: column; align-items: flex-start; }
+  .note-card__media-item, .note-card__media--3 .note-card__media-item:first-child { min-height: 8rem; }
+  .note-card__meta-badges { justify-content: flex-start; padding-top: 0; }
+}

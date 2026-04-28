@@ -1,0 +1,19 @@
+/**
+ * Entry point CSS for the notes feature.
+ * Import this single file in NotesPage.jsx instead of NotesPage.css.
+ *
+ * Each partial covers a distinct UI layer:
+ *  - common       : shared panel/glassmorphism + icon buttons
+ *  - NotesLayout  : shell, FAB, masonry grid, font-size modifiers
+ *  - NotesHeader  : topbar, search, avatar
+ *  - NotesSidebar : sidebar buttons, label section
+ *  - NoteCard     : card, badges, chips, collaborator avatars
+ *  - NoteEditor   : editor modal, toolbar, image viewer, collaborators
+ */
+
+@import './common.css';
+@import './NotesLayout.css';
+@import './NotesHeader.css';
+@import './NotesSidebar.css';
+@import './NoteCard.css';
+@import './NoteEditor.css';

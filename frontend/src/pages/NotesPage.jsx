@@ -1,35 +1,35 @@
-import { useDeferredValue, useEffect, useState } from 'react';
+import { useEffect, useState, useDeferredValue } from 'react';
 import { Button, Modal, Offcanvas } from 'react-bootstrap';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPlus, faStickyNote } from '@fortawesome/free-solid-svg-icons';
 import { useNavigate } from 'react-router-dom';
-import NoteCard from '../components/notes/NoteCard';
-import NoteEditorModal from '../components/notes/NoteEditorModal';
-import NoteSettingsModal from '../components/notes/NoteSettingsModal';
-import UserProfileModal from '../components/notes/UserProfileModal';
-import NotesHeader from '../components/notes/NotesHeader';
-import NotesSidebar from '../components/notes/NotesSidebar';
+import NoteCard from '../features/notes/components/NoteCard';
+import NoteEditorModal from '../features/notes/components/NoteEditorModal';
+import NoteSettingsModal from '../features/notes/components/NoteSettingsModal';
+import UserProfileModal from '../features/profile/components/UserProfileModal';
+import NotesHeader from '../features/notes/components/NotesHeader';
+import NotesSidebar from '../features/notes/components/NotesSidebar';
 import { loadNoteWorkspace, saveNoteWorkspace } from '../data/noteWorkspace';
-import './NotesPage.css';
+import { useTheme } from '../hooks/useTheme';
+import { useOnlineStatus } from '../hooks/useOnlineStatus';
+import { resolveNoteShareMeta } from '../features/notes/utils/noteShareResolver';
+import { sortNotes } from '../features/notes/utils/noteSorter';
+import NoteGrid from '../components/common/NoteGrid';
+import AnimatedNoteCard from '../components/common/AnimatedNoteCard';
+import '../features/notes/styles/index.css';
 
-function readStoredTheme() {
-  const storedTheme = window.localStorage.getItem('theme');
-  const prefersDark = window.matchMedia?.('(prefers-color-scheme: dark)')?.matches;
-  return storedTheme || (prefersDark ? 'dark' : 'light');
+function resolveNoteFontSize(value) {
+  return value === 'small' || value === 'large' ? value : 'medium';
 }
 
-function sortNotes(items) {
-  return [...items].sort((left, right) => {
-    if (left.isPinned !== right.isPinned) {
-      return Number(right.isPinned) - Number(left.isPinned);
-    }
-
-    return new Date(right.updatedAt).getTime() - new Date(left.updatedAt).getTime();
-  });
+function normalizeEmail(value) {
+  return String(value || '').trim().toLowerCase();
 }
 
 function NotesPage() {
   const navigate = useNavigate();
+  const { theme, setTheme } = useTheme();
+  const isOffline = useOnlineStatus();
   const [initialWorkspace] = useState(() => loadNoteWorkspace());
   const [notes, setNotes] = useState(() => sortNotes(initialWorkspace.notes));
   const [labels, setLabels] = useState(() => initialWorkspace.labels);
@@ -46,54 +46,26 @@ function NotesPage() {
   const [unlockError, setUnlockError] = useState('');
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
+  const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
-  const [theme, setTheme] = useState(() => readStoredTheme());
-  const [isOffline, setIsOffline] = useState(() =>
-    typeof navigator !== 'undefined' ? !navigator.onLine : false,
-  );
+  const [desktopSidebarOpen, setDesktopSidebarOpen] = useState(true);
 
   useEffect(() => {
-    document.documentElement.setAttribute('data-bs-theme', theme);
-    window.localStorage.setItem('theme', theme);
-  }, [theme]);
-
-  // Khôi phục font size đã lưu khi app khởi động
-  useEffect(() => {
-    const savedFontSize = localStorage.getItem('app-font-size');
-    if (savedFontSize) {
-      document.documentElement.style.fontSize = savedFontSize + 'px';
-    }
-  }, []);
-
-  useEffect(() => {
-    saveNoteWorkspace({
-      notes,
-      labels,
-      user,
-      viewMode,
-    });
+    saveNoteWorkspace({ notes, labels, user, viewMode });
   }, [notes, labels, user, viewMode]);
-
-  useEffect(() => {
-    const updateOnlineStatus = () => {
-      setIsOffline(!navigator.onLine);
-    };
-
-    updateOnlineStatus();
-    window.addEventListener('online', updateOnlineStatus);
-    window.addEventListener('offline', updateOnlineStatus);
-
-    return () => {
-      window.removeEventListener('online', updateOnlineStatus);
-      window.removeEventListener('offline', updateOnlineStatus);
-    };
-  }, []);
 
   const normalizedSearch = deferredSearch.trim().toLowerCase();
 
+  const normalizedUserEmail = normalizeEmail(user.email);
+
   const filteredNotes = sortNotes(
-    notes.filter((note) => {
-      if (showShared && note.sharedWith.length === 0) {
+    notes
+      .map((note) => ({
+        ...note,
+        __shareMeta: resolveNoteShareMeta(note, normalizedUserEmail),
+      }))
+      .filter((note) => {
+      if (showShared && !note.__shareMeta.isOwnedShared && !note.__shareMeta.isReceivedShared) {
         return false;
       }
 
@@ -106,14 +78,33 @@ function NotesPage() {
       }
 
       return `${note.title} ${note.content}`.toLowerCase().includes(normalizedSearch);
-    }),
+      }),
   );
 
   const pinnedNotes = filteredNotes.filter((note) => note.isPinned);
   const otherNotes = filteredNotes.filter((note) => !note.isPinned);
-  const sharedCount = notes.filter((note) => note.sharedWith.length > 0).length;
-  const noteCount = notes.length;
-  const lastUpdated = notes[0] ? new Date(notes[0].updatedAt).toLocaleDateString('vi-VN') : 'Chua co';
+  const ownedSharedNotes = filteredNotes.filter((note) => note.__shareMeta?.isOwnedShared);
+  const receivedSharedNotes = filteredNotes.filter((note) => note.__shareMeta?.isReceivedShared);
+  const noteFontSize = resolveNoteFontSize(user?.preferences?.fontSize);
+
+  function renderNote(note) {
+    return (
+      <AnimatedNoteCard
+        key={note.id}
+        note={note}
+        viewMode={viewMode}
+        onOpen={openEditor}
+        onTogglePin={handleToggleNotePin}
+        isOffline={isOffline}
+        shareScope={
+          note.__shareMeta?.isReceivedShared ? 'received'
+          : note.__shareMeta?.isOwnedShared ? 'owned'
+          : null
+        }
+        accessPermission={note.__shareMeta?.isReceivedShared ? note.__shareMeta.myPermission : null}
+      />
+    );
+  }
 
   function openEditor(note = null) {
     const requiredPassword = String(note?.lockPassword || '').trim();
@@ -143,7 +134,7 @@ function NotesPage() {
     const expectedPassword = String(unlockingNote.lockPassword || '').trim();
 
     if (expectedPassword.length > 0 && unlockPassword.trim() !== expectedPassword) {
-      setUnlockError('Mat khau khong dung.');
+      setUnlockError('Mật khẩu không đúng.');
       return;
     }
 
@@ -192,8 +183,8 @@ function NotesPage() {
   function handleToggleLabel(labelName) {
     setSelectedLabels((currentLabels) =>
       currentLabels.includes(labelName)
-        ? currentLabels.filter((item) => item !== labelName)
-        : [...currentLabels, labelName],
+        ? []
+        : [labelName],
     );
     setShowShared(false);
   }
@@ -249,32 +240,51 @@ function NotesPage() {
     );
   }
 
-  function renderNoteSection(title, items) {
-    if (items.length === 0) {
-      return null;
+  function handleUpdateProfilePreferences(nextPreferences) {
+    const nextDefaultColor = String(nextPreferences?.defaultNoteColor || '').trim();
+    const shouldSyncAllNoteColors =
+      nextDefaultColor.length > 0 && nextDefaultColor !== user?.preferences?.defaultNoteColor;
+
+    setUser((currentUser) => ({
+      ...currentUser,
+      preferences: {
+        ...currentUser.preferences,
+        ...nextPreferences,
+        fontSize: resolveNoteFontSize(nextPreferences?.fontSize),
+      },
+    }));
+
+    if (!shouldSyncAllNoteColors) {
+      return;
     }
 
-    return (
-      <section className="mb-4">
-        {title ? <div className="notes-section-title">{title}</div> : null}
-        <div className={viewMode === 'grid' ? 'notes-grid' : 'notes-list'}>
-          {items.map((note) => (
-            <NoteCard
-              key={note.id}
-              note={note}
-              viewMode={viewMode}
-              onOpen={openEditor}
-              onTogglePin={handleToggleNotePin}
-              isOffline={isOffline}
-            />
-          ))}
-        </div>
-      </section>
+    setNotes((currentNotes) =>
+      currentNotes.map((note) =>
+        note.color === nextDefaultColor
+          ? note
+          : {
+              ...note,
+              color: nextDefaultColor,
+            },
+      ),
     );
   }
 
+  function handleOpenLogoutConfirm() {
+    setLogoutConfirmOpen(true);
+  }
+
+  function handleCloseLogoutConfirm() {
+    setLogoutConfirmOpen(false);
+  }
+
+  function handleConfirmLogout() {
+    setLogoutConfirmOpen(false);
+    navigate('/login');
+  }
+
   return (
-    <div className={`notes-shell note-font-${user.preferences.fontSize}`}>
+    <div className={`notes-shell note-font-${noteFontSize}`}>
       <NotesHeader
         search={search}
         onSearchChange={setSearch}
@@ -282,17 +292,17 @@ function NotesPage() {
         onViewModeChange={setViewMode}
         userName={user.displayName}
         isVerified={user.isVerified}
-        theme={theme}
-        onToggleTheme={() => setTheme((currentTheme) => (currentTheme === 'dark' ? 'light' : 'dark'))}
-        onLogout={() => navigate('/login')}
+        selectedLabel={selectedLabels.length > 0 ? selectedLabels[0] : null}
+        onLogout={handleOpenLogoutConfirm}
         onOpenSettings={() => setSettingsOpen(true)}
         onOpenProfile={() => setProfileOpen(true)}
         onToggleMobileSidebar={() => setMobileSidebarOpen(true)}
+        onToggleDesktopSidebar={() => setDesktopSidebarOpen(!desktopSidebarOpen)}
       />
 
       <div className="container-fluid notes-main">
-        <div className="row g-4">
-          <aside className="col-lg-3 col-xl-3 col-xxl-2 d-none d-lg-block">
+        <div className="row g-4 flex-nowrap overflow-hidden">
+          <aside className={`col-lg-3 col-xl-3 col-xxl-2 d-none d-lg-block notes-sidebar-aside ${!desktopSidebarOpen ? 'collapsed' : ''}`}>
             <div className="notes-panel position-sticky top-0">
               <NotesSidebar
                 labels={labels}
@@ -314,38 +324,42 @@ function NotesPage() {
             </div>
           </aside>
 
-          <div className="col-lg-9 col-xl-9 col-xxl-10">
-            <div className="notes-summary-grid">
-              <div className="notes-summary-card">
-                <div className="notes-summary-card__label">Tong ghi chu</div>
-                <div className="notes-summary-card__value">{noteCount}</div>
-              </div>
-              <div className="notes-summary-card">
-                <div className="notes-summary-card__label">Dang hien thi</div>
-                <div className="notes-summary-card__value">{filteredNotes.length}</div>
-              </div>
-              <div className="notes-summary-card">
-                <div className="notes-summary-card__label">Ghi chu chia se</div>
-                <div className="notes-summary-card__value">{sharedCount}</div>
-              </div>
-            </div>
-
+          <div className="col flex-grow-1 notes-content-area">
             {filteredNotes.length > 0 ? (
               <>
-                {renderNoteSection(pinnedNotes.length > 0 ? 'Da ghim' : '', pinnedNotes)}
-                {renderNoteSection(pinnedNotes.length > 0 ? 'Khac' : '', otherNotes)}
+                {showShared ? (
+                  <>
+                    <section className="notes-shared-space">
+                      <div className="notes-shared-space__header">
+                        <div className="notes-shared-space__title">Ghi chú của tôi</div>
+                      </div>
+                      <NoteGrid items={ownedSharedNotes} viewMode={viewMode} renderItem={renderNote} emptyMessage="Không có ghi chú trong khu vực này." />
+                    </section>
+                    <section className="notes-shared-space">
+                      <div className="notes-shared-space__header">
+                        <div className="notes-shared-space__title">Ghi chú được chia sẻ</div>
+                      </div>
+                      <NoteGrid items={receivedSharedNotes} viewMode={viewMode} renderItem={renderNote} emptyMessage="Không có ghi chú trong khu vực này." />
+                    </section>
+                  </>
+                ) : (
+                  <>
+                    <NoteGrid items={pinnedNotes} viewMode={viewMode} title={pinnedNotes.length > 0 ? 'Đã ghim' : ''} renderItem={renderNote} />
+                    <NoteGrid items={otherNotes} viewMode={viewMode} title={pinnedNotes.length > 0 ? 'Khác' : ''} renderItem={renderNote} />
+                  </>
+                )}
               </>
             ) : (
               <div className="notes-panel notes-empty-state">
                 <div className="notes-empty-state__icon">
                   <FontAwesomeIcon icon={faStickyNote} />
                 </div>
-                <h2 className="h4">Chua co ghi chu phu hop</h2>
+                <h2 className="h4">Chưa có ghi chú phù hợp</h2>
                 <p className="text-secondary mb-4">
-                  Thu xoa bo loc hien tai hoac tao ghi chu moi de bat dau kho ghi chu cua ban.
+                  Thử xóa bộ lọc hiện tại hoặc tạo ghi chú mới để bắt đầu kho ghi chú của bạn.
                 </p>
                 <Button variant="primary" onClick={() => openEditor(null)}>
-                  Tao ghi chu dau tien
+                  Tạo ghi chú đầu tiên
                 </Button>
               </div>
             )}
@@ -353,7 +367,7 @@ function NotesPage() {
         </div>
       </div>
 
-      <Button className="note-fab" onClick={() => openEditor(null)} aria-label="Tao ghi chu moi">
+      <Button className="note-fab" onClick={() => openEditor(null)} aria-label="Tạo ghi chú mới">
         <FontAwesomeIcon icon={faPlus} />
       </Button>
 
@@ -364,7 +378,7 @@ function NotesPage() {
         className="notes-offcanvas"
       >
         <Offcanvas.Header closeButton>
-          <Offcanvas.Title>Bo loc ghi chu</Offcanvas.Title>
+          <Offcanvas.Title>Bộ lọc ghi chú</Offcanvas.Title>
         </Offcanvas.Header>
         <Offcanvas.Body>
           <NotesSidebar
@@ -422,17 +436,19 @@ function NotesPage() {
         onClose={() => setProfileOpen(false)}
         theme={theme}
         onToggleTheme={setTheme}
+        preferences={user.preferences}
+        onUpdatePreferences={handleUpdateProfilePreferences}
       />
 
       <Modal show={Boolean(unlockingNote)} onHide={handleCancelUnlock} centered dialogClassName="note-lock-modal">
         <Modal.Header className="border-0">
-          <Modal.Title>Nhap mat khau de mo ghi chu</Modal.Title>
+          <Modal.Title>Nhập mật khẩu để mở ghi chú</Modal.Title>
         </Modal.Header>
         <Modal.Body className="pt-0">
           <input
             type="password"
             className="note-editor__panel-input"
-            placeholder="Mat khau ghi chu"
+            placeholder="Mật khẩu ghi chú"
             value={unlockPassword}
             onChange={(event) => {
               setUnlockPassword(event.target.value);
@@ -449,10 +465,27 @@ function NotesPage() {
         </Modal.Body>
         <Modal.Footer className="border-0 pt-0">
           <Button variant="outline-secondary" onClick={handleCancelUnlock}>
-            Huy
+            Hủy
           </Button>
           <Button variant="primary" onClick={handleConfirmUnlock}>
-            Mo ghi chu
+            Mở ghi chú
+          </Button>
+        </Modal.Footer>
+      </Modal>
+
+      <Modal show={logoutConfirmOpen} onHide={handleCloseLogoutConfirm} centered>
+        <Modal.Header closeButton className="border-0">
+          <Modal.Title>Xác nhận đăng xuất</Modal.Title>
+        </Modal.Header>
+        <Modal.Body className="pt-0">
+          Bạn có chắc muốn đăng xuất khỏi phiên làm việc hiện tại không?
+        </Modal.Body>
+        <Modal.Footer className="border-0 pt-0">
+          <Button variant="outline-secondary" onClick={handleCloseLogoutConfirm}>
+            Hủy
+          </Button>
+          <Button variant="primary" onClick={handleConfirmLogout}>
+            Đăng xuất
           </Button>
         </Modal.Footer>
       </Modal>
