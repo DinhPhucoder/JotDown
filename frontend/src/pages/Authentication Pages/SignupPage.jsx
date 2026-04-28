@@ -123,54 +123,6 @@ const SignupPage = () => {
               </Button>
             </Form>
 
-
-            {/* FORM XÁC THỰC OTP (KÍCH HOẠT TÀI KHOẢN) */}
-            {/* <div className="otp-verification-step">
-              <div className="otp-header">
-                <div className="otp-icon-wrapper mb-3">
-                  <ShieldCheck size={32} />
-                </div>
-                <h3>Xác thực Email</h3>
-                <p className="text-secondary">
-                  Chúng tôi đã gửi mã 6 chữ số đến <br />
-                  <strong className="text-white">name@example.com</strong>
-                </p>
-              </div>
-
-              <Form>
-                <div className="otp-input-group d-flex justify-content-between mb-4">
-                  {[1, 2, 3, 4, 5, 6].map((item, index) => (
-                    <Form.Control
-                      key={index}
-                      className="otp-field text-center"
-                      type="text"
-                      maxLength="1"
-                      placeholder="-"
-                      style={{ width: '45px', height: '55px', fontSize: '1.5rem', cursor: 'text' }}
-                    />
-                  ))}
-                </div>
-
-                <Button variant="primary" type="button" className="w-100 mb-3">
-                  Xác thực & Kích hoạt
-                </Button>
-              </Form>
-
-              <div className="resend-container text-center mb-3">
-                <span className="text-secondary">Chưa nhận được mã? </span>
-                <button className="resend-btn btn btn-link p-0 text-decoration-none">
-                  Gửi lại mã
-                </button>
-              </div>
-
-              <div className="text-center">
-                <button className="back-btn btn btn-link p-0 text-decoration-none text-secondary d-flex align-items-center justify-content-center gap-1 mx-auto">
-                  <ArrowLeft size={16} /> Quay lại chỉnh sửa
-                </button>
-              </div>
-            </div> */}
-
-
             <div className="auth-footer text-center mt-5">
               <p className="text-secondary">
                 Đã có tài khoản?{' '}

@@ -1,10 +1,12 @@
 import React from 'react';
 import { Container, Row, Col, Form, Button } from 'react-bootstrap';
 import { Mail, ArrowLeft } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import './Auth.css';
 
 const ForgotPasswordPage = () => {
+  const navigate = useNavigate();
+
   return (
     <Container fluid className="p-0 auth-wrapper">
       {/* Logo */}
@@ -40,7 +42,7 @@ const ForgotPasswordPage = () => {
               </p>
             </div>
 
-            {/* Form Giao diện */}
+            {/* Form */}
             <Form className="auth-form">
               <Form.Group className="mb-4" controlId="email">
                 <Form.Label>Email</Form.Label>
@@ -54,7 +56,7 @@ const ForgotPasswordPage = () => {
                 </div>
               </Form.Group>
 
-              <Button variant="primary" type="button" className="w-100">
+              <Button variant="primary" type="button" className="w-100" onClick={() => navigate('/verify-otp')}>
                 Gửi liên kết
               </Button>
             </Form>

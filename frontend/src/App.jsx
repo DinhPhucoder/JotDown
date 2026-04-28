@@ -4,6 +4,7 @@ import { Toaster } from 'sonner';
 import ForgotPasswordPage from './pages/Authentication Pages/ForgotPasswordPage';
 import LoginPage from './pages/Authentication Pages/LoginPage';
 import SignupPage from './pages/Authentication Pages/SignupPage';
+import OtpVerificationPage from './pages/Authentication Pages/OtpVerificationPage';
 import LandingPage from './pages/LandingPage';
 import NotesPage from './pages/NotesPage';
 import NotFoundPage from './pages/NotFoundPage';
@@ -28,6 +29,7 @@ function App() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignupPage />} />
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="/verify-otp" element={<OtpVerificationPage />} />
         <Route path="/notes" element={<NotesPage />} />
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
