@@ -339,3 +339,16 @@ html[data-bs-theme='light'] .note-editor__floating-panel { background: rgba(255,
   .note-editor__floating-panel { left: 0; right: 0; width: 100%; }
   .note-editor__floating-panel--lock { right: 0; }
 }
+
+/* TipTap Editor */
+.tiptap-editor p.is-editor-empty:first-child::before {
+  color: var(--bs-secondary-color, #6c757d);
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+}
+
+.tiptap-editor p {
+  margin-bottom: 0.5rem;
+}

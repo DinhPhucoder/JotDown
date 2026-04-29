@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Laravel\Sanctum\HasApiTokens;
 
 #[Fillable(['name', 'email', 'password', 'avatar', 'preferences', 'otp', 'otp_expires_at'])]
@@ -31,6 +32,7 @@ class User extends Authenticatable
             'preferences' => 'array',
         ];
     }
+
 
     /**
      * Generate a 6-digit OTP and set expiry (5 minutes).
@@ -64,5 +66,20 @@ class User extends Authenticatable
             'otp' => null,
             'otp_expires_at' => null,
         ]);
+    }
+
+    public function notes(): HasMany
+    {
+        return $this->hasMany(Note::class);
+    }
+
+    public function sharedNotes(): HasMany
+    {
+        return $this->hasMany(NoteShare::class, 'sender_id');
+    }
+
+    public function receivedShares(): HasMany
+    {
+        return $this->hasMany(NoteShare::class, 'receiver_id');
     }
 }

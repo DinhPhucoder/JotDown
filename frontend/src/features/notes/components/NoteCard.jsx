@@ -45,6 +45,14 @@ function getAvatarInitial(email) {
   return (localPart.charAt(0) || '?').toUpperCase();
 }
 
+function stripHtml(html) {
+  if (!html) return '';
+  let text = String(html).replace(/<br\s*\/?>/gi, '\n');
+  text = text.replace(/<\/p>/gi, '\n');
+  const doc = new DOMParser().parseFromString(text, 'text/html');
+  return doc.body.textContent.trim() || '';
+}
+
 function NoteCard({
   note,
   viewMode,
@@ -86,6 +94,9 @@ function NoteCard({
         viewMode === 'list' ? 'note-card--list' : '' 
       }`} 
       onClick={() => onOpen(note)} 
+      onKeyDown={handleCardKeyDown}
+      tabIndex={0}
+      role="button"
     > 
       {previewImages.length > 0 ? (
         <div
@@ -140,7 +151,7 @@ function NoteCard({
       </div>
 
       <div className={`note-card__content ${note.isLocked ? 'note-card__content--locked' : ''}`}>
-        {note.content}
+        {stripHtml(note.content)}
       </div>
 
       {note.labels.length > 0 ? (

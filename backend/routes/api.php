@@ -2,6 +2,9 @@
 
 use App\Http\Controllers\Api\V1\AuthController;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Http\Request;
+use App\Http\Controllers\NoteController;
+use App\Http\Controllers\LabelController;
 
 /*
 |--------------------------------------------------------------------------
@@ -14,11 +17,20 @@ Route::get('/health', function () {
 });
 
 Route::get('/ping', function () {
-    return response()->json([
-        'status' => 'alive',
-        'message' => 'Render instance is awake!',
-        'time' => now(),
-    ]);
+    try {
+        \Illuminate\Support\Facades\DB::select('SELECT 1');
+        return response()->json([
+            'status' => 'alive', 
+            'message' => 'Render & Aiven are awake!', 
+            'time' => now()
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'status' => 'error',
+            'message' => 'Render is awake, but Aiven connection failed!',
+            'error' => $e->getMessage()
+        ], 500);
+    }
 });
 
 /*
@@ -44,3 +56,10 @@ Route::prefix('v1/auth')->group(function () {
         Route::get('user', [AuthController::class, 'user']);
     });
 });
+
+Route::apiResource('notes', NoteController::class);
+Route::apiResource('labels', LabelController::class);
+
+// Label attachment routes
+Route::post('/notes/{note}/labels/attach', [NoteController::class, 'attachLabels']);
+Route::post('/notes/{note}/labels/detach', [NoteController::class, 'detachLabels']);
