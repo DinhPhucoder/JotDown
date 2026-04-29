@@ -3,13 +3,14 @@ import { Container, Row, Col, Form, Button, Spinner } from 'react-bootstrap';
 import { Mail, ArrowLeft } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
+import { forgotPassword as forgotPasswordApi } from '../services/authService';
 import '../styles/Auth.css';
 
 const ForgotPasswordPage = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     const email = e.target.email?.value?.trim() || '';
 
@@ -17,11 +18,17 @@ const ForgotPasswordPage = () => {
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return toast.warning('Email không hợp lệ');
 
     setLoading(true);
-    setTimeout(() => {
+    try {
+      const res = await forgotPasswordApi({ email });
+      // Lưu email để trang OTP sử dụng
+      localStorage.setItem('reset_email', email);
+      toast.success(res.message);
+      navigate('/verify-otp?purpose=reset');
+    } catch (err) {
+      toast.error(err.message);
+    } finally {
       setLoading(false);
-      toast.success('Đã gửi mã xác thực! Vui lòng kiểm tra email.');
-      navigate('/verify-otp');
-    }, 1500);
+    }
   };
   return (
     <Container fluid className="p-0 auth-wrapper">

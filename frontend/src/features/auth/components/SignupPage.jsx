@@ -3,6 +3,7 @@ import { Container, Row, Col, Form, Button, Spinner } from 'react-bootstrap';
 import { Mail, Lock, User, Camera, Eye, EyeOff } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
+import { register as registerApi } from '../services/authService';
 import '../styles/Auth.css';
 
 const SignupPage = () => {
@@ -36,7 +37,7 @@ const SignupPage = () => {
     toast.success('Đã chọn ảnh đại diện!');
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     const form = e.target;
     const fullName = form.fullName.value.trim();
@@ -44,7 +45,7 @@ const SignupPage = () => {
     const password = form.password.value;
     const confirmPassword = form.confirmPassword.value;
 
-    // Validation
+    // Frontend validation
     if (!fullName) return toast.warning('Vui lòng nhập họ và tên');
     if (!email) return toast.warning('Vui lòng nhập email');
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return toast.warning('Email không hợp lệ');
@@ -52,13 +53,21 @@ const SignupPage = () => {
     if (password.length < 8) return toast.warning('Mật khẩu phải có ít nhất 8 ký tự');
     if (password !== confirmPassword) return toast.warning('Mật khẩu xác nhận không khớp');
 
-    // Giả lập gọi API
     setLoading(true);
-    setTimeout(() => {
+    try {
+      const res = await registerApi({
+        name: fullName,
+        email,
+        password,
+        password_confirmation: confirmPassword,
+      });
+      toast.success(res.message);
+      navigate('/login');
+    } catch (err) {
+      toast.error(err.message);
+    } finally {
       setLoading(false);
-      toast.success('Đăng ký thành công! Vui lòng xác thực email.');
-      navigate('/verify-otp');
-    }, 1500);
+    }
   };
 
   return (

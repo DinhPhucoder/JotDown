@@ -3,6 +3,7 @@ import { Container, Row, Col, Form, Button, Spinner } from 'react-bootstrap';
 import { Mail, Lock, Eye, EyeOff } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
+import { login as loginApi } from '../services/authService';
 import '../styles/Auth.css';
 
 const LoginPage = () => {
@@ -10,25 +11,30 @@ const LoginPage = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     const form = e.target;
     const email = form.email.value.trim();
     const password = form.password.value;
 
-    // Validation
+    // Frontend validation
     if (!email) return toast.warning('Vui lòng nhập email');
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return toast.warning('Email không hợp lệ');
     if (!password) return toast.warning('Vui lòng nhập mật khẩu');
     if (password.length < 8) return toast.warning('Mật khẩu phải có ít nhất 8 ký tự');
 
-    // Giả lập gọi API
     setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
-      toast.success('Đăng nhập thành công!');
+    try {
+      const res = await loginApi({ email, password });
+      // Lưu thông tin user
+      localStorage.setItem('auth_user', JSON.stringify(res.data.user));
+      toast.success(res.message);
       navigate('/notes');
-    }, 1500);
+    } catch (err) {
+      toast.error(err.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

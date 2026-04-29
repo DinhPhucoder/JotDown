@@ -1,12 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { Container, Row, Col, Form, Button, Spinner } from 'react-bootstrap';
 import { ShieldCheck, ArrowLeft } from 'lucide-react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
+import { verifyOtp as verifyOtpApi, resendOtp as resendOtpApi } from '../services/authService';
 import '../styles/Auth.css';
 
 const OtpVerificationPage = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const purpose = searchParams.get('purpose') || 'verify';
+  const email = localStorage.getItem('reset_email') || '';
+
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [loading, setLoading] = useState(false);
   const [countdown, setCountdown] = useState(60);
@@ -22,10 +27,16 @@ const OtpVerificationPage = () => {
     return () => clearTimeout(timer);
   }, [countdown]);
 
-  const handleResend = () => {
-    setCanResend(false);
-    setCountdown(60);
-    toast.success('Đã gửi lại mã xác thực!');
+  const handleResend = async () => {
+    if (!email) return toast.error('Không tìm thấy email. Vui lòng thực hiện lại.');
+    try {
+      await resendOtpApi({ email, purpose });
+      setCanResend(false);
+      setCountdown(60);
+      toast.success('Đã gửi lại mã xác thực!');
+    } catch (err) {
+      toast.error(err.message);
+    }
   };
 
   const handleOtpChange = (index, value) => {
@@ -51,19 +62,31 @@ const OtpVerificationPage = () => {
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     const otpValue = otp.join('');
 
+    if (!email) return toast.error('Không tìm thấy email. Vui lòng thực hiện lại.');
     if (otpValue.length < 6) return toast.warning('Vui lòng nhập đủ 6 chữ số');
     if (!/^\d{6}$/.test(otpValue)) return toast.warning('Mã OTP chỉ chứa chữ số');
 
     setLoading(true);
-    setTimeout(() => {
+    try {
+      const res = await verifyOtpApi({ email, otp: otpValue });
+      toast.success(res.message);
+      localStorage.removeItem('reset_email');
+
+      if (purpose === 'reset') {
+        // Chuyển đến trang đặt lại mật khẩu (tạm thời quay về login)
+        navigate('/login');
+      } else {
+        navigate('/login');
+      }
+    } catch (err) {
+      toast.error(err.message);
+    } finally {
       setLoading(false);
-      toast.success('Xác thực thành công!');
-      navigate('/login');
-    }, 1500);
+    }
   };
 
   return (
