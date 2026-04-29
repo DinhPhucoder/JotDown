@@ -54,6 +54,8 @@ Route::prefix('v1/auth')->group(function () {
         Route::post('change-password', [AuthController::class, 'changePassword']);
         Route::post('send-verify-otp', [AuthController::class, 'sendVerifyOtp']);
         Route::get('user', [AuthController::class, 'user']);
+        Route::put('update-profile', [AuthController::class, 'updateProfile']);
+        Route::post('upload-avatar', [AuthController::class, 'uploadAvatar']);
     });
 });
 

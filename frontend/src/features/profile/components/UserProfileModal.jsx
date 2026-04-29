@@ -1,9 +1,11 @@
-import { useState } from 'react';
-import { Modal, Button, Form, Tab, Row, Col, Nav } from 'react-bootstrap';
+import { useState, useRef } from 'react';
+import { Modal, Button, Form, Tab, Row, Col, Nav, Spinner } from 'react-bootstrap';
 import { User, Mail, PaintBucket, Shield, Camera, Lock, Eye, EyeOff, X, Type } from 'lucide-react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faBars } from '@fortawesome/free-solid-svg-icons';
 import { noteColorOptions } from '../../../data/constants';
+import { updateProfile, uploadAvatar, changePassword as changePasswordApi } from '../../auth/services/authService';
+import { toast } from 'sonner';
 import './UserProfileModal.css';
 
 const noteFontSizeOptions = [
@@ -12,8 +14,11 @@ const noteFontSizeOptions = [
     { value: 'large', label: 'Lớn', preview: 'A+' },
 ];
 
-function UserProfileModal({ open, onClose, theme, onToggleTheme, preferences, onUpdatePreferences }) {
+function UserProfileModal({ open, onClose, theme, onToggleTheme, preferences, onUpdatePreferences, user, onUserUpdate }) {
     const [activeTab, setActiveTab] = useState('profile');
+    const fileInputRef = useRef(null);
+    const [saving, setSaving] = useState(false);
+    const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
     const selectedFontSize = noteFontSizeOptions.some((option) => option.value === preferences?.fontSize)
         ? preferences.fontSize
@@ -23,11 +28,11 @@ function UserProfileModal({ open, onClose, theme, onToggleTheme, preferences, on
         : 'default';
 
     const [formData, setFormData] = useState({
-        displayName: 'Thomas Muller',
-        email: 'thomas.muller@fcbayern.com',
-        bio: '',
-        language: 'vi'
+        displayName: user?.displayName || user?.name || '',
+        email: user?.email || '',
     });
+
+    const [avatarPreview, setAvatarPreview] = useState(null);
 
     const [isChangingPassword, setIsChangingPassword] = useState(false);
     const [passwordData, setPasswordData] = useState({
@@ -35,6 +40,7 @@ function UserProfileModal({ open, onClose, theme, onToggleTheme, preferences, on
         newPassword: '',
         confirmPassword: ''
     });
+    const [savingPassword, setSavingPassword] = useState(false);
 
     const [showPasswords, setShowPasswords] = useState({
         current: false,
@@ -61,6 +67,60 @@ function UserProfileModal({ open, onClose, theme, onToggleTheme, preferences, on
         setFormData(prev => ({ ...prev, [name]: value }));
     };
 
+    const handleSaveProfile = async (e) => {
+        e.preventDefault();
+        if (!formData.displayName.trim()) return toast.warning('Vui lòng nhập họ và tên');
+        setSaving(true);
+        try {
+            const res = await updateProfile({ name: formData.displayName.trim() });
+            toast.success(res.message);
+            // Cập nhật user ở parent + localStorage
+            const updatedUser = res.data.user;
+            localStorage.setItem('auth_user', JSON.stringify(updatedUser));
+            if (typeof onUserUpdate === 'function') {
+                onUserUpdate({ displayName: updatedUser.name, name: updatedUser.name });
+            }
+        } catch (err) {
+            toast.error(err.message);
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const handleAvatarClick = () => {
+        fileInputRef.current?.click();
+    };
+
+    const handleAvatarChange = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        if (file.size > 5 * 1024 * 1024) {
+            return toast.warning('Ảnh đại diện không được vượt quá 5MB');
+        }
+        // Preview ngay
+        const reader = new FileReader();
+        reader.onload = () => setAvatarPreview(reader.result);
+        reader.readAsDataURL(file);
+
+        // Upload
+        setUploadingAvatar(true);
+        try {
+            const res = await uploadAvatar(file);
+            toast.success(res.message);
+            const authUser = JSON.parse(localStorage.getItem('auth_user') || '{}');
+            authUser.avatar = res.data.avatar;
+            localStorage.setItem('auth_user', JSON.stringify(authUser));
+            if (typeof onUserUpdate === 'function') {
+                onUserUpdate({ avatar: res.data.avatar });
+            }
+        } catch (err) {
+            toast.error(err.message);
+            setAvatarPreview(null);
+        } finally {
+            setUploadingAvatar(false);
+        }
+    };
+
     const handlePasswordChange = (e) => {
         const { name, value } = e.target;
         setPasswordData(prev => ({ ...prev, [name]: value }));
@@ -70,13 +130,27 @@ function UserProfileModal({ open, onClose, theme, onToggleTheme, preferences, on
         setShowPasswords(prev => ({ ...prev, [field]: !prev[field] }));
     };
 
-    const submitPasswordChange = (e) => {
+    const submitPasswordChange = async (e) => {
         e.preventDefault();
-        // TODO: Xác thực và gửi yêu cầu đổi mật khẩu tới Server
-        console.log('Change password payload:', passwordData);
-        setIsChangingPassword(false);
-        setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
-        setShowPasswords({ current: false, new: false, confirm: false });
+        if (passwordData.newPassword.length < 8) return toast.warning('Mật khẩu mới phải có ít nhất 8 ký tự');
+        if (passwordData.newPassword !== passwordData.confirmPassword) return toast.warning('Mật khẩu xác nhận không khớp');
+
+        setSavingPassword(true);
+        try {
+            const res = await changePasswordApi({
+                current_password: passwordData.currentPassword,
+                password: passwordData.newPassword,
+                password_confirmation: passwordData.confirmPassword,
+            });
+            toast.success(res.message);
+            setIsChangingPassword(false);
+            setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
+            setShowPasswords({ current: false, new: false, confirm: false });
+        } catch (err) {
+            toast.error(err.message);
+        } finally {
+            setSavingPassword(false);
+        }
     };
 
     const handleClosePasswordChange = () => {
@@ -91,6 +165,7 @@ function UserProfileModal({ open, onClose, theme, onToggleTheme, preferences, on
         setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
         setShowPasswords({ current: false, new: false, confirm: false });
         setShowMobileNav(false);
+        setAvatarPreview(null);
     };
 
     const renderNavItems = () => (
@@ -172,18 +247,28 @@ function UserProfileModal({ open, onClose, theme, onToggleTheme, preferences, on
                                     <h6 className="fw-bold mb-4">Thông tin Hồ sơ</h6>
 
                                     <div className="d-flex align-items-center gap-4 mb-4">
-                                        <div className="profile-image-picker">
+                                        <div className="profile-image-picker" onClick={handleAvatarClick} style={{ cursor: 'pointer' }}>
                                             <div className="profile-image-circle">
-                                                <User size={40} className="profile-placeholder-icon" />
+                                                {avatarPreview || user?.avatar ? (
+                                                    <img
+                                                        src={avatarPreview || user.avatar}
+                                                        alt="Avatar"
+                                                        style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }}
+                                                    />
+                                                ) : (
+                                                    <User size={40} className="profile-placeholder-icon" />
+                                                )}
                                                 <div className="profile-image-overlay">
-                                                    <Camera size={20} />
+                                                    {uploadingAvatar ? <Spinner animation="border" size="sm" /> : <Camera size={20} />}
                                                 </div>
                                             </div>
                                             <p className="profile-image-label mb-0">Thay đổi</p>
                                             <input
                                                 type="file"
+                                                ref={fileInputRef}
                                                 accept="image/jpeg,image/png,image/webp"
                                                 hidden
+                                                onChange={handleAvatarChange}
                                             />
                                         </div>
                                         <div>
@@ -192,7 +277,7 @@ function UserProfileModal({ open, onClose, theme, onToggleTheme, preferences, on
                                         </div>
                                     </div>
 
-                                    <Form>
+                                    <Form onSubmit={handleSaveProfile}>
                                         <Form.Group className="mb-3">
                                             <Form.Label className="small fw-semibold">Họ và tên</Form.Label>
                                             <div className="position-relative">
@@ -230,7 +315,9 @@ function UserProfileModal({ open, onClose, theme, onToggleTheme, preferences, on
                                         </Form.Group>
 
                                         <div className="d-flex justify-content-end">
-                                            <Button variant="primary">Lưu hồ sơ</Button>
+                                            <Button variant="primary" type="submit" disabled={saving}>
+                                                {saving ? <Spinner animation="border" size="sm" /> : 'Lưu hồ sơ'}
+                                            </Button>
                                         </div>
                                     </Form>
                                 </Tab.Pane>

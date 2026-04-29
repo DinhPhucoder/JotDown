@@ -33,7 +33,22 @@ function NotesPage() {
   const [initialWorkspace] = useState(() => loadNoteWorkspace());
   const [notes, setNotes] = useState(() => sortNotes(initialWorkspace.notes));
   const [labels, setLabels] = useState(() => initialWorkspace.labels);
-  const [user, setUser] = useState(() => initialWorkspace.user);
+  const [user, setUser] = useState(() => {
+    // Lấy user từ backend (đã lưu khi login)
+    try {
+      const authUser = JSON.parse(localStorage.getItem('auth_user'));
+      if (authUser) {
+        return {
+          ...initialWorkspace.user,
+          id: authUser.id,
+          email: authUser.email,
+          displayName: authUser.name,
+          isVerified: authUser.email_verified || false,
+        };
+      }
+    } catch { /* ignore */ }
+    return initialWorkspace.user;
+  });
   const [viewMode, setViewMode] = useState(() => initialWorkspace.viewMode);
   const [search, setSearch] = useState('');
   const deferredSearch = useDeferredValue(search);
@@ -65,19 +80,19 @@ function NotesPage() {
         __shareMeta: resolveNoteShareMeta(note, normalizedUserEmail),
       }))
       .filter((note) => {
-      if (showShared && !note.__shareMeta.isOwnedShared && !note.__shareMeta.isReceivedShared) {
-        return false;
-      }
+        if (showShared && !note.__shareMeta.isOwnedShared && !note.__shareMeta.isReceivedShared) {
+          return false;
+        }
 
-      if (selectedLabels.length > 0 && !selectedLabels.some((label) => note.labels.includes(label))) {
-        return false;
-      }
+        if (selectedLabels.length > 0 && !selectedLabels.some((label) => note.labels.includes(label))) {
+          return false;
+        }
 
-      if (!normalizedSearch) {
-        return true;
-      }
+        if (!normalizedSearch) {
+          return true;
+        }
 
-      return `${note.title} ${note.content}`.toLowerCase().includes(normalizedSearch);
+        return `${note.title} ${note.content}`.toLowerCase().includes(normalizedSearch);
       }),
   );
 
@@ -98,8 +113,8 @@ function NotesPage() {
         isOffline={isOffline}
         shareScope={
           note.__shareMeta?.isReceivedShared ? 'received'
-          : note.__shareMeta?.isOwnedShared ? 'owned'
-          : null
+            : note.__shareMeta?.isOwnedShared ? 'owned'
+              : null
         }
         accessPermission={note.__shareMeta?.isReceivedShared ? note.__shareMeta.myPermission : null}
       />
@@ -263,9 +278,9 @@ function NotesPage() {
         note.color === nextDefaultColor
           ? note
           : {
-              ...note,
-              color: nextDefaultColor,
-            },
+            ...note,
+            color: nextDefaultColor,
+          },
       ),
     );
   }
@@ -280,6 +295,10 @@ function NotesPage() {
 
   function handleConfirmLogout() {
     setLogoutConfirmOpen(false);
+    // Gọi API logout (fire-and-forget) và xóa dữ liệu local
+    import('../features/auth/services/authService').then(m => m.logout()).catch(() => { });
+    localStorage.removeItem('auth_token');
+    localStorage.removeItem('auth_user');
     navigate('/login');
   }
 
@@ -438,6 +457,8 @@ function NotesPage() {
         onToggleTheme={setTheme}
         preferences={user.preferences}
         onUpdatePreferences={handleUpdateProfilePreferences}
+        user={user}
+        onUserUpdate={(updates) => setUser(prev => ({ ...prev, ...updates }))}
       />
 
       <Modal show={Boolean(unlockingNote)} onHide={handleCancelUnlock} centered dialogClassName="note-lock-modal">

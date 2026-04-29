@@ -289,4 +289,59 @@ class AuthController extends Controller
             ],
         ]);
     }
+
+    /**
+     * Cập nhật thông tin profile (tên).
+     */
+    public function updateProfile(Request $request): JsonResponse
+    {
+        $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+        ]);
+
+        $user = $request->user();
+        $user->update(['name' => $request->name]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Cập nhật hồ sơ thành công!',
+            'data' => [
+                'user' => [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'avatar' => $user->avatar ? asset('storage/' . $user->avatar) : null,
+                    'email_verified' => !is_null($user->email_verified_at),
+                ],
+            ],
+        ]);
+    }
+
+    /**
+     * Upload avatar.
+     */
+    public function uploadAvatar(Request $request): JsonResponse
+    {
+        $request->validate([
+            'avatar' => ['required', 'image', 'mimes:jpeg,png,webp', 'max:5120'], // max 5MB
+        ]);
+
+        $user = $request->user();
+
+        // Xóa avatar cũ nếu có
+        if ($user->avatar && \Illuminate\Support\Facades\Storage::disk('public')->exists($user->avatar)) {
+            \Illuminate\Support\Facades\Storage::disk('public')->delete($user->avatar);
+        }
+
+        $path = $request->file('avatar')->store('avatars', 'public');
+        $user->update(['avatar' => $path]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Cập nhật ảnh đại diện thành công!',
+            'data' => [
+                'avatar' => asset('storage/' . $path),
+            ],
+        ]);
+    }
 }

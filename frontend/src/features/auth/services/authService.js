@@ -116,3 +116,42 @@ export async function sendVerifyOtp() {
 export async function getUser() {
   return request('/v1/auth/user');
 }
+
+export async function updateProfile({ name }) {
+  return request('/v1/auth/update-profile', {
+    method: 'PUT',
+    body: JSON.stringify({ name }),
+  });
+}
+
+export async function uploadAvatar(file) {
+  const token = localStorage.getItem('auth_token');
+  const formData = new FormData();
+  formData.append('avatar', file);
+
+  const res = await fetch(`${API_BASE}/v1/auth/upload-avatar`, {
+    method: 'POST',
+    headers: {
+      'Accept': 'application/json',
+      ...(token && { Authorization: `Bearer ${token}` }),
+    },
+    body: formData,
+  });
+
+  const contentType = res.headers.get('content-type') || '';
+  if (!contentType.includes('application/json')) {
+    throw new Error('Không thể kết nối đến máy chủ. Vui lòng thử lại sau.');
+  }
+
+  const data = await res.json();
+
+  if (!res.ok) {
+    if (res.status === 422 && data.errors) {
+      const firstError = Object.values(data.errors).flat()[0];
+      throw new Error(firstError || data.message);
+    }
+    throw new Error(data.message || 'Có lỗi xảy ra');
+  }
+
+  return data;
+}
