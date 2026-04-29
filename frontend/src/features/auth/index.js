@@ -10,6 +10,7 @@ export { default as LoginPage } from './components/LoginPage';
 export { default as SignupPage } from './components/SignupPage';
 export { default as ForgotPasswordPage } from './components/ForgotPasswordPage';
 export { default as OtpVerificationPage } from './components/OtpVerificationPage';
+export { default as ResetPasswordPage } from './components/ResetPasswordPage';
 
 // Hooks
 export { useAuth } from './hooks/useAuth';

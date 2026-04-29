@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import { Toaster } from 'sonner';
-import { ForgotPasswordPage, LoginPage, SignupPage, OtpVerificationPage } from './features/auth';
+import { ForgotPasswordPage, LoginPage, SignupPage, OtpVerificationPage, ResetPasswordPage } from './features/auth';
 import LandingPage from './pages/LandingPage';
 import NotesPage from './pages/NotesPage';
 import NotFoundPage from './pages/NotFoundPage';
@@ -27,6 +27,7 @@ function App() {
         <Route path="/signup" element={<SignupPage />} />
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         <Route path="/verify-otp" element={<OtpVerificationPage />} />
+        <Route path="/reset-password" element={<ResetPasswordPage />} />
         <Route path="/notes" element={<NotesPage />} />
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
