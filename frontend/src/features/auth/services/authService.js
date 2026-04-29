@@ -124,6 +124,13 @@ export async function updateProfile({ name }) {
   });
 }
 
+export async function updatePreferences(preferences) {
+  return request('/v1/auth/update-preferences', {
+    method: 'PUT',
+    body: JSON.stringify({ preferences }),
+  });
+}
+
 export async function uploadAvatar(file) {
   const token = localStorage.getItem('auth_token');
   const formData = new FormData();

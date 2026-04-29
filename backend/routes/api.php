@@ -56,6 +56,7 @@ Route::prefix('v1/auth')->group(function () {
         Route::get('user', [AuthController::class, 'user']);
         Route::put('update-profile', [AuthController::class, 'updateProfile']);
         Route::post('upload-avatar', [AuthController::class, 'uploadAvatar']);
+        Route::put('update-preferences', [AuthController::class, 'updatePreferences']);
     });
 });
 

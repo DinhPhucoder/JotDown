@@ -344,4 +344,25 @@ class AuthController extends Controller
             ],
         ]);
     }
+
+    /**
+     * Cập nhật preferences (cài đặt ứng dụng).
+     */
+    public function updatePreferences(Request $request): JsonResponse
+    {
+        $request->validate([
+            'preferences' => ['required', 'array'],
+        ]);
+
+        $user = $request->user();
+        $user->update(['preferences' => $request->preferences]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Cập nhật cài đặt thành công!',
+            'data' => [
+                'preferences' => $user->preferences,
+            ],
+        ]);
+    }
 }
