@@ -80,6 +80,13 @@ html[data-bs-theme='light'] .notes-search__input.form-control {
   display: none !important;
 }
 
+.notes-avatar-toggle.has-avatar {
+  background: transparent !important;
+  box-shadow: none;
+  overflow: hidden;
+  padding: 0 !important;
+}
+
 @media (max-width: 991.98px) {
   .notes-topbar__inner {
     flex-wrap: wrap;

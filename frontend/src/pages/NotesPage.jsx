@@ -310,6 +310,7 @@ function NotesPage() {
         viewMode={viewMode}
         onViewModeChange={setViewMode}
         userName={user.displayName}
+        userAvatar={user.avatar}
         isVerified={user.isVerified}
         selectedLabel={selectedLabels.length > 0 ? selectedLabels[0] : null}
         onLogout={handleOpenLogoutConfirm}

@@ -16,6 +16,7 @@ function NotesHeader({
   viewMode,
   onViewModeChange,
   userName,
+  userAvatar,
   isVerified,
   selectedLabel,
   onLogout,
@@ -84,8 +85,12 @@ function NotesHeader({
           </button>
 
           <Dropdown align="end">
-            <Dropdown.Toggle className="notes-avatar-toggle" variant="link">
-              {userName.charAt(0).toUpperCase()}
+            <Dropdown.Toggle className={`notes-avatar-toggle${userAvatar ? ' has-avatar' : ''}`} variant="link">
+              {userAvatar ? (
+                <img src={userAvatar} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
+              ) : (
+                userName.charAt(0).toUpperCase()
+              )}
             </Dropdown.Toggle>
             <Dropdown.Menu className="notes-account-menu">
               <Dropdown.Header>{userName}</Dropdown.Header>
