@@ -25,6 +25,12 @@ async function request(endpoint, options = {}) {
     headers,
   });
 
+  // Kiểm tra response có phải JSON không
+  const contentType = res.headers.get('content-type') || '';
+  if (!contentType.includes('application/json')) {
+    throw new Error('Không thể kết nối đến máy chủ. Vui lòng thử lại sau.');
+  }
+
   const data = await res.json();
 
   if (!res.ok) {

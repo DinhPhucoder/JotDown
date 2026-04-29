@@ -36,6 +36,8 @@ services:
       - DB_PASSWORD=root
     depends_on:
       - db
+    ports:
+      - "8000:80"
 
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost/api/health"]
