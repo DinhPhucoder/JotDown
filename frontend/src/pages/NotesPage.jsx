@@ -109,7 +109,14 @@ function NotesPage() {
   const { theme, setTheme } = useTheme();
   const isOffline = useOnlineStatus();
   const [initialWorkspace] = useState(() => loadNoteWorkspace());
-  const [notes, setNotes] = useState(() => sortNotes(initialWorkspace.notes));
+  const [notes, setNotes] = useState(() => {
+    // Nếu có token, ưu tiên bắt đầu với mảng rỗng để đợi dữ liệu từ server,
+    // tránh hiện tượng flash dữ liệu cũ từ localStorage.
+    if (localStorage.getItem('auth_token')) {
+      return [];
+    }
+    return sortNotes(initialWorkspace.notes);
+  });
   const [labels, setLabels] = useState(() => initialWorkspace.labels);
   const [user, setUser] = useState(() => {
     // Lấy user từ backend (đã lưu khi login)

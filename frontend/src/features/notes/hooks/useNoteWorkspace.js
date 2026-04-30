@@ -21,7 +21,12 @@ function resolveNoteFontSize(value) {
  */
 export function useNoteWorkspace() {
   const [initialWorkspace] = useState(() => loadNoteWorkspace());
-  const [notes, setNotes] = useState(() => sortNotes(initialWorkspace.notes));
+  const [notes, setNotes] = useState(() => {
+    if (localStorage.getItem('auth_token')) {
+      return [];
+    }
+    return sortNotes(initialWorkspace.notes);
+  });
   const [labels, setLabels] = useState(() => initialWorkspace.labels);
   const [user, setUser] = useState(() => initialWorkspace.user);
   const [viewMode, setViewMode] = useState(() => initialWorkspace.viewMode);

@@ -14,6 +14,10 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
     command: sh -c "npm install && npm run dev -- --host"
+    environment:
+      - VITE_PROXY_TARGET=http://backend:80
+      - CHOKIDAR_USEPOLLING=true
+      - WATCHPACK_POLLING=true
     volumes:
       - ./frontend:/app
       - /app/node_modules # Bảo toàn node_modules sinh ra trong container

@@ -58,41 +58,15 @@ function sanitizeUser(user) {
 // ─── Demo note injection ────────────────────────────────────────────────────────
 
 function ensureSharedDemoNote(notes) {
-  const sanitizedNotes = Array.isArray(notes) ? notes.map(sanitizeNote).filter(Boolean) : [];
-  const hasReceivedSharedNote = sanitizedNotes.some((note) => {
-    const ownerEmail = String(note.ownerEmail || '').trim().toLowerCase();
-    const hasViewer = Array.isArray(note.sharedWith)
-      ? note.sharedWith.some((entry) => String(entry.email || '').trim().toLowerCase() === mockUser.email)
-      : false;
-
-    return ownerEmail && ownerEmail !== mockUser.email && hasViewer;
-  });
-
-  if (hasReceivedSharedNote) {
-    return sanitizedNotes;
-  }
-
-  const demoSharedNote = sanitizeNote(mockNotes.find((note) => note.id === '7'));
-
-  if (!demoSharedNote) {
-    return sanitizedNotes;
-  }
-
-  const hasSameId = sanitizedNotes.some((note) => note.id === demoSharedNote.id);
-
-  if (hasSameId) {
-    return sanitizedNotes.map((note) => (note.id === demoSharedNote.id ? demoSharedNote : note));
-  }
-
-  return [demoSharedNote, ...sanitizedNotes];
+  return Array.isArray(notes) ? notes.map(sanitizeNote).filter(Boolean) : [];
 }
 
 // ─── Default workspace ─────────────────────────────────────────────────────────
 
 function getDefaultWorkspace() {
   return {
-    notes: mockNotes,
-    labels: mockLabels,
+    notes: [],
+    labels: [],
     user: mockUser,
     viewMode: 'grid',
   };

@@ -46,14 +46,6 @@
                                     </td>
                                 </tr>
                             </table>
-
-                            <p style="font-family: 'Google Sans Flex', 'Inter', sans-serif; font-size: 13px; color: #64748b; margin-bottom: 8px;">
-                                Hoặc copy đường dẫn sau vào trình duyệt:
-                            </p>
-                            <p style="font-size: 13px; color: #4f46e5; word-break: break-all; margin-top: 0; margin-bottom: 24px;">
-                                {{ $url }}
-                            </p>
-
                             <p style="font-size: 14px; color: #64748b; line-height: 1.6; margin: 0;">
                                 Link này sẽ hết hạn sau <strong>60 phút</strong>.<br>
                                 Nếu bạn không thực hiện yêu cầu này, vui lòng bỏ qua email.

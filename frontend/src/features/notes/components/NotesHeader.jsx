@@ -43,7 +43,7 @@ function NotesHeader({
           >
             <FontAwesomeIcon icon={faBars} />
           </button>
-          
+
           <button
             type="button"
             className="notes-icon-btn d-none d-lg-inline-flex"
