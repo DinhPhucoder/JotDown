@@ -12,6 +12,14 @@ import {
 import NoteCollaboratorsModal from './NoteCollaboratorsModal';
 import NoteDeleteConfirmDialog from './NoteDeleteConfirmDialog';
 import TiptapEditor from './TiptapEditor';
+import {
+  deleteNoteAttachment,
+  getAttachmentSignature,
+  getNoteAttachmentSignature,
+  saveNoteAttachment,
+  uploadImageToCloudinary,
+} from '../services/noteAttachmentService';
+import { removeOfflineAttachmentById, saveOfflineAttachment } from '../services/offlineAttachmentStore';
 
 const collaboratorEmailSuggestions = [
   'dinhphan1209@gmail.com',
@@ -45,18 +53,33 @@ function createDraftSnapshot(
   nextContent,
   nextPinned,
   nextImages,
+  nextAttachments,
   nextLabels,
   nextSharedWith,
   nextLocked,
   nextLockPassword,
 ) {
   const normalizedState = normalizeSecurityState(nextLocked, nextLockPassword, nextSharedWith);
+  const normalizedImages = (Array.isArray(nextImages) ? nextImages : [])
+    .map((item) => String(item || ''))
+    .filter(Boolean);
+  const normalizedAttachments = (Array.isArray(nextAttachments) ? nextAttachments : [])
+    .map((item) => ({
+      id: String(item?.id ?? item?.local_file_id ?? ''),
+      file_url: String(item?.file_url || ''),
+      file_size: Number(item?.file_size || 0),
+      file_type: String(item?.file_type || ''),
+      is_local_only: Boolean(item?.is_local_only),
+      sync_status: String(item?.sync_status || ''),
+    }))
+    .sort((left, right) => left.id.localeCompare(right.id));
 
   return JSON.stringify({
     title: nextTitle,
     content: nextContent,
     isPinned: nextPinned,
-    images: nextImages,
+    images: normalizedImages,
+    attachments: normalizedAttachments,
     labels: normalizeLabels(nextLabels).sort((left, right) => left.localeCompare(right)),
     isLocked: normalizedState.isLocked,
     lockPassword: normalizedState.lockPassword,
@@ -100,42 +123,6 @@ function normalizeSecurityState(nextLocked, nextLockPassword, nextSharedWith) {
   };
 }
 
-function resizeImageFile(file) {
-  return new Promise((resolve, reject) => {
-    const imageUrl = URL.createObjectURL(file);
-    const image = new Image();
-
-    image.onload = () => {
-      const maxSide = 1600;
-      const ratio = Math.min(1, maxSide / Math.max(image.width, image.height));
-      const width = Math.max(1, Math.round(image.width * ratio));
-      const height = Math.max(1, Math.round(image.height * ratio));
-      const canvas = document.createElement('canvas');
-      const context = canvas.getContext('2d');
-
-      if (!context) {
-        URL.revokeObjectURL(imageUrl);
-        reject(new Error('Không thể xử lý ảnh'));
-        return;
-      }
-
-      canvas.width = width;
-      canvas.height = height;
-      context.drawImage(image, 0, 0, width, height);
-      const resizedDataUrl = canvas.toDataURL('image/webp', 0.82);
-      URL.revokeObjectURL(imageUrl);
-      resolve(resizedDataUrl);
-    };
-
-    image.onerror = () => {
-      URL.revokeObjectURL(imageUrl);
-      reject(new Error('Không thể đọc ảnh'));
-    };
-
-    image.src = imageUrl;
-  });
-}
-
 function formatLastEditedText(value) {
   const parsedDate = value ? new Date(value) : new Date();
 
@@ -164,6 +151,7 @@ function NoteEditorModal({
   note,
   open,
   defaultColor,
+  isOffline = false,
   availableLabels = [],
   onClose,
   onDelete,
@@ -203,10 +191,32 @@ function NoteEditorModal({
   const [activeImage, setActiveImage] = useState(null);
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [uploadError, setUploadError] = useState('');
+  const [imageMetas, setImageMetas] = useState(() => {
+    if (!Array.isArray(note?.attachments)) {
+      return [];
+    }
+
+    return note.attachments
+      .filter(Boolean)
+      .slice(0, 3)
+      .map((attachment) => ({
+        file_size: Number(attachment.file_size || 0),
+      }));
+  });
+  const [attachmentItems, setAttachmentItems] = useState(() => {
+    if (!Array.isArray(note?.attachments)) {
+      return [];
+    }
+
+    return note.attachments.filter(Boolean).slice(0, 3);
+  });
 
   const fileInputRef = useRef(null);
   const labelPanelRef = useRef(null);
   const noteIdRef = useRef(note?.id || null);
+  const localPreviewUrlsRef = useRef(new Set());
 
   const normalizedAvailableLabels = useMemo(() => normalizeLabels(availableLabels), [availableLabels]);
   const normalizedLabelQuery = labelQuery.trim().toLowerCase();
@@ -220,6 +230,7 @@ function NoteEditorModal({
       initialContent.trim(),
       initialPinned,
       initialImages,
+      note?.attachments || [],
       initialLabels,
       initialSharedWith,
       initialIsLocked,
@@ -232,6 +243,7 @@ function NoteEditorModal({
     content.trim(),
     isPinned,
     images,
+    attachmentItems,
     selectedLabels,
     sharedWith,
     isLocked,
@@ -258,6 +270,7 @@ function NoteEditorModal({
         draft.content,
         draft.isPinned,
         draft.images,
+        draft.attachments,
         draft.labels,
         draft.sharedWith,
         draft.isLocked,
@@ -284,12 +297,25 @@ function NoteEditorModal({
         lockPassword: normalizedState.lockPassword,
         labels: normalizeLabels(selectedLabels),
         images,
+        attachments: attachmentItems,
         sharedWith: normalizedState.sharedWith,
         createdAt: note?.createdAt || now,
         updatedAt: now,
       };
     },
-    [title, content, note, defaultColor, isPinned, isLocked, lockPassword, selectedLabels, images, sharedWith],
+    [
+      title,
+      content,
+      note,
+      defaultColor,
+      isPinned,
+      isLocked,
+      lockPassword,
+      selectedLabels,
+      images,
+      attachmentItems,
+      sharedWith,
+    ],
   );
 
   function handleToggleLabel(labelName) {
@@ -365,15 +391,181 @@ function NoteEditorModal({
       return;
     }
 
+    const allowedTypes = new Set(['image/jpeg', 'image/png']);
     const nextFiles = files.slice(0, remainingImageSlots);
-    const nextImages = await Promise.all(nextFiles.map((file) => resizeImageFile(file)));
-    setImages((currentImages) => [...currentImages, ...nextImages].slice(0, 3));
+    const currentSize = imageMetas.reduce((total, item) => total + Number(item.file_size || 0), 0);
+    const newSize = nextFiles.reduce((total, file) => total + Number(file.size || 0), 0);
+
+    if (!nextFiles.every((file) => allowedTypes.has(file.type))) {
+      setUploadError('Chỉ hỗ trợ ảnh JPG hoặc PNG.');
+      event.target.value = '';
+      return;
+    }
+
+    if (currentSize + newSize > 15 * 1024 * 1024) {
+      setUploadError('Tổng dung lượng ảnh không được vượt quá 15MB.');
+      event.target.value = '';
+      return;
+    }
+
+    setUploadError('');
+    setIsUploadingImage(true);
+
+    try {
+      if (isOffline) {
+        const localNoteId = String(note?.id || noteIdRef.current || crypto.randomUUID());
+        noteIdRef.current = localNoteId;
+        const localUrls = [];
+        const localMetas = [];
+        const localAttachments = [];
+
+        for (const file of nextFiles) {
+          const localAttachmentId = `local-${crypto.randomUUID()}`;
+          const previewUrl = URL.createObjectURL(file);
+          localPreviewUrlsRef.current.add(previewUrl);
+
+          await saveOfflineAttachment({
+            id: localAttachmentId,
+            note_id: localNoteId,
+            file,
+            file_name: file.name,
+            file_type: file.type,
+            file_size: Number(file.size || 0),
+            created_at: new Date().toISOString(),
+          });
+
+          localUrls.push(previewUrl);
+          localMetas.push({ file_size: Number(file.size || 0) });
+          localAttachments.push({
+            id: localAttachmentId,
+            local_file_id: localAttachmentId,
+            file_url: previewUrl,
+            file_size: Number(file.size || 0),
+            file_type: file.type,
+            original_name: file.name,
+            is_local_only: true,
+            sync_status: 'pending_upload',
+          });
+        }
+
+        setImages((currentImages) => [...currentImages, ...localUrls].slice(0, 3));
+        setImageMetas((currentMetas) => [...currentMetas, ...localMetas].slice(0, 3));
+        setAttachmentItems((currentAttachments) => [...currentAttachments, ...localAttachments].slice(0, 3));
+        return;
+      }
+
+      const uploadedUrls = [];
+      const uploadedMetas = [];
+      const uploadedAttachments = [];
+
+      for (const file of nextFiles) {
+        const noteId = Number(note?.id);
+        const signaturePayload =
+          noteId && !Number.isNaN(noteId)
+            ? await getNoteAttachmentSignature(noteId)
+            : await getAttachmentSignature();
+        const cloudinaryResponse = await uploadImageToCloudinary(file, signaturePayload);
+
+        if (noteId && !Number.isNaN(noteId)) {
+          const savedAttachment = await saveNoteAttachment(noteId, {
+            file_url: cloudinaryResponse.secure_url,
+            file_size: cloudinaryResponse.bytes,
+            file_type: cloudinaryResponse.format,
+            original_name: cloudinaryResponse.original_filename,
+          });
+
+          uploadedUrls.push(savedAttachment.file_url);
+          uploadedMetas.push({ file_size: savedAttachment.file_size });
+          uploadedAttachments.push(savedAttachment);
+        } else {
+          uploadedUrls.push(cloudinaryResponse.secure_url);
+          uploadedMetas.push({ file_size: cloudinaryResponse.bytes });
+          uploadedAttachments.push({
+            id: `pending-${crypto.randomUUID()}`,
+            file_url: cloudinaryResponse.secure_url,
+            file_size: cloudinaryResponse.bytes,
+            file_type: cloudinaryResponse.format,
+            original_name: cloudinaryResponse.original_filename,
+            is_local_only: false,
+            sync_status: 'pending_note_create',
+          });
+        }
+      }
+
+      setImages((currentImages) => [...currentImages, ...uploadedUrls].slice(0, 3));
+      setImageMetas((currentMetas) => [...currentMetas, ...uploadedMetas].slice(0, 3));
+      setAttachmentItems((currentAttachments) => [...currentAttachments, ...uploadedAttachments].slice(0, 3));
+    } catch (error) {
+      setUploadError(error?.message || 'Không thể tải ảnh lên.');
+    } finally {
+      setIsUploadingImage(false);
+    }
+
     event.target.value = '';
+  }
+
+  async function handleRemoveImage(index) {
+    if (index < 0 || index >= images.length) {
+      return;
+    }
+
+    const nextImages = images.filter((_, itemIndex) => itemIndex !== index);
+    const nextMetas = imageMetas.filter((_, itemIndex) => itemIndex !== index);
+    const attachmentToDelete = attachmentItems[index];
+    const nextAttachments = attachmentItems.filter((_, itemIndex) => itemIndex !== index);
+
+    setImages(nextImages);
+    setImageMetas(nextMetas);
+    setAttachmentItems(nextAttachments);
+
+    if (attachmentToDelete?.is_local_only || attachmentToDelete?.local_file_id) {
+      try {
+        const localId = String(attachmentToDelete.local_file_id || attachmentToDelete.id || '');
+        if (localId) {
+          await removeOfflineAttachmentById(localId);
+        }
+
+        if (typeof attachmentToDelete?.file_url === 'string' && attachmentToDelete.file_url.startsWith('blob:')) {
+          URL.revokeObjectURL(attachmentToDelete.file_url);
+          localPreviewUrlsRef.current.delete(attachmentToDelete.file_url);
+        }
+      } catch (error) {
+        setImages(images);
+        setImageMetas(imageMetas);
+        setAttachmentItems(attachmentItems);
+        setUploadError(error?.message || 'Không thể xóa ảnh offline ngay lúc này.');
+      }
+      return;
+    }
+
+    if (!attachmentToDelete?.id || !note?.id) {
+      return;
+    }
+
+    try {
+      await deleteNoteAttachment(note.id, attachmentToDelete.id);
+    } catch (error) {
+      setImages(images);
+      setImageMetas(imageMetas);
+      setAttachmentItems(attachmentItems);
+      setUploadError(error?.message || 'Không thể xóa ảnh ngay lúc này.');
+    }
   }
 
   function handleCloseImageViewer() {
     setActiveImage(null);
   }
+
+  useEffect(() => {
+    const previewUrls = localPreviewUrlsRef.current;
+
+    return () => {
+      previewUrls.forEach((url) => {
+        URL.revokeObjectURL(url);
+      });
+      previewUrls.clear();
+    };
+  }, []);
 
   useEffect(() => {
     if (!isLabelPanelOpen) {
@@ -499,11 +691,10 @@ function NoteEditorModal({
                   <button
                     type="button"
                     className="note-editor__remove-btn"
-                    onClick={(event) => {
+                    disabled={isOffline && !attachmentItems[index]?.is_local_only}
+                    onClick={async (event) => {
                       event.stopPropagation();
-                      setImages((currentImages) =>
-                        currentImages.filter((_, itemIndex) => itemIndex !== index),
-                      );
+                      await handleRemoveImage(index);
                     }}
                     aria-label="Xóa ảnh"
                     title="Xóa ảnh"
@@ -544,7 +735,7 @@ function NoteEditorModal({
                   type="button" 
                   className={`notes-icon-btn ${sharedWith.length > 0 ? 'active' : ''}`} 
                   onClick={() => setIsCollaboratorsOpen(true)}
-                  title="Mở cộng tác viên"
+                  title="Mời cộng tác viên"
                 >
                   <FontAwesomeIcon icon={faUserPlus} />
                 </button>
@@ -563,9 +754,11 @@ function NoteEditorModal({
                 type="button"
                 className="notes-icon-btn"
                 onClick={() => fileInputRef.current?.click()}
-                disabled={remainingImageSlots <= 0}
+                disabled={remainingImageSlots <= 0 || isUploadingImage}
                 title={
-                  remainingImageSlots > 0
+                  isOffline
+                    ? `Thêm ảnh offline (${images.length}/3)`
+                    : remainingImageSlots > 0
                     ? `Thêm ảnh (${images.length}/3)`
                     : 'Đã đạt tối đa 3 ảnh'
                 }
@@ -624,6 +817,10 @@ function NoteEditorModal({
 
             <span className="note-editor__status">{formatLastEditedText(lastEditedAt)}</span>
           </div>
+
+            {uploadError ? <div className="note-editor__lock-error mt-2">{uploadError}</div> : null}
+            {isOffline ? <div className="note-editor__status mt-2">Đang offline: ảnh mới sẽ chờ đồng bộ.</div> : null}
+            {isUploadingImage ? <div className="note-editor__status mt-2">Đang tải ảnh...</div> : null}
 
           {selectedLabels.length > 0 ? (
             <div className="note-editor__selected-labels">
@@ -750,3 +947,4 @@ function NoteEditorModal({
 }
 
 export default NoteEditorModal;
+

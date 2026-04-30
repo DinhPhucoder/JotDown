@@ -8,10 +8,24 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Models\User;
 use App\Models\Label;
 use App\Models\NoteShare;
+use App\Models\NoteAttachment;
 
 class Note extends Model
 {
     use HasFactory, SoftDeletes;
+    
+    /**
+     * Boot the model.
+     */
+    protected static function booted()
+    {
+        static::deleting(function ($note) {
+            // Tự động xóa mềm các attachment và shares liên quan khi note bị xóa mềm
+            $note->attachments()->delete();
+            $note->shares()->delete();
+        });
+    }
+
 
     protected $fillable = [
         'user_id',
@@ -44,5 +58,10 @@ class Note extends Model
     public function labels()
     {
         return $this->belongsToMany(Label::class, 'note_labels');
+    }
+
+    public function attachments()
+    {
+        return $this->hasMany(NoteAttachment::class, 'note_id');
     }
 }

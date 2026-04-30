@@ -16,9 +16,17 @@ class UpdateLabelRequest extends FormRequest
     {
         $label = $this->route('label');
         $labelId = is_object($label) ? $label->getKey() : $label;
+        $userId = $this->user()?->id;
 
         return [
-            'name' => ['nullable', 'string', 'max:100', Rule::unique('labels', 'name')->ignore($labelId)],
+            'name' => [
+                'nullable',
+                'string',
+                'max:100',
+                Rule::unique('labels', 'name')
+                    ->where(fn ($query) => $query->where('user_id', $userId))
+                    ->ignore($labelId),
+            ],
         ];
     }
 

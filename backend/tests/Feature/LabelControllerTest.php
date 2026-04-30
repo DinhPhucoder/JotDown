@@ -6,6 +6,7 @@ use App\Models\Label;
 use App\Models\Note;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
 class LabelControllerTest extends TestCase
@@ -16,12 +17,13 @@ class LabelControllerTest extends TestCase
     {
         parent::setUp();
 
-        User::factory()->create(['id' => 1]);
+        $user = User::factory()->create(['id' => 1]);
+        Sanctum::actingAs($user);
     }
 
     public function test_get_labels_returns_empty_list_when_no_labels_exist(): void
     {
-        $response = $this->getJson('/api/labels');
+        $response = $this->getJson('/api/v1/labels');
 
         $response->assertOk()->assertJson([]);
     }
@@ -30,7 +32,7 @@ class LabelControllerTest extends TestCase
     {
         $labels = Label::factory(3)->create();
 
-        $response = $this->getJson('/api/labels');
+        $response = $this->getJson('/api/v1/labels');
 
         $response->assertOk()->assertJsonCount(3);
 
@@ -45,7 +47,7 @@ class LabelControllerTest extends TestCase
             'name' => 'Important',
         ];
 
-        $response = $this->postJson('/api/labels', $data);
+        $response = $this->postJson('/api/v1/labels', $data);
 
         $response->assertCreated()
             ->assertJsonPath('name', 'Important');
@@ -55,7 +57,7 @@ class LabelControllerTest extends TestCase
 
     public function test_post_labels_fails_validation_when_name_is_missing(): void
     {
-        $response = $this->postJson('/api/labels', []);
+        $response = $this->postJson('/api/v1/labels', []);
 
         $response->assertUnprocessable()->assertJsonValidationErrors('name');
     }
@@ -64,7 +66,7 @@ class LabelControllerTest extends TestCase
     {
         Label::factory()->create(['name' => 'Duplicate']);
 
-        $response = $this->postJson('/api/labels', [
+        $response = $this->postJson('/api/v1/labels', [
             'name' => 'Duplicate',
         ]);
 
@@ -73,7 +75,7 @@ class LabelControllerTest extends TestCase
 
     public function test_post_labels_fails_validation_when_name_exceeds_max_length(): void
     {
-        $response = $this->postJson('/api/labels', [
+        $response = $this->postJson('/api/v1/labels', [
             'name' => str_repeat('a', 101),
         ]);
 
@@ -88,7 +90,7 @@ class LabelControllerTest extends TestCase
             'name' => 'Updated Label',
         ];
 
-        $response = $this->putJson("/api/labels/{$label->id}", $updateData);
+        $response = $this->putJson("/api/v1/labels/{$label->id}", $updateData);
 
         $response->assertOk()
             ->assertJsonPath('name', 'Updated Label');
@@ -103,7 +105,7 @@ class LabelControllerTest extends TestCase
     {
         $label = Label::factory()->create(['name' => 'Original']);
 
-        $response = $this->putJson("/api/labels/{$label->id}", [
+        $response = $this->putJson("/api/v1/labels/{$label->id}", [
             'name' => 'Updated Name',
         ]);
 
@@ -115,7 +117,7 @@ class LabelControllerTest extends TestCase
     {
         $label = Label::factory()->create(['name' => 'Test Label']);
 
-        $response = $this->putJson("/api/labels/{$label->id}", [
+        $response = $this->putJson("/api/v1/labels/{$label->id}", [
             'name' => 'Test Label',
         ]);
 
@@ -127,7 +129,7 @@ class LabelControllerTest extends TestCase
         Label::factory()->create(['name' => 'Label 1']);
         $label2 = Label::factory()->create(['name' => 'Label 2']);
 
-        $response = $this->putJson("/api/labels/{$label2->id}", [
+        $response = $this->putJson("/api/v1/labels/{$label2->id}", [
             'name' => 'Label 1',
         ]);
 
@@ -136,7 +138,7 @@ class LabelControllerTest extends TestCase
 
     public function test_put_labels_id_returns_404_when_label_does_not_exist(): void
     {
-        $response = $this->putJson('/api/labels/9999', ['name' => 'New']);
+        $response = $this->putJson('/api/v1/labels/9999', ['name' => 'New']);
 
         $response->assertNotFound();
     }
@@ -145,7 +147,7 @@ class LabelControllerTest extends TestCase
     {
         $label = Label::factory()->create();
 
-        $response = $this->deleteJson("/api/labels/{$label->id}");
+        $response = $this->deleteJson("/api/v1/labels/{$label->id}");
 
         $response->assertOk()->assertJsonPath('message', 'Deleted');
 
@@ -154,7 +156,7 @@ class LabelControllerTest extends TestCase
 
     public function test_delete_labels_id_returns_404_when_label_does_not_exist(): void
     {
-        $response = $this->deleteJson('/api/labels/9999');
+        $response = $this->deleteJson('/api/v1/labels/9999');
 
         $response->assertNotFound();
     }
@@ -165,7 +167,7 @@ class LabelControllerTest extends TestCase
         $note = Note::factory()->create();
         $note->labels()->attach($label->id);
 
-        $this->deleteJson("/api/labels/{$label->id}");
+        $this->deleteJson("/api/v1/labels/{$label->id}");
 
         $this->assertDatabaseMissing('note_labels', [
             'label_id' => $label->id,

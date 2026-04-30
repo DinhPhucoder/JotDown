@@ -16,6 +16,33 @@ import { resolveNoteShareMeta } from '../features/notes/utils/noteShareResolver'
 import { sortNotes } from '../features/notes/utils/noteSorter';
 import NoteGrid from '../components/common/NoteGrid';
 import AnimatedNoteCard from '../components/common/AnimatedNoteCard';
+import {
+  attachLabelsToNoteOnServer,
+  createNoteOnServer,
+  deleteNoteOnServer,
+  detachLabelsFromNoteOnServer,
+  fetchNotes,
+  pullSyncChanges,
+  pushSyncChanges,
+  updateNoteOnServer,
+} from '../features/notes/services/noteApiService';
+import {
+  createLabel,
+  deleteLabel,
+  fetchLabels as fetchLabelsFromServer,
+  updateLabel,
+} from '../features/notes/services/labelApiService';
+import {
+  cacheNotes,
+  clearQueuedSyncChanges,
+  enqueueSyncChange,
+  getCachedNotes,
+  getLastSyncCursor,
+  getQueuedSyncChanges,
+  setLastSyncCursor,
+  upsertCachedNote,
+} from '../services/noteOfflineSync';
+import { subscribeToNoteChannel } from '../services/noteRealtime';
 import '../features/notes/styles/index.css';
 
 function resolveNoteFontSize(value) {
@@ -24,6 +51,57 @@ function resolveNoteFontSize(value) {
 
 function normalizeEmail(value) {
   return String(value || '').trim().toLowerCase();
+}
+
+function isServerBackedId(noteId) {
+  return /^\d+$/.test(String(noteId || ''));
+}
+
+const NOTE_COLOR_TO_HEX = {
+  default: '#ffffff',
+  yellow: '#fde68a',
+  green: '#bbf7d0',
+  blue: '#bfdbfe',
+  pink: '#fbcfe8',
+  purple: '#ddd6fe',
+  orange: '#fed7aa',
+  teal: '#99f6e4',
+};
+
+function resolveApiColor(color) {
+  if (typeof color === 'string' && /^#[0-9A-F]{6}$/i.test(color)) {
+    return color;
+  }
+
+  return NOTE_COLOR_TO_HEX[color] || '#ffffff';
+}
+
+function toSyncPayload(note) {
+  return {
+    title: String(note?.title || ''),
+    content: String(note?.content || ''),
+    color: resolveApiColor(note?.color),
+    is_pinned: Boolean(note?.isPinned),
+    version: Math.max(Number(note?.version || 1), 1),
+  };
+}
+
+function normalizeLabelNames(list) {
+  const seen = new Set();
+
+  return (Array.isArray(list) ? list : [])
+    .map((item) => String(item || '').trim())
+    .filter(Boolean)
+    .filter((item) => {
+      const key = item.toLowerCase();
+
+      if (seen.has(key)) {
+        return false;
+      }
+
+      seen.add(key);
+      return true;
+    });
 }
 
 function NotesPage() {
@@ -68,6 +146,215 @@ function NotesPage() {
   useEffect(() => {
     saveNoteWorkspace({ notes, labels, user, viewMode });
   }, [notes, labels, user, viewMode]);
+
+  useEffect(() => {
+    const token = localStorage.getItem('auth_token');
+
+    if (!token) {
+      return;
+    }
+
+    let isCancelled = false;
+
+    async function loadInitialNotes() {
+      if (isOffline) {
+        const cached = await getCachedNotes();
+
+        if (!isCancelled && cached.length > 0) {
+          setNotes(sortNotes(cached));
+        }
+
+        return;
+      }
+
+      try {
+        const remoteNotes = await fetchNotes();
+
+        if (isCancelled) {
+          return;
+        }
+
+        setNotes(sortNotes(remoteNotes));
+        await cacheNotes(remoteNotes);
+        await setLastSyncCursor(new Date().toISOString());
+
+        try {
+          const remoteLabels = await fetchLabelsFromServer();
+          if (!isCancelled) {
+            setLabels(remoteLabels);
+          }
+        } catch {
+          // no-op: keep local labels when label fetch fails
+        }
+      } catch {
+        const cached = await getCachedNotes();
+
+        if (!isCancelled && cached.length > 0) {
+          setNotes(sortNotes(cached));
+        }
+      }
+    }
+
+    void loadInitialNotes();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [isOffline]);
+
+  useEffect(() => {
+    const token = localStorage.getItem('auth_token');
+
+    if (!token || isOffline) {
+      return;
+    }
+
+    let isCancelled = false;
+
+    async function flushAndPullChanges() {
+      const queuedChanges = await getQueuedSyncChanges();
+
+      if (queuedChanges.length > 0) {
+        const changes = queuedChanges.map((entry) => ({
+          action: entry.action,
+          entity_id: entry.entity_id,
+          payload: entry.payload,
+          timestamp: entry.timestamp,
+        }));
+
+        try {
+          const syncResult = await pushSyncChanges(changes);
+
+          if (!isCancelled && Array.isArray(syncResult.conflicts) && syncResult.conflicts.length > 0) {
+            setNotes((currentNotes) => {
+              const conflictMap = new Map(
+                syncResult.conflicts
+                  .filter((item) => item?.server_note?.id !== undefined)
+                  .map((item) => [String(item.server_note.id), {
+                    ...item.server_note,
+                    id: String(item.server_note.id),
+                    isPinned: Boolean(item.server_note.is_pinned),
+                    pinnedAt: item.server_note.pinned_at || undefined,
+                    createdAt: item.server_note.created_at || new Date().toISOString(),
+                    updatedAt: item.server_note.updated_at || new Date().toISOString(),
+                    version: Number(item.server_note.version || 1),
+                    labels: [],
+                    attachments: Array.isArray(item.server_note.attachments) ? item.server_note.attachments : [],
+                    images: Array.isArray(item.server_note.attachments)
+                      ? item.server_note.attachments.map((attachment) => String(attachment?.file_url || '')).filter(Boolean)
+                      : [],
+                    sharedWith: [],
+                    isLocked: Boolean(item.server_note.is_protected),
+                    lockPassword: '',
+                  }]),
+              );
+
+              return sortNotes(
+                currentNotes.map((note) => conflictMap.get(String(note.id)) || note),
+              );
+            });
+          }
+
+          await clearQueuedSyncChanges();
+        } catch {
+          return;
+        }
+      }
+
+      try {
+        const since = await getLastSyncCursor();
+        const pulled = await pullSyncChanges(since);
+
+        if (isCancelled) {
+          return;
+        }
+
+        setNotes((currentNotes) => {
+          const nextMap = new Map(currentNotes.map((note) => [String(note.id), note]));
+
+          pulled.notes.forEach((note) => {
+            nextMap.set(String(note.id), note);
+          });
+
+          pulled.deletedIds.forEach((id) => {
+            nextMap.delete(String(id));
+          });
+
+          const merged = Array.from(nextMap.values());
+          void cacheNotes(merged);
+          return sortNotes(merged);
+        });
+
+        await setLastSyncCursor(pulled.syncedAt);
+      } catch {
+        // no-op: preserve local state when sync fails
+      }
+    }
+
+    void flushAndPullChanges();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [isOffline]);
+
+  useEffect(() => {
+    const token = localStorage.getItem('auth_token');
+
+    if (!token || isOffline || notes.length === 0) {
+      return;
+    }
+
+    const unsubscribers = [];
+    const subscribed = new Set();
+
+    notes.forEach((note) => {
+      if (!isServerBackedId(note.id) || subscribed.has(String(note.id))) {
+        return;
+      }
+
+      subscribed.add(String(note.id));
+
+      void subscribeToNoteChannel(note.id, (payload) => {
+        const remote = payload?.note;
+
+        if (!remote || remote.id === undefined) {
+          return;
+        }
+
+        const normalized = {
+          ...note,
+          id: String(remote.id),
+          title: String(remote.title || ''),
+          content: String(remote.content || ''),
+          color: remote.color || note.color,
+          isPinned: Boolean(remote.is_pinned),
+          pinnedAt: remote.pinned_at || undefined,
+          updatedAt: remote.updated_at || new Date().toISOString(),
+          version: Number(remote.version || note.version || 1),
+          attachments: Array.isArray(remote.attachments) ? remote.attachments : [],
+          images: Array.isArray(remote.attachments)
+            ? remote.attachments.map((attachment) => String(attachment?.file_url || '')).filter(Boolean)
+            : note.images,
+        };
+
+        setNotes((currentNotes) =>
+          sortNotes(
+            currentNotes.map((currentNote) =>
+              String(currentNote.id) === String(normalized.id) ? normalized : currentNote,
+            ),
+          ),
+        );
+        void upsertCachedNote(normalized);
+      }).then((unsubscribe) => {
+        unsubscribers.push(unsubscribe);
+      });
+    });
+
+    return () => {
+      unsubscribers.forEach((unsubscribe) => unsubscribe());
+    };
+  }, [isOffline, notes]);
 
   const normalizedSearch = deferredSearch.trim().toLowerCase();
 
@@ -159,40 +446,261 @@ function NotesPage() {
   }
 
   function handleSave(nextNote) {
+    const now = new Date().toISOString();
+    let noteWithVersion = {
+      ...nextNote,
+      labels: normalizeLabelNames(nextNote?.labels),
+      version: Math.max(Number(nextNote?.version || 1), 1),
+      updatedAt: nextNote?.updatedAt || now,
+    };
+    let previousLabels = [];
+
     setNotes((currentNotes) => {
       const index = currentNotes.findIndex((item) => item.id === nextNote.id);
 
       if (index === -1) {
-        return sortNotes([nextNote, ...currentNotes]);
+        return sortNotes([noteWithVersion, ...currentNotes]);
       }
 
+      const currentVersion = Math.max(Number(currentNotes[index]?.version || 1), 1);
+      previousLabels = normalizeLabelNames(currentNotes[index]?.labels);
+      noteWithVersion = {
+        ...noteWithVersion,
+        version: Math.max(currentVersion, Number(noteWithVersion.version || 1)),
+      };
+
       const nextNotes = [...currentNotes];
-      nextNotes[index] = nextNote;
+      nextNotes[index] = noteWithVersion;
       return sortNotes(nextNotes);
     });
+
+    void upsertCachedNote(noteWithVersion);
+
+    const token = localStorage.getItem('auth_token');
+
+    if (!token) {
+      return;
+    }
+
+    async function syncNoteLabels(noteId) {
+      const nextLabelNames = normalizeLabelNames(noteWithVersion.labels);
+      const previousLabelSet = new Set(previousLabels.map((name) => name.toLowerCase()));
+      const nextLabelSet = new Set(nextLabelNames.map((name) => name.toLowerCase()));
+      const labelNameToId = new Map(
+        labels
+          .filter((label) => /^\d+$/.test(String(label?.id || '')))
+          .map((label) => [String(label?.name || '').trim().toLowerCase(), Number(label.id)]),
+      );
+
+      const attachedIds = nextLabelNames
+        .filter((name) => !previousLabelSet.has(name.toLowerCase()))
+        .map((name) => labelNameToId.get(name.toLowerCase()))
+        .filter((id) => Number.isInteger(id) && id > 0);
+
+      const detachedIds = previousLabels
+        .filter((name) => !nextLabelSet.has(name.toLowerCase()))
+        .map((name) => labelNameToId.get(name.toLowerCase()))
+        .filter((id) => Number.isInteger(id) && id > 0);
+
+      if (attachedIds.length > 0) {
+        await attachLabelsToNoteOnServer(noteId, attachedIds);
+      }
+
+      if (detachedIds.length > 0) {
+        await detachLabelsFromNoteOnServer(noteId, detachedIds);
+      }
+    }
+
+    if (isOffline) {
+      void enqueueSyncChange({
+        action: isServerBackedId(noteWithVersion.id) ? 'UPDATE' : 'CREATE',
+        entity_id: String(noteWithVersion.id),
+        payload: toSyncPayload(noteWithVersion),
+        timestamp: now,
+      });
+      return;
+    }
+
+    if (!isServerBackedId(noteWithVersion.id)) {
+      void createNoteOnServer(noteWithVersion)
+        .then((createdNote) => {
+          return syncNoteLabels(createdNote.id)
+            .then(() => {
+              const mergedCreatedNote = {
+                ...createdNote,
+                labels: noteWithVersion.labels,
+              };
+
+              setNotes((currentNotes) =>
+                sortNotes(
+                  currentNotes.map((note) =>
+                    note.id === noteWithVersion.id ? mergedCreatedNote : note,
+                  ),
+                ),
+              );
+              setEditingNote((currentEditing) =>
+                currentEditing?.id === noteWithVersion.id ? mergedCreatedNote : currentEditing,
+              );
+              return upsertCachedNote(mergedCreatedNote);
+            });
+        })
+        .catch(() => {
+          void enqueueSyncChange({
+            action: 'CREATE',
+            entity_id: String(noteWithVersion.id),
+            payload: toSyncPayload(noteWithVersion),
+            timestamp: now,
+          });
+        });
+      return;
+    }
+
+    void updateNoteOnServer(noteWithVersion.id, noteWithVersion)
+      .then((updatedNote) => {
+        return syncNoteLabels(noteWithVersion.id)
+          .then(() => {
+            const mergedUpdatedNote = {
+              ...updatedNote,
+              labels: noteWithVersion.labels,
+            };
+
+            setNotes((currentNotes) =>
+              sortNotes(
+                currentNotes.map((note) =>
+                  note.id === noteWithVersion.id ? mergedUpdatedNote : note,
+                ),
+              ),
+            );
+            return upsertCachedNote(mergedUpdatedNote);
+          });
+      })
+      .catch((error) => {
+        if (error?.code === 'CONFLICT' && error?.serverNote) {
+          setNotes((currentNotes) =>
+            sortNotes(
+              currentNotes.map((note) =>
+                note.id === noteWithVersion.id ? error.serverNote : note,
+              ),
+            ),
+          );
+
+          const shouldKeepLocal = window.confirm(
+            'Ghi chu nay da duoc cap nhat boi nguoi khac. Chon OK de giu ban sua cua ban va dong bo lai sau.',
+          );
+
+          if (shouldKeepLocal) {
+            void enqueueSyncChange({
+              action: 'UPDATE',
+              entity_id: String(error.serverNote.id),
+              payload: {
+                ...toSyncPayload(noteWithVersion),
+                version: Number(error.serverNote.version || 1),
+              },
+              timestamp: new Date().toISOString(),
+            });
+          }
+
+          return;
+        }
+
+        void enqueueSyncChange({
+          action: 'UPDATE',
+          entity_id: String(noteWithVersion.id),
+          payload: toSyncPayload(noteWithVersion),
+          timestamp: now,
+        });
+      });
   }
 
   function handleDelete(noteId) {
-    setNotes((currentNotes) => currentNotes.filter((item) => item.id !== noteId));
+    setNotes((currentNotes) => {
+      const nextNotes = currentNotes.filter((item) => item.id !== noteId);
+      void cacheNotes(nextNotes);
+      return nextNotes;
+    });
     setEditingNote(null);
     setEditorOpen(false);
+
+    const token = localStorage.getItem('auth_token');
+
+    if (!token) {
+      return;
+    }
+
+    if (isOffline || !isServerBackedId(noteId)) {
+      void enqueueSyncChange({
+        action: 'DELETE',
+        entity_id: String(noteId),
+        payload: null,
+        timestamp: new Date().toISOString(),
+      });
+      return;
+    }
+
+    void deleteNoteOnServer(noteId).catch(() => {
+      void enqueueSyncChange({
+        action: 'DELETE',
+        entity_id: String(noteId),
+        payload: null,
+        timestamp: new Date().toISOString(),
+      });
+    });
   }
 
   function handleToggleNotePin(noteId) {
-    setNotes((currentNotes) =>
-      sortNotes(
-        currentNotes.map((note) =>
-          note.id === noteId
-            ? {
-              ...note,
-              isPinned: !note.isPinned,
-              pinnedAt: !note.isPinned ? new Date().toISOString() : undefined,
-              updatedAt: new Date().toISOString(),
-            }
-            : note,
-        ),
-      ),
-    );
+    const now = new Date().toISOString();
+    let toggledNote = null;
+
+    setNotes((currentNotes) => {
+      const nextNotes = currentNotes.map((note) => {
+        if (note.id !== noteId) {
+          return note;
+        }
+
+        toggledNote = {
+          ...note,
+          isPinned: !note.isPinned,
+          pinnedAt: !note.isPinned ? now : undefined,
+          updatedAt: now,
+          version: Math.max(Number(note.version || 1), 1),
+        };
+
+        return toggledNote;
+      });
+
+      return sortNotes(nextNotes);
+    });
+
+    if (!toggledNote) {
+      return;
+    }
+
+    void upsertCachedNote(toggledNote);
+
+    const token = localStorage.getItem('auth_token');
+
+    if (!token) {
+      return;
+    }
+
+    if (isOffline || !isServerBackedId(toggledNote.id)) {
+      void enqueueSyncChange({
+        action: isServerBackedId(toggledNote.id) ? 'UPDATE' : 'CREATE',
+        entity_id: String(toggledNote.id),
+        payload: toSyncPayload(toggledNote),
+        timestamp: now,
+      });
+      return;
+    }
+
+    void updateNoteOnServer(toggledNote.id, toggledNote).catch(() => {
+      void enqueueSyncChange({
+        action: 'UPDATE',
+        entity_id: String(toggledNote.id),
+        payload: toSyncPayload(toggledNote),
+        timestamp: now,
+      });
+    });
   }
 
   function handleToggleLabel(labelName) {
@@ -205,14 +713,40 @@ function NotesPage() {
   }
 
   function handleAddLabel(labelName) {
-    setLabels((currentLabels) => {
-      const normalizedName = labelName.trim().toLowerCase();
+    const normalizedName = String(labelName || '').trim();
+    if (!normalizedName) {
+      return;
+    }
 
-      if (currentLabels.some((label) => label.name.trim().toLowerCase() === normalizedName)) {
+    const token = localStorage.getItem('auth_token');
+    if (token && !isOffline) {
+      void createLabel(normalizedName)
+        .then((created) => {
+          setLabels((currentLabels) => {
+            if (currentLabels.some((label) => String(label.id) === String(created.id))) {
+              return currentLabels;
+            }
+            return [...currentLabels, created];
+          });
+        })
+        .catch(() => {
+          setLabels((currentLabels) => {
+            const normalizedKey = normalizedName.toLowerCase();
+            if (currentLabels.some((label) => label.name.trim().toLowerCase() === normalizedKey)) {
+              return currentLabels;
+            }
+            return [...currentLabels, { id: crypto.randomUUID(), name: normalizedName }];
+          });
+        });
+      return;
+    }
+
+    setLabels((currentLabels) => {
+      const normalizedKey = normalizedName.toLowerCase();
+      if (currentLabels.some((label) => label.name.trim().toLowerCase() === normalizedKey)) {
         return currentLabels;
       }
-
-      return [...currentLabels, { id: crypto.randomUUID(), name: labelName.trim() }];
+      return [...currentLabels, { id: crypto.randomUUID(), name: normalizedName }];
     });
   }
 
@@ -223,16 +757,28 @@ function NotesPage() {
       return;
     }
 
+    const normalizedNextName = String(nextName || '').trim();
+    if (!normalizedNextName) {
+      return;
+    }
+
+    const token = localStorage.getItem('auth_token');
+    if (token && !isOffline) {
+      void updateLabel(labelId, normalizedNextName).catch(() => {
+        // no-op: keep optimistic UI even if request fails
+      });
+    }
+
     setLabels((currentLabels) =>
-      currentLabels.map((label) => (label.id === labelId ? { ...label, name: nextName } : label)),
+      currentLabels.map((label) => (label.id === labelId ? { ...label, name: normalizedNextName } : label)),
     );
     setSelectedLabels((currentLabels) =>
-      currentLabels.map((labelName) => (labelName === currentLabel.name ? nextName : labelName)),
+      currentLabels.map((labelName) => (labelName === currentLabel.name ? normalizedNextName : labelName)),
     );
     setNotes((currentNotes) =>
       currentNotes.map((note) => ({
         ...note,
-        labels: note.labels.map((labelName) => (labelName === currentLabel.name ? nextName : labelName)),
+        labels: note.labels.map((labelName) => (labelName === currentLabel.name ? normalizedNextName : labelName)),
       })),
     );
   }
@@ -244,6 +790,13 @@ function NotesPage() {
 
     if (!label) {
       return;
+    }
+
+    const token = localStorage.getItem('auth_token');
+    if (token && !isOffline) {
+      void deleteLabel(labelId).catch(() => {
+        // no-op: preserve UI even if request fails
+      });
     }
 
     setSelectedLabels((currentLabels) => currentLabels.filter((item) => item !== label.name));
@@ -432,6 +985,7 @@ function NotesPage() {
           note={editingNote}
           open={editorOpen}
           defaultColor={user.preferences.defaultNoteColor}
+          isOffline={isOffline}
           availableLabels={labels.map((label) => label.name)}
           onClose={() => setEditorOpen(false)}
           onDelete={handleDelete}

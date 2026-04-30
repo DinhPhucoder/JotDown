@@ -17,7 +17,7 @@ class SyncRequest extends FormRequest
     {
         return [
             'changes' => ['required', 'array'],
-            'changes.*.action' => ['required', 'string', 'in:CREATE,UPDATE,DELETE'],
+            'changes.*.action' => ['required', 'string', 'in:CREATE,UPDATE,DELETE,ATTACHMENT_ADD,ATTACHMENT_REMOVE'],
             'changes.*.entity_id' => ['required', 'string'],
             'changes.*.payload' => ['nullable', 'array'],
             'changes.*.timestamp' => ['required', 'date'],

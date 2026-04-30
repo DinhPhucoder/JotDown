@@ -2,10 +2,12 @@
 
 namespace Tests\Feature;
 
+use App\Events\NoteUpdated;
 use App\Models\Note;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Event;
 use Tests\TestCase;
 
 class NoteControllerTest extends TestCase
@@ -87,22 +89,48 @@ class NoteControllerTest extends TestCase
         $response->assertCreated()->assertJsonPath('color', '#ffffff');
     }
 
-    public function test_post_notes_fails_validation_when_title_is_missing(): void
+    public function test_post_notes_allows_missing_title_when_content_exists(): void
     {
         $response = $this->postJson('/api/notes', [
             'content' => 'Missing title',
         ]);
 
-        $response->assertUnprocessable()->assertJsonValidationErrors('title');
+        $response->assertCreated()
+            ->assertJsonPath('title', '')
+            ->assertJsonPath('content', 'Missing title');
     }
 
-    public function test_post_notes_fails_validation_when_content_is_missing(): void
+    public function test_post_notes_allows_missing_content_when_title_exists(): void
     {
         $response = $this->postJson('/api/notes', [
             'title' => 'Missing content',
         ]);
 
-        $response->assertUnprocessable()->assertJsonValidationErrors('content');
+        $response->assertCreated()
+            ->assertJsonPath('title', 'Missing content')
+            ->assertJsonPath('content', null);
+    }
+
+    public function test_post_notes_fails_validation_when_title_and_content_are_both_missing_without_attachments(): void
+    {
+        $response = $this->postJson('/api/notes', []);
+
+        $response->assertUnprocessable()->assertJsonValidationErrors('note');
+    }
+
+    public function test_post_notes_allows_missing_title_and_content_when_attachments_exist(): void
+    {
+        $response = $this->postJson('/api/notes', [
+            'attachments' => [
+                [
+                    'file_url' => 'https://example.com/image.jpg',
+                ],
+            ],
+        ]);
+
+        $response->assertCreated()
+            ->assertJsonPath('title', '')
+            ->assertJsonPath('content', null);
     }
 
     public function test_post_notes_fails_validation_when_title_exceeds_max_length(): void
@@ -160,6 +188,7 @@ class NoteControllerTest extends TestCase
         $note = Note::factory()->create();
 
         $updateData = [
+            'version' => $note->version,
             'title' => 'Updated Title',
             'content' => 'Updated content',
             'color' => '#00ff00',
@@ -187,6 +216,7 @@ class NoteControllerTest extends TestCase
         $note = Note::factory()->create(['title' => 'Original', 'content' => 'Original content']);
 
         $response = $this->putJson("/api/notes/{$note->id}", [
+            'version' => $note->version,
             'title' => 'Updated Title Only',
         ]);
 
@@ -199,8 +229,14 @@ class NoteControllerTest extends TestCase
     {
         $note = Note::factory()->create(['version' => 1]);
 
-        $this->putJson("/api/notes/{$note->id}", ['title' => 'Update 1']);
-        $this->putJson("/api/notes/{$note->id}", ['title' => 'Update 2']);
+        $this->putJson("/api/notes/{$note->id}", [
+            'version' => 1,
+            'title' => 'Update 1',
+        ]);
+        $this->putJson("/api/notes/{$note->id}", [
+            'version' => 2,
+            'title' => 'Update 2',
+        ]);
 
         $note->refresh();
 
@@ -211,7 +247,10 @@ class NoteControllerTest extends TestCase
     {
         $note = Note::factory()->create(['is_pinned' => false, 'pinned_at' => null]);
 
-        $response = $this->putJson("/api/notes/{$note->id}", ['is_pinned' => true]);
+        $response = $this->putJson("/api/notes/{$note->id}", [
+            'version' => $note->version,
+            'is_pinned' => true,
+        ]);
 
         $response->assertOk()->assertJsonPath('is_pinned', true);
 
@@ -222,7 +261,10 @@ class NoteControllerTest extends TestCase
     {
         $note = Note::factory()->pinned()->create();
 
-        $response = $this->putJson("/api/notes/{$note->id}", ['is_pinned' => false]);
+        $response = $this->putJson("/api/notes/{$note->id}", [
+            'version' => $note->version,
+            'is_pinned' => false,
+        ]);
 
         $response->assertOk()
             ->assertJsonPath('is_pinned', false)
@@ -234,15 +276,62 @@ class NoteControllerTest extends TestCase
         $note = Note::factory()->create();
 
         $response = $this->putJson("/api/notes/{$note->id}", [
+            'version' => $note->version,
             'color' => 'not-a-hex-color',
         ]);
 
         $response->assertUnprocessable()->assertJsonValidationErrors('color');
     }
 
+    public function test_put_notes_id_fails_validation_when_version_is_missing(): void
+    {
+        $note = Note::factory()->create();
+
+        $response = $this->putJson("/api/notes/{$note->id}", [
+            'title' => 'Updated without version',
+        ]);
+
+        $response->assertUnprocessable()->assertJsonValidationErrors('version');
+    }
+
+    public function test_put_notes_id_returns_conflict_when_request_version_is_stale(): void
+    {
+        $note = Note::factory()->create(['version' => 4]);
+
+        $response = $this->putJson("/api/notes/{$note->id}", [
+            'version' => 3,
+            'title' => 'Stale update',
+        ]);
+
+        $response->assertStatus(409)
+            ->assertJsonPath('conflict', true)
+            ->assertJsonPath('server_version', 4)
+            ->assertJsonPath('server_note.id', $note->id);
+    }
+
+    public function test_put_notes_id_broadcasts_note_updated_event(): void
+    {
+        Event::fake([NoteUpdated::class]);
+        $note = Note::factory()->create(['version' => 1]);
+
+        $response = $this->putJson("/api/notes/{$note->id}", [
+            'version' => 1,
+            'title' => 'Broadcast test',
+        ]);
+
+        $response->assertOk();
+
+        Event::assertDispatched(NoteUpdated::class, function (NoteUpdated $event) use ($note): bool {
+            return $event->note->id === $note->id;
+        });
+    }
+
     public function test_put_notes_id_returns_404_when_note_does_not_exist(): void
     {
-        $response = $this->putJson('/api/notes/9999', ['title' => 'New']);
+        $response = $this->putJson('/api/notes/9999', [
+            'version' => 1,
+            'title' => 'New',
+        ]);
 
         $response->assertNotFound();
     }

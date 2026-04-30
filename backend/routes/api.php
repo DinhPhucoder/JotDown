@@ -5,6 +5,9 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Http\Request;
 use App\Http\Controllers\NoteController;
 use App\Http\Controllers\LabelController;
+use App\Http\Controllers\NoteAttachmentController;
+use App\Http\Controllers\AttachmentSignatureController;
+use App\Http\Controllers\SyncController;
 
 /*
 |--------------------------------------------------------------------------
@@ -60,8 +63,18 @@ Route::prefix('v1/auth')->group(function () {
 });
 
 Route::apiResource('notes', NoteController::class);
-Route::apiResource('labels', LabelController::class);
 
 // Label attachment routes
 Route::post('/notes/{note}/labels/attach', [NoteController::class, 'attachLabels']);
 Route::post('/notes/{note}/labels/detach', [NoteController::class, 'detachLabels']);
+
+Route::middleware('auth:sanctum')->prefix('v1')->group(function () {
+    Route::apiResource('notes', NoteController::class)->names('v1.notes');
+    Route::apiResource('labels', LabelController::class)->names('v1.labels');
+    Route::post('/sync/push', [SyncController::class, 'push']);
+    Route::get('/sync/pull', [SyncController::class, 'pull']);
+    Route::post('/attachments/signature', AttachmentSignatureController::class);
+    Route::post('/notes/{note}/attachments/signature', [NoteAttachmentController::class, 'signature']);
+    Route::post('/notes/{note}/attachments', [NoteAttachmentController::class, 'store']);
+    Route::delete('/notes/{note}/attachments/{attachment}', [NoteAttachmentController::class, 'destroy']);
+});

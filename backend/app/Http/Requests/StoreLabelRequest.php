@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class StoreLabelRequest extends FormRequest
 {
@@ -13,8 +14,15 @@ class StoreLabelRequest extends FormRequest
 
     public function rules(): array
     {
+        $userId = $this->user()?->id;
+
         return [
-            'name' => 'required|string|max:100|unique:labels,name',
+            'name' => [
+                'required',
+                'string',
+                'max:100',
+                Rule::unique('labels', 'name')->where(fn ($query) => $query->where('user_id', $userId)),
+            ],
         ];
     }
 
