@@ -1,6 +1,16 @@
-const SHELL_CACHE = 'jotdown-shell-v1';
-const API_CACHE = 'jotdown-api-v1';
-const APP_SHELL_FILES = ['/', '/index.html', '/manifest.webmanifest', '/favicon.svg'];
+const SHELL_CACHE = 'jotdown-shell-v2';
+const API_CACHE = 'jotdown-api-v2';
+const APP_SHELL_FILES = [
+  '/',
+  '/index.html',
+  '/manifest.webmanifest',
+  '/favicon.svg',
+  '/Logo_JotDown.png',
+  '/bg-dark.png',
+  '/bg-light.png',
+  '/sun-icon.svg',
+];
+const CACHED_STATIC_PATHS = new Set(APP_SHELL_FILES);
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
@@ -35,7 +45,12 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  if (url.origin === self.location.origin) {
+  if (request.mode === 'navigate') {
+    event.respondWith(networkFirst(request, SHELL_CACHE));
+    return;
+  }
+
+  if (url.origin === self.location.origin && CACHED_STATIC_PATHS.has(url.pathname)) {
     event.respondWith(cacheFirst(request, SHELL_CACHE));
   }
 });
@@ -45,7 +60,9 @@ async function networkFirst(request, cacheName) {
 
   try {
     const response = await fetch(request);
-    cache.put(request, response.clone());
+    if (response.ok) {
+      cache.put(request, response.clone());
+    }
     return response;
   } catch {
     const cached = await cache.match(request);
@@ -66,6 +83,8 @@ async function cacheFirst(request, cacheName) {
   }
 
   const response = await fetch(request);
-  cache.put(request, response.clone());
+  if (response.ok) {
+    cache.put(request, response.clone());
+  }
   return response;
 }
