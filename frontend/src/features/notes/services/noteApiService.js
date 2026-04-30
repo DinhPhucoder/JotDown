@@ -1,4 +1,7 @@
-const API_BASE = import.meta.env.VITE_API_URL || '/api';
+let base = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || '/api';
+if (base.endsWith('/')) base = base.slice(0, -1);
+if (base !== '' && !base.endsWith('/api')) base += '/api';
+const API_BASE = base;
 const NOTE_COLOR_TO_HEX = {
   default: '#ffffff',
   yellow: '#fde68a',
