@@ -113,6 +113,10 @@ export async function sendVerifyOtp() {
   return request('/v1/auth/send-verify-otp', { method: 'POST' });
 }
 
+export async function sendVerificationLink() {
+  return request('/v1/auth/send-verification-link', { method: 'POST' });
+}
+
 export async function getUser() {
   return request('/v1/auth/user');
 }

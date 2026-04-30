@@ -71,6 +71,38 @@ function NotesPage() {
     saveNoteWorkspace({ notes, labels, user, viewMode });
   }, [notes, labels, user, viewMode]);
 
+  useEffect(() => {
+    // Refresh user data from backend on mount (or tab focus) to get latest verification status
+    import('../features/auth/services/authService').then(m => {
+      m.getUser().then(res => {
+        if (res.data?.user) {
+          localStorage.setItem('auth_user', JSON.stringify(res.data.user));
+          setUser(prev => ({
+            ...prev,
+            ...res.data.user,
+            isVerified: res.data.user.email_verified || false,
+            displayName: res.data.user.name,
+          }));
+        }
+      }).catch(() => {});
+    });
+    
+    // Listen to storage event to sync cross-tab (like when they verify in another tab)
+    const handleStorageChange = (e) => {
+      if (e.key === 'auth_user' && e.newValue) {
+        try {
+          const authUser = JSON.parse(e.newValue);
+          setUser(prev => ({
+            ...prev,
+            isVerified: authUser.email_verified || false,
+          }));
+        } catch { /* ignore */ }
+      }
+    };
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
+
   const normalizedSearch = deferredSearch.trim().toLowerCase();
 
   const normalizedUserEmail = normalizeEmail(user.email);

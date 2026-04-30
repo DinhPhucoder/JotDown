@@ -1,10 +1,10 @@
 import { useState, useRef } from 'react';
 import { Modal, Button, Form, Tab, Row, Col, Nav, Spinner } from 'react-bootstrap';
-import { User, Mail, PaintBucket, Shield, Camera, Lock, Eye, EyeOff, X, Type } from 'lucide-react';
+import { User, Mail, PaintBucket, Shield, Camera, Lock, Eye, EyeOff, X, Type, AlertTriangle, CheckCircle } from 'lucide-react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faBars } from '@fortawesome/free-solid-svg-icons';
 import { noteColorOptions } from '../../../data/constants';
-import { updateProfile, uploadAvatar, changePassword as changePasswordApi } from '../../auth/services/authService';
+import { updateProfile, uploadAvatar, changePassword as changePasswordApi, sendVerificationLink } from '../../auth/services/authService';
 import { toast } from 'sonner';
 import './UserProfileModal.css';
 
@@ -19,6 +19,8 @@ function UserProfileModal({ open, onClose, theme, onToggleTheme, preferences, on
     const fileInputRef = useRef(null);
     const [saving, setSaving] = useState(false);
     const [uploadingAvatar, setUploadingAvatar] = useState(false);
+    const [sendingLink, setSendingLink] = useState(false);
+    const [linkSent, setLinkSent] = useState(false);
 
     const selectedFontSize = noteFontSizeOptions.some((option) => option.value === preferences?.fontSize)
         ? preferences.fontSize
@@ -312,6 +314,51 @@ function UserProfileModal({ open, onClose, theme, onToggleTheme, preferences, on
                                             <Form.Text className="text-muted small">
                                                 Email không thể thay đổi.
                                             </Form.Text>
+
+                                            {/* Trạng thái xác thực email */}
+                                            {user?.isVerified ? (
+                                                <div className="d-flex align-items-center gap-2 mt-2 text-success small">
+                                                    <CheckCircle size={16} />
+                                                    <span>Email đã được xác thực</span>
+                                                </div>
+                                            ) : (
+                                                <div className="mt-2 p-3 border rounded-3" style={{ background: 'rgba(255, 193, 7, 0.08)', borderColor: 'rgba(255, 193, 7, 0.3)' }}>
+                                                    <div className="d-flex align-items-center gap-2 mb-2">
+                                                        <AlertTriangle size={16} className="text-warning" />
+                                                        <span className="small fw-semibold text-warning">Email chưa được xác thực</span>
+                                                    </div>
+                                                    <p className="small text-secondary mb-2" style={{ lineHeight: '1.5' }}>
+                                                        Xác thực email để bảo vệ tài khoản và sử dụng đầy đủ các tính năng.
+                                                    </p>
+                                                    {linkSent ? (
+                                                        <div className="small text-success d-flex align-items-center gap-2">
+                                                            <CheckCircle size={14} />
+                                                            <span>Đã gửi link xác thực! Vui lòng kiểm tra hộp thư email.</span>
+                                                        </div>
+                                                    ) : (
+                                                        <Button
+                                                            size="sm"
+                                                            variant="warning"
+                                                            className="fw-semibold"
+                                                            disabled={sendingLink}
+                                                            onClick={async () => {
+                                                                setSendingLink(true);
+                                                                try {
+                                                                    const res = await sendVerificationLink();
+                                                                    toast.success(res.message);
+                                                                    setLinkSent(true);
+                                                                } catch (err) {
+                                                                    toast.error(err.message);
+                                                                } finally {
+                                                                    setSendingLink(false);
+                                                                }
+                                                            }}
+                                                        >
+                                                            {sendingLink ? <Spinner animation="border" size="sm" /> : 'Gửi link xác thực'}
+                                                        </Button>
+                                                    )}
+                                                </div>
+                                            )}
                                         </Form.Group>
 
                                         <div className="d-flex justify-content-end">

@@ -53,11 +53,15 @@ Route::prefix('v1/auth')->group(function () {
         Route::post('logout', [AuthController::class, 'logout']);
         Route::post('change-password', [AuthController::class, 'changePassword']);
         Route::post('send-verify-otp', [AuthController::class, 'sendVerifyOtp']);
+        Route::post('send-verification-link', [AuthController::class, 'sendVerificationLink']);
         Route::get('user', [AuthController::class, 'user']);
         Route::put('update-profile', [AuthController::class, 'updateProfile']);
         Route::post('upload-avatar', [AuthController::class, 'uploadAvatar']);
         Route::put('update-preferences', [AuthController::class, 'updatePreferences']);
     });
+    // Public: xác thực email từ link (signed URL)
+    Route::get('verify-email/{id}/{hash}', [AuthController::class, 'verifyEmailFromLink'])
+        ->name('verification.verify');
 });
 
 Route::apiResource('notes', NoteController::class);
