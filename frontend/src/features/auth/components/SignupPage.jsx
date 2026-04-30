@@ -88,7 +88,6 @@ const SignupPage = () => {
           <div className="auth-card">
             <div className="auth-header mb-4">
               <h1 className="fw-bold">Đăng ký</h1>
-              <p className="text-secondary">Bắt đầu không gian ghi chú của riêng bạn ngay hôm nay</p>
             </div>
 
             {/* Chọn ảnh đại diện */}
