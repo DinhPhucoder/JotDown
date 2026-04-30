@@ -113,6 +113,10 @@ export async function sendVerifyOtp() {
   return request('/v1/auth/send-verify-otp', { method: 'POST' });
 }
 
+export async function sendVerificationLink() {
+  return request('/v1/auth/send-verification-link', { method: 'POST' });
+}
+
 export async function getUser() {
   return request('/v1/auth/user');
 }
@@ -121,6 +125,13 @@ export async function updateProfile({ name }) {
   return request('/v1/auth/update-profile', {
     method: 'PUT',
     body: JSON.stringify({ name }),
+  });
+}
+
+export async function updatePreferences(preferences) {
+  return request('/v1/auth/update-preferences', {
+    method: 'PUT',
+    body: JSON.stringify({ preferences }),
   });
 }
 

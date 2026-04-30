@@ -121,7 +121,9 @@ function NotesPage() {
           id: authUser.id,
           email: authUser.email,
           displayName: authUser.name,
+          avatar: authUser.avatar,
           isVerified: authUser.email_verified || false,
+          preferences: authUser.preferences || initialWorkspace.user.preferences,
         };
       }
     } catch { /* ignore */ }
@@ -813,14 +815,18 @@ function NotesPage() {
     const shouldSyncAllNoteColors =
       nextDefaultColor.length > 0 && nextDefaultColor !== user?.preferences?.defaultNoteColor;
 
+    const newPreferences = {
+      ...user.preferences,
+      ...nextPreferences,
+      fontSize: resolveNoteFontSize(nextPreferences?.fontSize),
+    };
+
     setUser((currentUser) => ({
       ...currentUser,
-      preferences: {
-        ...currentUser.preferences,
-        ...nextPreferences,
-        fontSize: resolveNoteFontSize(nextPreferences?.fontSize),
-      },
+      preferences: newPreferences,
     }));
+
+    import('../features/auth/services/authService').then(m => m.updatePreferences(newPreferences)).catch(() => {});
 
     if (!shouldSyncAllNoteColors) {
       return;
@@ -997,12 +1003,13 @@ function NotesPage() {
         open={settingsOpen}
         preferences={user.preferences}
         onClose={() => setSettingsOpen(false)}
-        onUpdate={(nextPreferences) =>
+        onUpdate={(nextPreferences) => {
           setUser((currentUser) => ({
             ...currentUser,
             preferences: nextPreferences,
-          }))
-        }
+          }));
+          import('../features/auth/services/authService').then(m => m.updatePreferences(nextPreferences)).catch(() => {});
+        }}
       />
 
       <UserProfileModal

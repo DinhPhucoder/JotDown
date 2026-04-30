@@ -10,11 +10,13 @@ use App\Http\Requests\Auth\RegisterRequest;
 use App\Http\Requests\Auth\ResetPasswordRequest;
 use App\Http\Requests\Auth\VerifyOtpRequest;
 use App\Mail\OtpMail;
+use App\Mail\VerifyEmailMail;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\URL;
 
 class AuthController extends Controller
 {
@@ -343,5 +345,82 @@ class AuthController extends Controller
                 'avatar' => asset('storage/' . $path),
             ],
         ]);
+    }
+
+    /**
+     * Cập nhật preferences (cài đặt ứng dụng).
+     */
+    public function updatePreferences(Request $request): JsonResponse
+    {
+        $request->validate([
+            'preferences' => ['required', 'array'],
+        ]);
+
+        $user = $request->user();
+        $user->update(['preferences' => $request->preferences]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Cập nhật cài đặt thành công!',
+            'data' => [
+                'preferences' => $user->preferences,
+            ],
+        ]);
+    }
+
+    /**
+     * Gửi link xác thực email.
+     */
+    public function sendVerificationLink(Request $request): JsonResponse
+    {
+        $user = $request->user();
+
+        if ($user->email_verified_at) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Email đã được xác thực trước đó.',
+                'data' => null,
+            ], 400);
+        }
+
+        // Tạo signed URL hết hạn sau 60 phút
+        $verificationUrl = URL::temporarySignedRoute(
+            'verification.verify',
+            now()->addMinutes(60),
+            ['id' => $user->id, 'hash' => sha1($user->email)]
+        );
+
+        Mail::to($user->email)->send(new VerifyEmailMail($verificationUrl));
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Đã gửi link xác thực đến email của bạn. Vui lòng kiểm tra hộp thư.',
+            'data' => null,
+        ]);
+    }
+
+    /**
+     * Xác thực email từ link (signed URL).
+     */
+    public function verifyEmailFromLink(Request $request, $id, $hash)
+    {
+        $user = User::findOrFail($id);
+
+        // Kiểm tra hash khớp email
+        if (!hash_equals(sha1($user->email), $hash)) {
+            return redirect(config('app.frontend_url', 'http://localhost:5174') . '/verify-email-result?status=error&message=' . urlencode('Link xác thực không hợp lệ.'));
+        }
+
+        // Kiểm tra signed URL
+        if (!$request->hasValidSignature()) {
+            return redirect(config('app.frontend_url', 'http://localhost:5174') . '/verify-email-result?status=error&message=' . urlencode('Link xác thực đã hết hạn. Vui lòng gửi lại.'));
+        }
+
+        if (!$user->email_verified_at) {
+            $user->email_verified_at = now();
+            $user->save();
+        }
+
+        return redirect(config('app.frontend_url', 'http://localhost:5174') . '/verify-email-result?status=success');
     }
 }
