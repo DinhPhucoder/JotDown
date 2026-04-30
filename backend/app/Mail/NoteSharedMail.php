@@ -20,6 +20,7 @@ class NoteSharedMail extends Mailable implements ShouldQueue
     public function __construct(
         public readonly Note $note,
         public readonly User $sender,
+        public readonly User $receiver,
         public readonly string $permission,
     ) {}
 

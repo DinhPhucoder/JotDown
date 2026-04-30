@@ -42,6 +42,15 @@ export async function saveOfflineAttachment(entry) {
   });
 }
 
+export async function getOfflineAttachments() {
+  return withStore('readonly', (store, resolve, reject) => {
+    const request = store.getAll();
+
+    request.onsuccess = () => resolve(request.result || []);
+    request.onerror = () => reject(request.error || new Error('Failed to read offline attachments'));
+  });
+}
+
 export async function removeOfflineAttachmentById(id) {
   await withStore('readwrite', (store) => {
     store.delete(String(id));

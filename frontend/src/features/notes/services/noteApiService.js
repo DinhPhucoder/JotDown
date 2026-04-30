@@ -205,3 +205,31 @@ export async function pullSyncChanges(since) {
     syncedAt: data?.synced_at || new Date().toISOString(),
   };
 }
+
+export async function shareNoteOnServer(noteId, email, permission) {
+  const data = await request(`/v1/notes/${noteId}/share`, {
+    method: 'POST',
+    body: JSON.stringify({ email, permission }),
+  });
+  return data?.data;
+}
+
+export async function fetchSharedWithMe() {
+  const data = await request('/v1/notes/shared-with-me');
+  return Array.isArray(data?.data) ? data.data : [];
+}
+
+export async function updateNoteShareOnServer(noteId, shareId, permission) {
+  const data = await request(`/v1/notes/${noteId}/shares/${shareId}`, {
+    method: 'PUT',
+    body: JSON.stringify({ permission }),
+  });
+  return data?.data;
+}
+
+export async function revokeNoteShareOnServer(noteId, shareId) {
+  await request(`/v1/notes/${noteId}/shares/${shareId}`, {
+    method: 'DELETE',
+  });
+}
+

@@ -13,6 +13,7 @@ final class SyncQueue extends Model
     use HasFactory;
 
     protected $table = 'sync_queue';
+    const UPDATED_AT = null;
 
     protected $fillable = [
         'user_id',

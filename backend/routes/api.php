@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\V1\AuthController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Http\Request;
 use App\Http\Controllers\NoteController;
+use App\Http\Controllers\NoteShareController;
 use App\Http\Controllers\LabelController;
 use App\Http\Controllers\NoteAttachmentController;
 use App\Http\Controllers\AttachmentSignatureController;
@@ -76,10 +77,21 @@ Route::post('/notes/{note}/labels/detach', [NoteController::class, 'detachLabels
 Route::middleware('auth:sanctum')->prefix('v1')->group(function () {
     Route::apiResource('notes', NoteController::class)->names('v1.notes');
     Route::apiResource('labels', LabelController::class)->names('v1.labels');
+
+    // Sync (Offline)
     Route::post('/sync/push', [SyncController::class, 'push']);
     Route::get('/sync/pull', [SyncController::class, 'pull']);
+
+    // Attachments
     Route::post('/attachments/signature', AttachmentSignatureController::class);
     Route::post('/notes/{note}/attachments/signature', [NoteAttachmentController::class, 'signature']);
     Route::post('/notes/{note}/attachments', [NoteAttachmentController::class, 'store']);
     Route::delete('/notes/{note}/attachments/{attachment}', [NoteAttachmentController::class, 'destroy']);
+
+    // Note Sharing
+    Route::get('/notes/shared-with-me', [NoteShareController::class, 'sharedWithMe']);
+    Route::post('/notes/{note}/share', [NoteShareController::class, 'share']);
+    Route::put('/notes/{note}/shares/{share}', [NoteShareController::class, 'update']);
+    Route::delete('/notes/{note}/shares/{share}', [NoteShareController::class, 'revoke']);
 });
+

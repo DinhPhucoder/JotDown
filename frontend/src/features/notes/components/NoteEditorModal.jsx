@@ -218,6 +218,12 @@ function NoteEditorModal({
   const noteIdRef = useRef(note?.id || null);
   const localPreviewUrlsRef = useRef(new Set());
 
+  useEffect(() => {
+    if (note?.id && note.id !== noteIdRef.current) {
+      noteIdRef.current = note.id;
+    }
+  }, [note?.id]);
+
   const normalizedAvailableLabels = useMemo(() => normalizeLabels(availableLabels), [availableLabels]);
   const normalizedLabelQuery = labelQuery.trim().toLowerCase();
   const filteredLabelOptions = normalizedAvailableLabels.filter((label) =>
@@ -580,17 +586,6 @@ function NoteEditorModal({
   function handleCloseImageViewer() {
     setActiveImage(null);
   }
-
-  useEffect(() => {
-    const previewUrls = localPreviewUrlsRef.current;
-
-    return () => {
-      previewUrls.forEach((url) => {
-        URL.revokeObjectURL(url);
-      });
-      previewUrls.clear();
-    };
-  }, []);
 
   useEffect(() => {
     if (!isLabelPanelOpen) {

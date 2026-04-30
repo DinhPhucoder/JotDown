@@ -1,4 +1,4 @@
-import { useEffect, useState, useDeferredValue } from 'react';
+import { useEffect, useRef, useState, useDeferredValue } from 'react';
 import { Button, Modal, Offcanvas } from 'react-bootstrap';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPlus, faStickyNote } from '@fortawesome/free-solid-svg-icons';
@@ -26,6 +26,15 @@ import {
   pushSyncChanges,
   updateNoteOnServer,
 } from '../features/notes/services/noteApiService';
+import {
+  getNoteAttachmentSignature,
+  saveNoteAttachment,
+  uploadImageToCloudinary,
+} from '../features/notes/services/noteAttachmentService';
+import {
+  getOfflineAttachments,
+  removeOfflineAttachmentById,
+} from '../features/notes/services/offlineAttachmentStore';
 import {
   createLabel,
   deleteLabel,
@@ -161,10 +170,44 @@ function NotesPage() {
   const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [desktopSidebarOpen, setDesktopSidebarOpen] = useState(true);
+  const [networkNotice, setNetworkNotice] = useState(() =>
+    isOffline
+      ? {
+          variant: 'warning',
+          message: 'Bạn đang offline. Dữ liệu sẽ được lưu cục bộ và chờ đồng bộ.',
+        }
+      : null,
+  );
+  const wasOfflineRef = useRef(isOffline);
+  const reconnectSyncPendingRef = useRef(false);
+  const pendingCreatesRef = useRef(new Map());
+  const pendingUpdatesRef = useRef(new Map());
 
   useEffect(() => {
     saveNoteWorkspace({ notes, labels, user, viewMode });
   }, [notes, labels, user, viewMode]);
+
+  useEffect(() => {
+    if (isOffline) {
+      reconnectSyncPendingRef.current = false;
+      setNetworkNotice({
+        variant: 'warning',
+        message: 'Bạn đang offline. Dữ liệu sẽ được lưu cục bộ và chờ đồng bộ.',
+      });
+      wasOfflineRef.current = true;
+      return;
+    }
+
+    if (wasOfflineRef.current) {
+      reconnectSyncPendingRef.current = true;
+      setNetworkNotice({
+        variant: 'info',
+        message: 'Bạn đã online trở lại. Hệ thống đang đồng bộ dữ liệu...',
+      });
+    }
+
+    wasOfflineRef.current = false;
+  }, [isOffline]);
 
   useEffect(() => {
     // Refresh user data from backend on mount to get latest verification status
@@ -262,18 +305,107 @@ function NotesPage() {
 
     let isCancelled = false;
 
-    async function flushAndPullChanges() {
-      const queuedChanges = await getQueuedSyncChanges();
+    async function syncOfflineAttachments() {
+      const offlineAttachments = await getOfflineAttachments();
 
-      if (queuedChanges.length > 0) {
-        const changes = queuedChanges.map((entry) => ({
-          action: entry.action,
-          entity_id: entry.entity_id,
-          payload: entry.payload,
-          timestamp: entry.timestamp,
-        }));
+      for (const entry of offlineAttachments) {
+        if (isCancelled) {
+          return;
+        }
+
+        const entryId = String(entry?.id || '');
+        const noteId = String(entry?.note_id || '');
+        const file = entry?.file;
+
+        if (!entryId || !isServerBackedId(noteId) || !file) {
+          continue;
+        }
 
         try {
+          const numericNoteId = Number(noteId);
+          const signaturePayload = await getNoteAttachmentSignature(numericNoteId);
+          const cloudinaryResponse = await uploadImageToCloudinary(file, signaturePayload);
+          const savedAttachment = await saveNoteAttachment(numericNoteId, {
+            file_url: cloudinaryResponse.secure_url,
+            file_size: cloudinaryResponse.bytes,
+            file_type: cloudinaryResponse.format,
+            original_name: cloudinaryResponse.original_filename,
+          });
+
+          if (isCancelled) {
+            return;
+          }
+
+          setNotes((currentNotes) => {
+            let changed = false;
+
+            const nextNotes = currentNotes.map((note) => {
+              if (String(note.id) !== noteId) {
+                return note;
+              }
+
+              const currentAttachments = Array.isArray(note.attachments) ? note.attachments : [];
+              const matchingAttachment = currentAttachments.find(
+                (attachment) => String(attachment?.local_file_id || attachment?.id || '') === entryId,
+              );
+
+              if (matchingAttachment?.file_url?.startsWith('blob:')) {
+                URL.revokeObjectURL(matchingAttachment.file_url);
+              }
+
+              const nextAttachments = currentAttachments
+                .filter((attachment) => String(attachment?.local_file_id || attachment?.id || '') !== entryId)
+                .concat(savedAttachment)
+                .slice(0, 3);
+              const nextImages = nextAttachments
+                .map((attachment) => String(attachment?.file_url || ''))
+                .filter(Boolean)
+                .slice(0, 3);
+
+              changed = true;
+
+              return {
+                ...note,
+                attachments: nextAttachments,
+                images: nextImages,
+                updatedAt: new Date().toISOString(),
+              };
+            });
+
+            if (changed) {
+              nextNotes.forEach((nextNote) => {
+                if (String(nextNote.id) === noteId) {
+                  void upsertCachedNote(nextNote);
+                }
+              });
+            }
+
+            return changed ? sortNotes(nextNotes) : currentNotes;
+          });
+
+          await removeOfflineAttachmentById(entryId);
+        } catch {
+          // keep entry for next retry when online again
+        }
+      }
+    }
+
+    async function flushAndPullChanges() {
+      const shouldNotifyReconnectSync = reconnectSyncPendingRef.current;
+
+      try {
+        await syncOfflineAttachments();
+
+        const queuedChanges = await getQueuedSyncChanges();
+
+        if (queuedChanges.length > 0) {
+          const changes = queuedChanges.map((entry) => ({
+            action: entry.action,
+            entity_id: entry.entity_id,
+            payload: entry.payload,
+            timestamp: entry.timestamp,
+          }));
+
           const syncResult = await pushSyncChanges(changes);
 
           if (!isCancelled && Array.isArray(syncResult.conflicts) && syncResult.conflicts.length > 0) {
@@ -307,12 +439,8 @@ function NotesPage() {
           }
 
           await clearQueuedSyncChanges();
-        } catch {
-          return;
         }
-      }
 
-      try {
         const since = await getLastSyncCursor();
         const pulled = await pullSyncChanges(since);
 
@@ -337,8 +465,29 @@ function NotesPage() {
         });
 
         await setLastSyncCursor(pulled.syncedAt);
+
+        const refreshedNotes = await fetchNotes();
+
+        if (!isCancelled) {
+          setNotes(sortNotes(refreshedNotes));
+          await cacheNotes(refreshedNotes);
+        }
+
+        if (shouldNotifyReconnectSync && !isCancelled) {
+          setNetworkNotice({
+            variant: 'success',
+            message: 'Đã online lại và đồng bộ dữ liệu thành công.',
+          });
+          reconnectSyncPendingRef.current = false;
+        }
       } catch {
-        // no-op: preserve local state when sync fails
+        if (shouldNotifyReconnectSync && !isCancelled) {
+          setNetworkNotice({
+            variant: 'danger',
+            message: 'Đã online lại nhưng đồng bộ thất bại. Hệ thống sẽ thử lại tự động.',
+          });
+          reconnectSyncPendingRef.current = false;
+        }
       }
     }
 
@@ -348,6 +497,22 @@ function NotesPage() {
       isCancelled = true;
     };
   }, [isOffline]);
+
+  useEffect(() => {
+    if (!networkNotice || isOffline) {
+      return undefined;
+    }
+
+    if (networkNotice.variant === 'warning' || networkNotice.variant === 'info') {
+      return undefined;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setNetworkNotice(null);
+    }, 4500);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [networkNotice, isOffline]);
 
   useEffect(() => {
     const token = localStorage.getItem('auth_token');
@@ -525,6 +690,13 @@ function NotesPage() {
       return sortNotes(nextNotes);
     });
 
+    setEditingNote((currentEditing) => {
+      if (!currentEditing || currentEditing.id === nextNote.id) {
+        return noteWithVersion;
+      }
+      return currentEditing;
+    });
+
     void upsertCachedNote(noteWithVersion);
 
     const token = localStorage.getItem('auth_token');
@@ -573,6 +745,14 @@ function NotesPage() {
     }
 
     if (!isServerBackedId(noteWithVersion.id)) {
+      if (pendingCreatesRef.current.has(noteWithVersion.id)) {
+        // A creation is already in progress, store the latest draft to be synced after it finishes
+        pendingCreatesRef.current.set(noteWithVersion.id, noteWithVersion);
+        return;
+      }
+      
+      pendingCreatesRef.current.set(noteWithVersion.id, null);
+
       void createNoteOnServer(noteWithVersion)
         .then((createdNote) => {
           return syncNoteLabels(createdNote.id)
@@ -592,10 +772,19 @@ function NotesPage() {
               setEditingNote((currentEditing) =>
                 currentEditing?.id === noteWithVersion.id ? mergedCreatedNote : currentEditing,
               );
-              return upsertCachedNote(mergedCreatedNote);
+              return upsertCachedNote(mergedCreatedNote).then(() => {
+                const latestDraft = pendingCreatesRef.current.get(noteWithVersion.id);
+                pendingCreatesRef.current.delete(noteWithVersion.id);
+                
+                if (latestDraft) {
+                  // Re-trigger save with the new server ID and latest content
+                  handleSave({ ...latestDraft, id: createdNote.id });
+                }
+              });
             });
         })
         .catch(() => {
+          pendingCreatesRef.current.delete(noteWithVersion.id);
           void enqueueSyncChange({
             action: 'CREATE',
             entity_id: String(noteWithVersion.id),
@@ -605,6 +794,13 @@ function NotesPage() {
         });
       return;
     }
+
+    if (pendingUpdatesRef.current.has(noteWithVersion.id)) {
+      pendingUpdatesRef.current.set(noteWithVersion.id, noteWithVersion);
+      return;
+    }
+
+    pendingUpdatesRef.current.set(noteWithVersion.id, null);
 
     void updateNoteOnServer(noteWithVersion.id, noteWithVersion)
       .then((updatedNote) => {
@@ -622,10 +818,18 @@ function NotesPage() {
                 ),
               ),
             );
-            return upsertCachedNote(mergedUpdatedNote);
+            return upsertCachedNote(mergedUpdatedNote).then(() => {
+              const latestDraft = pendingUpdatesRef.current.get(noteWithVersion.id);
+              pendingUpdatesRef.current.delete(noteWithVersion.id);
+              
+              if (latestDraft) {
+                handleSave({ ...latestDraft, version: mergedUpdatedNote.version });
+              }
+            });
           });
       })
       .catch((error) => {
+        pendingUpdatesRef.current.delete(noteWithVersion.id);
         if (error?.code === 'CONFLICT' && error?.serverNote) {
           setNotes((currentNotes) =>
             sortNotes(
@@ -928,6 +1132,14 @@ function NotesPage() {
         onToggleDesktopSidebar={() => setDesktopSidebarOpen(!desktopSidebarOpen)}
       />
 
+      {networkNotice ? (
+        <div className="container-fluid mt-3">
+          <div className={`alert alert-${networkNotice.variant} py-2 mb-0`} role="status" aria-live="polite">
+            {networkNotice.message}
+          </div>
+        </div>
+      ) : null}
+
       <div className="container-fluid notes-main">
         <div className="row g-4 flex-nowrap overflow-hidden">
           <aside className={`col-lg-3 col-xl-3 col-xxl-2 d-none d-lg-block notes-sidebar-aside ${!desktopSidebarOpen ? 'collapsed' : ''}`}>
@@ -1036,7 +1248,7 @@ function NotesPage() {
 
       {editorOpen ? (
         <NoteEditorModal
-          key={`${editingNote?.id || 'new'}-${resolvedNotePreferences.defaultNoteColor}`}
+          key="active-editor-modal"
           note={editingNote}
           open={editorOpen}
           defaultColor={resolvedNotePreferences.defaultNoteColor}
