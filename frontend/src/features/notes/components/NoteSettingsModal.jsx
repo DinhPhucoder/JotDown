@@ -1,7 +1,13 @@
 import { Button, Form, Modal } from 'react-bootstrap';
+import { mockUser } from '../../../data/mockData';
 import { fontSizeOptions, noteColorOptions } from '../../../data/constants';
 
 function NoteSettingsModal({ open, preferences, onClose, onUpdate }) {
+  const resolvedPreferences = {
+    ...mockUser.preferences,
+    ...(preferences || {}),
+  };
+
   return (
     <Modal show={open} onHide={onClose} centered>
       <Modal.Header closeButton className="border-0 pb-0">
@@ -11,8 +17,8 @@ function NoteSettingsModal({ open, preferences, onClose, onUpdate }) {
         <div className="notes-settings-group">
           <Form.Label>Cỡ chữ mặc định</Form.Label>
           <Form.Select
-            value={preferences.fontSize}
-            onChange={(event) => onUpdate({ ...preferences, fontSize: event.target.value })}
+            value={resolvedPreferences.fontSize}
+            onChange={(event) => onUpdate({ ...resolvedPreferences, fontSize: event.target.value })}
           >
             {fontSizeOptions.map((option) => (
               <option key={option.value} value={option.value}>
@@ -29,9 +35,9 @@ function NoteSettingsModal({ open, preferences, onClose, onUpdate }) {
               <button
                 key={option.value}
                 type="button"
-                className={`note-swatch ${preferences.defaultNoteColor === option.value ? 'active' : ''}`}
+                className={`note-swatch ${resolvedPreferences.defaultNoteColor === option.value ? 'active' : ''}`}
                 style={{ background: option.swatch }}
-                onClick={() => onUpdate({ ...preferences, defaultNoteColor: option.value })}
+                onClick={() => onUpdate({ ...resolvedPreferences, defaultNoteColor: option.value })}
                 title={option.label}
                 aria-label={option.label}
               />

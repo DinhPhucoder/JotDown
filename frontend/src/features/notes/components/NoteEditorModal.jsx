@@ -374,6 +374,57 @@ function NoteEditorModal({
     setLockSetupError('');
   }
 
+  async function saveOfflineImageAttachments(nextFiles) {
+    const localNoteId = String(note?.id || noteIdRef.current || crypto.randomUUID());
+    noteIdRef.current = localNoteId;
+    const localUrls = [];
+    const localMetas = [];
+    const localAttachments = [];
+
+    for (const file of nextFiles) {
+      const localAttachmentId = `local-${crypto.randomUUID()}`;
+      const previewUrl = URL.createObjectURL(file);
+      localPreviewUrlsRef.current.add(previewUrl);
+
+      await saveOfflineAttachment({
+        id: localAttachmentId,
+        note_id: localNoteId,
+        file,
+        file_name: file.name,
+        file_type: file.type,
+        file_size: Number(file.size || 0),
+        created_at: new Date().toISOString(),
+      });
+
+      localUrls.push(previewUrl);
+      localMetas.push({ file_size: Number(file.size || 0) });
+      localAttachments.push({
+        id: localAttachmentId,
+        local_file_id: localAttachmentId,
+        file_url: previewUrl,
+        file_size: Number(file.size || 0),
+        file_type: file.type,
+        original_name: file.name,
+        is_local_only: true,
+        sync_status: 'pending_upload',
+      });
+    }
+
+    setImages((currentImages) => [...currentImages, ...localUrls].slice(0, 3));
+    setImageMetas((currentMetas) => [...currentMetas, ...localMetas].slice(0, 3));
+    setAttachmentItems((currentAttachments) => [...currentAttachments, ...localAttachments].slice(0, 3));
+  }
+
+  function isNetworkUploadFailure(error) {
+    const message = String(error?.message || '');
+
+    return (
+      message.includes('Failed to fetch') ||
+      message.includes('NetworkError') ||
+      message.includes('Load failed')
+    );
+  }
+
   function handleRemoveLock() {
     setIsLocked(false);
     setLockPassword('');
@@ -413,44 +464,7 @@ function NoteEditorModal({
 
     try {
       if (isOffline) {
-        const localNoteId = String(note?.id || noteIdRef.current || crypto.randomUUID());
-        noteIdRef.current = localNoteId;
-        const localUrls = [];
-        const localMetas = [];
-        const localAttachments = [];
-
-        for (const file of nextFiles) {
-          const localAttachmentId = `local-${crypto.randomUUID()}`;
-          const previewUrl = URL.createObjectURL(file);
-          localPreviewUrlsRef.current.add(previewUrl);
-
-          await saveOfflineAttachment({
-            id: localAttachmentId,
-            note_id: localNoteId,
-            file,
-            file_name: file.name,
-            file_type: file.type,
-            file_size: Number(file.size || 0),
-            created_at: new Date().toISOString(),
-          });
-
-          localUrls.push(previewUrl);
-          localMetas.push({ file_size: Number(file.size || 0) });
-          localAttachments.push({
-            id: localAttachmentId,
-            local_file_id: localAttachmentId,
-            file_url: previewUrl,
-            file_size: Number(file.size || 0),
-            file_type: file.type,
-            original_name: file.name,
-            is_local_only: true,
-            sync_status: 'pending_upload',
-          });
-        }
-
-        setImages((currentImages) => [...currentImages, ...localUrls].slice(0, 3));
-        setImageMetas((currentMetas) => [...currentMetas, ...localMetas].slice(0, 3));
-        setAttachmentItems((currentAttachments) => [...currentAttachments, ...localAttachments].slice(0, 3));
+        await saveOfflineImageAttachments(nextFiles);
         return;
       }
 
@@ -496,6 +510,17 @@ function NoteEditorModal({
       setImageMetas((currentMetas) => [...currentMetas, ...uploadedMetas].slice(0, 3));
       setAttachmentItems((currentAttachments) => [...currentAttachments, ...uploadedAttachments].slice(0, 3));
     } catch (error) {
+      if (!isOffline && isNetworkUploadFailure(error)) {
+        try {
+          await saveOfflineImageAttachments(nextFiles);
+          setUploadError('');
+          return;
+        } catch (offlineError) {
+          setUploadError(offlineError?.message || 'Không thể tải ảnh lên.');
+          return;
+        }
+      }
+
       setUploadError(error?.message || 'Không thể tải ảnh lên.');
     } finally {
       setIsUploadingImage(false);
