@@ -45,6 +45,11 @@ import {
 import { subscribeToNoteChannel } from '../services/noteRealtime';
 import '../features/notes/styles/index.css';
 
+const DEFAULT_NOTE_PREFERENCES = {
+  fontSize: 'medium',
+  defaultNoteColor: 'default',
+};
+
 function resolveNoteFontSize(value) {
   return value === 'small' || value === 'large' ? value : 'medium';
 }
@@ -138,6 +143,11 @@ function NotesPage() {
   });
   const [viewMode, setViewMode] = useState(() => initialWorkspace.viewMode);
   const [search, setSearch] = useState('');
+
+  const resolvedNotePreferences = {
+    ...DEFAULT_NOTE_PREFERENCES,
+    ...(user?.preferences || {}),
+  };
   const deferredSearch = useDeferredValue(search);
   const [selectedLabels, setSelectedLabels] = useState([]);
   const [showShared, setShowShared] = useState(false);
@@ -852,10 +862,10 @@ function NotesPage() {
   function handleUpdateProfilePreferences(nextPreferences) {
     const nextDefaultColor = String(nextPreferences?.defaultNoteColor || '').trim();
     const shouldSyncAllNoteColors =
-      nextDefaultColor.length > 0 && nextDefaultColor !== user?.preferences?.defaultNoteColor;
+      nextDefaultColor.length > 0 && nextDefaultColor !== resolvedNotePreferences.defaultNoteColor;
 
     const newPreferences = {
-      ...user.preferences,
+      ...resolvedNotePreferences,
       ...nextPreferences,
       fontSize: resolveNoteFontSize(nextPreferences?.fontSize),
     };
@@ -1026,10 +1036,10 @@ function NotesPage() {
 
       {editorOpen ? (
         <NoteEditorModal
-          key={`${editingNote?.id || 'new'}-${user.preferences.defaultNoteColor}`}
+          key={`${editingNote?.id || 'new'}-${resolvedNotePreferences.defaultNoteColor}`}
           note={editingNote}
           open={editorOpen}
-          defaultColor={user.preferences.defaultNoteColor}
+          defaultColor={resolvedNotePreferences.defaultNoteColor}
           isOffline={isOffline}
           availableLabels={labels.map((label) => label.name)}
           onClose={() => setEditorOpen(false)}
@@ -1040,12 +1050,16 @@ function NotesPage() {
 
       <NoteSettingsModal
         open={settingsOpen}
-        preferences={user.preferences}
+        preferences={resolvedNotePreferences}
         onClose={() => setSettingsOpen(false)}
         onUpdate={(nextPreferences) => {
           setUser((currentUser) => ({
             ...currentUser,
-            preferences: nextPreferences,
+            preferences: {
+              ...(currentUser?.preferences || DEFAULT_NOTE_PREFERENCES),
+              ...(nextPreferences || {}),
+              fontSize: resolveNoteFontSize(nextPreferences?.fontSize),
+            },
           }));
           import('../features/auth/services/authService').then(m => m.updatePreferences(nextPreferences)).catch(() => {});
         }}
@@ -1056,7 +1070,7 @@ function NotesPage() {
         onClose={() => setProfileOpen(false)}
         theme={theme}
         onToggleTheme={setTheme}
-        preferences={user.preferences}
+        preferences={resolvedNotePreferences}
         onUpdatePreferences={handleUpdateProfilePreferences}
         user={user}
         onUserUpdate={(updates) => setUser(prev => ({ ...prev, ...updates }))}
