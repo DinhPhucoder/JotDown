@@ -13,7 +13,7 @@ services:
         - render.yaml
     envVars:
       - key: APP_NAME
-        value: "false"
+        value: "JotDown"
       - key: APP_ENV
         value: production
       - key: APP_DEBUG
@@ -35,7 +35,7 @@ services:
       - key: DB_HOST
         sync: false
       - key: DB_PORT
-        value: "false"
+        sync: false
       - key: DB_DATABASE
         sync: false
       - key: DB_USERNAME
