@@ -75,12 +75,12 @@ const OtpVerificationPage = () => {
       if (purpose === 'reset') {
         // Lưu OTP để trang reset-password sử dụng, không verify ở đây
         localStorage.setItem('reset_otp', otpValue);
-        toast.success('Mã OTP hợp lệ! Vui lòng nhập mật khẩu mới.');
+        toast.success('Mã OTP hợp lệ!', { duration: 2000 });
         navigate('/reset-password');
       } else {
         // Verify email flow
         const res = await verifyOtpApi({ email, otp: otpValue });
-        toast.success(res.message);
+        toast.success(res.message, { duration: 2000 });
         localStorage.removeItem('reset_email');
         navigate('/login');
       }
