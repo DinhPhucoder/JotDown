@@ -183,6 +183,7 @@ function NoteEditorModal({
   const [lastEditedAt, setLastEditedAt] = useState(() => initialUpdatedAt);
   const [isCollaboratorsOpen, setIsCollaboratorsOpen] = useState(false);
   const [isLockSetupOpen, setIsLockSetupOpen] = useState(false);
+  const [lockDraftOldPassword, setLockDraftOldPassword] = useState('');
   const [lockDraftPassword, setLockDraftPassword] = useState('');
   const [lockDraftConfirm, setLockDraftConfirm] = useState('');
   const [lockSetupError, setLockSetupError] = useState('');
@@ -344,6 +345,7 @@ function NoteEditorModal({
     }
 
     setIsLabelPanelOpen(false);
+    setLockDraftOldPassword('');
     setLockDraftPassword('');
     setLockDraftConfirm('');
     setLockSetupError('');
@@ -352,17 +354,30 @@ function NoteEditorModal({
 
   function handleCancelLockSetup() {
     setIsLockSetupOpen(false);
+    setLockDraftOldPassword('');
     setLockDraftPassword('');
     setLockDraftConfirm('');
     setLockSetupError('');
   }
 
   function handleSaveLockSetup() {
+    const oldPassword = lockDraftOldPassword.trim();
     const password = lockDraftPassword.trim();
     const confirmPassword = lockDraftConfirm.trim();
 
+    if (isLocked) {
+      if (!oldPassword) {
+        setLockSetupError('Vui lòng nhập mật khẩu cũ.');
+        return;
+      }
+      if (oldPassword !== lockPassword) {
+        setLockSetupError('Mật khẩu cũ không chính xác.');
+        return;
+      }
+    }
+
     if (password.length < 4) {
-      setLockSetupError('Mật khẩu cần ít nhất 4 ký tự.');
+      setLockSetupError(isLocked ? 'Mật khẩu mới cần ít nhất 4 ký tự.' : 'Mật khẩu cần ít nhất 4 ký tự.');
       return;
     }
 
@@ -375,6 +390,7 @@ function NoteEditorModal({
     setIsLocked(true);
     setLockPassword(password);
     setIsLockSetupOpen(false);
+    setLockDraftOldPassword('');
     setLockDraftPassword('');
     setLockDraftConfirm('');
     setLockSetupError('');
@@ -432,9 +448,20 @@ function NoteEditorModal({
   }
 
   function handleRemoveLock() {
+    const oldPassword = lockDraftOldPassword.trim();
+    if (!oldPassword) {
+      setLockSetupError('Vui lòng nhập mật khẩu cũ để bỏ khóa.');
+      return;
+    }
+    if (oldPassword !== lockPassword) {
+      setLockSetupError('Mật khẩu cũ không chính xác.');
+      return;
+    }
+
     setIsLocked(false);
     setLockPassword('');
     setIsLockSetupOpen(false);
+    setLockDraftOldPassword('');
     setLockDraftPassword('');
     setLockDraftConfirm('');
     setLockSetupError('');
@@ -886,10 +913,22 @@ function NoteEditorModal({
           <Modal.Title>{isLocked ? 'Quản lý khóa ghi chú' : 'Thiết lập khóa ghi chú'}</Modal.Title>
         </Modal.Header>
         <Modal.Body className="pt-0">
+          {isLocked ? (
+            <input
+              type="password"
+              className="note-editor__panel-input"
+              placeholder="Nhập mật khẩu cũ"
+              value={lockDraftOldPassword}
+              onChange={(event) => {
+                setLockDraftOldPassword(event.target.value);
+                setLockSetupError('');
+              }}
+            />
+          ) : null}
           <input
             type="password"
             className="note-editor__panel-input"
-            placeholder="Nhập mật khẩu"
+            placeholder={isLocked ? 'Nhập mật khẩu mới' : 'Nhập mật khẩu'}
             value={lockDraftPassword}
             onChange={(event) => {
               setLockDraftPassword(event.target.value);
