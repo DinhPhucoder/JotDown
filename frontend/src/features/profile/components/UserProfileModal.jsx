@@ -20,9 +20,15 @@ function UserProfileModal({ open, onClose, theme, onToggleTheme, preferences, on
     const [saving, setSaving] = useState(false);
     const [uploadingAvatar, setUploadingAvatar] = useState(false);
     const [sendingLink, setSendingLink] = useState(false);
+    const verifyStorageKey = `verify_link_sent_at_${user?.id || 'unknown'}`;
     const [linkSent, setLinkSent] = useState(() => {
+        // Nếu user đã xác thực rồi thì không cần giữ trạng thái "đã gửi"
+        if (user?.isVerified) {
+            localStorage.removeItem(verifyStorageKey);
+            return false;
+        }
         try {
-            const sentAt = localStorage.getItem('verify_link_sent_at');
+            const sentAt = localStorage.getItem(verifyStorageKey);
             if (sentAt) {
                 const elapsed = Date.now() - Number(sentAt);
                 // Link hết hạn sau 60 phút → cho phép gửi lại
@@ -357,7 +363,7 @@ function UserProfileModal({ open, onClose, theme, onToggleTheme, preferences, on
                                                                     const res = await sendVerificationLink();
                                                                     toast.success(res.message);
                                                                     setLinkSent(true);
-                                                                    localStorage.setItem('verify_link_sent_at', String(Date.now()));
+                                                                    localStorage.setItem(verifyStorageKey, String(Date.now()));
                                                                 } catch (err) {
                                                                     toast.error(err.message);
                                                                 } finally {
