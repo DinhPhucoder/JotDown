@@ -5,7 +5,7 @@ function normalizeEmail(value) {
 }
 
 function normalizePermission(value) {
-  return value === 'edit' ? 'edit' : 'read';
+  return String(value || '').toLowerCase() === 'edit' ? 'edit' : 'read';
 }
 
 // ─── Public API ───────────────────────────────────────────────────────────────

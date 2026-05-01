@@ -22,7 +22,7 @@ function resolveNoteFontSize(value) {
 export function useNoteWorkspace() {
   const [initialWorkspace] = useState(() => loadNoteWorkspace());
   const [notes, setNotes] = useState(() => {
-    if (localStorage.getItem('auth_token')) {
+    if (sessionStorage.getItem('auth_token')) {
       return [];
     }
     return sortNotes(initialWorkspace.notes);

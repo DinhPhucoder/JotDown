@@ -16,7 +16,7 @@ const ResetPasswordPage = () => {
 
   useEffect(() => {
     if (!emailRef.current || !otpRef.current) {
-      toast.error('Phiên đặt lại mật khẩu đã hết hạn. Vui lòng thực hiện lại.', { duration: 2000 });
+      toast.error('Phiên đặt lại mật khẩu đã hết hạn. Vui lòng thực hiện lại.');
       navigate('/forgot-password', { replace: true });
     }
   }, [navigate]);

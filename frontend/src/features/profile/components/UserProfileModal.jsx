@@ -94,7 +94,7 @@ function UserProfileModal({ open, onClose, theme, onToggleTheme, preferences, on
             toast.success(res.message);
             // Cập nhật user ở parent + localStorage
             const updatedUser = res.data.user;
-            localStorage.setItem('auth_user', JSON.stringify(updatedUser));
+            sessionStorage.setItem('auth_user', JSON.stringify(updatedUser));
             if (typeof onUserUpdate === 'function') {
                 onUserUpdate({ displayName: updatedUser.name, name: updatedUser.name });
             }
@@ -125,9 +125,9 @@ function UserProfileModal({ open, onClose, theme, onToggleTheme, preferences, on
         try {
             const res = await uploadAvatar(file);
             toast.success(res.message);
-            const authUser = JSON.parse(localStorage.getItem('auth_user') || '{}');
+            const authUser = JSON.parse(sessionStorage.getItem('auth_user') || '{}');
             authUser.avatar = res.data.avatar;
-            localStorage.setItem('auth_user', JSON.stringify(authUser));
+            sessionStorage.setItem('auth_user', JSON.stringify(authUser));
             if (typeof onUserUpdate === 'function') {
                 onUserUpdate({ avatar: res.data.avatar });
             }

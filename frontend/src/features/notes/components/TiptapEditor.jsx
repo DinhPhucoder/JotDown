@@ -3,7 +3,7 @@ import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
 import { useEffect } from 'react';
 
-const TiptapEditor = ({ content, onChange, placeholder }) => {
+const TiptapEditor = ({ content, onChange, placeholder, readOnly = false }) => {
   const editor = useEditor({
     extensions: [
       StarterKit,
@@ -13,15 +13,22 @@ const TiptapEditor = ({ content, onChange, placeholder }) => {
       }),
     ],
     content: content,
+    editable: !readOnly,
     onUpdate: ({ editor }) => {
       onChange(editor.getHTML());
     },
     editorProps: {
       attributes: {
-        class: 'note-editor__content tiptap-editor focus:outline-none min-h-[200px] h-full',
+        class: `note-editor__content tiptap-editor focus:outline-none min-h-[200px] h-full ${readOnly ? 'tiptap-editor--readonly' : ''}`,
       },
     },
   });
+
+  useEffect(() => {
+    if (editor && editor.isEditable !== !readOnly) {
+      editor.setEditable(!readOnly);
+    }
+  }, [editor, readOnly]);
 
   // Keep content in sync if it changes externally
   useEffect(() => {

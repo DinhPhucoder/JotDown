@@ -23,7 +23,7 @@ class NoteController extends Controller
     //  GET ALL
     public function index()
     {
-        $query = Note::with('attachments')
+        $query = Note::with(['attachments', 'shares.receiver', 'user', 'labels' => fn($q) => $q->where('labels.user_id', request()->user()?->id)])
             ->orderBy('is_pinned', 'desc')
             ->orderBy('updated_at', 'desc');
         $userId = request()->user()?->id;
@@ -89,13 +89,14 @@ class NoteController extends Controller
             }
         }
 
-        return response()->json($note->refresh()->load('attachments'), 201);
+        return response()->json($note->refresh()->load(['attachments', 'shares.receiver', 'user', 'labels' => fn($q) => $q->where('labels.user_id', request()->user()?->id)]), 201);
     }
 
     //  GET ONE
     public function show($id)
     {
-        $note = Note::with('attachments')->findOrFail($id);
+        $note = Note::with(['attachments', 'shares.receiver', 'user', 'labels' => fn($q) => $q->where('labels.user_id', request()->user()?->id)])->findOrFail($id);
+        $this->authorize('view', $note);
         return $this->maskProtectedNote($note);
     }
 
@@ -103,6 +104,7 @@ class NoteController extends Controller
     public function update(UpdateNoteRequest $request, $id)
     {
         $note = Note::with('attachments')->findOrFail($id);
+        $this->authorize('update', $note);
         $validated = $request->validated();
         $requestVersion = (int) $validated['version'];
 
@@ -112,7 +114,7 @@ class NoteController extends Controller
                 'conflict' => true,
                 'client_version' => $requestVersion,
                 'server_version' => $note->version,
-                'server_note' => $note->load('attachments'),
+                'server_note' => $note->load(['attachments', 'shares.receiver', 'user', 'labels' => fn($q) => $q->where('labels.user_id', request()->user()?->id)]),
             ], 409);
         }
 
@@ -144,7 +146,14 @@ class NoteController extends Controller
 
         $note->update($updateData);
 
-        $note->refresh()->load('attachments');
+        $note->refresh()->load(['attachments', 'shares.receiver', 'user', 'labels' => fn($q) => $q->where('labels.user_id', request()->user()?->id)]);
+        
+        \Log::info('Broadcasting NoteUpdated event', [
+            'note_id' => $note->id,
+            'user_id' => $request->user()?->id,
+            'broadcast_connection' => config('broadcasting.default'),
+        ]);
+        
         event(new NoteUpdated($note, (string) ($request->user()?->id ?? 'system')));
 
         return $note;
@@ -154,6 +163,7 @@ class NoteController extends Controller
     public function destroy($id)
     {
         $note = Note::findOrFail($id);
+        $this->authorize('delete', $note);
         $note->delete();
 
         return response()->json([
@@ -167,13 +177,13 @@ class NoteController extends Controller
         $note = Note::findOrFail($id);
 
         if (!$note->is_protected || !$note->password) {
-            return response()->json(['valid' => true, 'note' => $note->load('attachments')]);
+            return response()->json(['valid' => true, 'note' => $note->load(['attachments', 'shares.receiver', 'user', 'labels' => fn($q) => $q->where('labels.user_id', request()->user()?->id)])]);
         }
 
         $inputPassword = (string) $request->input('password', '');
 
         if (Hash::check($inputPassword, $note->password)) {
-            return response()->json(['valid' => true, 'note' => $note->load('attachments')]);
+            return response()->json(['valid' => true, 'note' => $note->load(['attachments', 'shares.receiver', 'user', 'labels' => fn($q) => $q->where('labels.user_id', request()->user()?->id)])]);
         }
 
         return response()->json(['valid' => false, 'message' => 'Mật khẩu không đúng.'], 403);
@@ -183,12 +193,31 @@ class NoteController extends Controller
     public function attachLabels(AttachLabelsRequest $request, $id)
     {
         $note = Note::findOrFail($id);
+        $this->authorize('view', $note);
+        $userId = request()->user()?->id;
 
-        $note->labels()->syncWithoutDetaching($request->validated('label_ids'));
+        $existing = \Illuminate\Support\Facades\DB::table('note_labels')
+            ->where('note_id', $note->id)
+            ->where('user_id', $userId)
+            ->pluck('label_id')
+            ->toArray();
+
+        $newIds = array_diff($request->validated('label_ids'), $existing);
+        
+        if (!empty($newIds)) {
+            $inserts = array_map(function($labelId) use ($note, $userId) {
+                return [
+                    'note_id' => $note->id,
+                    'label_id' => $labelId,
+                    'user_id' => $userId,
+                ];
+            }, $newIds);
+            \Illuminate\Support\Facades\DB::table('note_labels')->insert($inserts);
+        }
 
         return response()->json([
             'message' => 'Labels attached successfully',
-            'data' => $note->load('labels'),
+            'data' => $note->load(['labels' => fn($q) => $q->where('labels.user_id', $userId)]),
         ]);
     }
 
@@ -196,12 +225,18 @@ class NoteController extends Controller
     public function detachLabels(DetachLabelsRequest $request, $id)
     {
         $note = Note::findOrFail($id);
+        $this->authorize('view', $note);
+        $userId = request()->user()?->id;
 
-        $note->labels()->detach($request->validated('label_ids'));
+        \Illuminate\Support\Facades\DB::table('note_labels')
+            ->where('note_id', $note->id)
+            ->where('user_id', $userId)
+            ->whereIn('label_id', $request->validated('label_ids'))
+            ->delete();
 
         return response()->json([
             'message' => 'Labels detached successfully',
-            'data' => $note->load('labels'),
+            'data' => $note->load(['labels' => fn($q) => $q->where('labels.user_id', $userId)]),
         ]);
     }
 }

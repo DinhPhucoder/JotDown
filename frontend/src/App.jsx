@@ -20,7 +20,7 @@ function App() {
 
   return (
     <BrowserRouter>
-      <Toaster richColors position="top-right" />
+      <Toaster richColors position="top-right" duration={2000} />
       <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route path="/landing" element={<LandingPage />} />

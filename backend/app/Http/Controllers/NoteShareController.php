@@ -51,7 +51,7 @@ final class NoteShareController extends Controller
         Mail::to($receiver->email)->queue(new NoteSharedMail($note, $sender, $receiver, $permission));
 
         // Broadcast realtime
-        event(new NoteShared($note->load('attachments'), (string) $receiver->id));
+            event(new NoteShared($note->load(['attachments', 'shares.receiver', 'user']), (string) $receiver->id, $sender, $permission));
 
         return response()->json([
             'success' => true,
@@ -68,7 +68,13 @@ final class NoteShareController extends Controller
     {
         $userId = $request->user()->id;
 
-        $shares = NoteShare::with(['note.attachments', 'sender'])
+        $shares = NoteShare::with([
+            'note.attachments', 
+            'note.shares.receiver', 
+            'sender', 
+            'receiver',
+            'note.labels' => fn($q) => $q->where('labels.user_id', $userId)
+        ])
             ->where('receiver_id', $userId)
             ->whereHas('note', fn ($q) => $q->whereNull('deleted_at'))
             ->latest()
@@ -100,6 +106,14 @@ final class NoteShareController extends Controller
         $share->update(['permission' => strtoupper($request->input('permission'))]);
         $share->load('receiver', 'sender');
 
+        // Broadcast cập nhật quyền realtime
+        event(new NoteShared(
+            $note->load(['attachments', 'shares.receiver', 'user']), 
+            (string) $share->receiver_id, 
+            $share->sender, 
+            $share->permission
+        ));
+
         return response()->json([
             'success' => true,
             'message' => 'Cập nhật quyền thành công.',
@@ -122,7 +136,13 @@ final class NoteShareController extends Controller
             ], 404);
         }
 
+        $receiverId = (string) $share->receiver_id;
+        $noteId = $note->id;
+
         $share->delete();
+
+        // Broadcast thu hồi quyền realtime
+        event(new \App\Events\NoteRevoked($noteId, $receiverId));
 
         return response()->json([
             'success' => true,

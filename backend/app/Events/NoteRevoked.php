@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace App\Events;
 
-use App\Models\Note;
-use App\Models\User;
 use Illuminate\Broadcasting\Channel;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Broadcasting\PresenceChannel;
@@ -14,15 +12,13 @@ use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
-class NoteShared implements ShouldBroadcastNow
+class NoteRevoked implements ShouldBroadcastNow
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
     public function __construct(
-        public readonly Note $note,
-        public readonly string $receiverId,
-        public readonly User $sender,
-        public readonly string $permission
+        public readonly int $noteId,
+        public readonly string $receiverId
     ) {}
 
     public function broadcastOn(): array
@@ -32,18 +28,16 @@ class NoteShared implements ShouldBroadcastNow
         ];
     }
 
+    public function broadcastAs(): string
+    {
+        return 'NoteRevoked';
+    }
+
     public function broadcastWith(): array
     {
         return [
-            'note' => $this->note->toArray(),
-            'sender' => $this->sender->toArray(),
-            'permission' => $this->permission,
-            'message' => 'Một ghi chú vừa được chia sẻ với bạn.',
+            'note_id' => $this->noteId,
+            'message' => 'Quyền truy cập ghi chú của bạn đã bị thu hồi.',
         ];
-    }
-
-    public function broadcastAs(): string
-    {
-        return 'NoteShared';
     }
 }

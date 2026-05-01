@@ -27,6 +27,15 @@
 .note-editor__title:focus,
 .note-editor__content:focus { outline: none; }
 
+.note-editor__title--readonly {
+  cursor: default;
+}
+
+.tiptap-editor--readonly {
+  cursor: default;
+  opacity: 0.95;
+}
+
 .note-collaborators-modal .modal-content { max-width: 44rem; }
 
 .note-lock-modal .modal-content { max-width: 30rem; margin: 0 auto; }

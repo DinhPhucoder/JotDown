@@ -14,7 +14,7 @@ const API_BASE = base;
  * Generic fetch wrapper with JSON handling.
  */
 async function request(endpoint, options = {}) {
-  const token = localStorage.getItem('auth_token');
+  const token = sessionStorage.getItem('auth_token');
 
   const headers = {
     'Content-Type': 'application/json',
@@ -64,7 +64,7 @@ export async function login({ email, password }) {
   });
   // Persist token
   if (data.data?.token) {
-    localStorage.setItem('auth_token', data.data.token);
+    sessionStorage.setItem('auth_token', data.data.token);
   }
   return data;
 }
@@ -101,7 +101,7 @@ export async function resendOtp({ email, purpose }) {
 
 export async function logout() {
   const data = await request('/v1/auth/logout', { method: 'POST' });
-  localStorage.removeItem('auth_token');
+  sessionStorage.removeItem('auth_token');
   return data;
 }
 
@@ -139,7 +139,7 @@ export async function updatePreferences(preferences) {
 }
 
 export async function uploadAvatar(file) {
-  const token = localStorage.getItem('auth_token');
+  const token = sessionStorage.getItem('auth_token');
   const formData = new FormData();
   formData.append('avatar', file);
 

@@ -70,13 +70,15 @@ Route::prefix('v1/auth')->group(function () {
 
 Route::apiResource('notes', NoteController::class);
 
-// Label attachment routes
-Route::post('/notes/{note}/labels/attach', [NoteController::class, 'attachLabels']);
-Route::post('/notes/{note}/labels/detach', [NoteController::class, 'detachLabels']);
-
 Route::middleware('auth:sanctum')->prefix('v1')->group(function () {
-    Route::apiResource('notes', NoteController::class)->names('v1.notes');
-    Route::apiResource('labels', LabelController::class)->names('v1.labels');
+    // Label attachment routes
+    Route::post('/notes/{note}/labels/attach', [NoteController::class, 'attachLabels']);
+    Route::post('/notes/{note}/labels/detach', [NoteController::class, 'detachLabels']);
+    // Note Sharing
+    Route::get('/notes/shared-with-me', [NoteShareController::class, 'sharedWithMe']);
+    Route::post('/notes/{note}/share', [NoteShareController::class, 'share']);
+    Route::put('/notes/{note}/shares/{share}', [NoteShareController::class, 'update']);
+    Route::delete('/notes/{note}/shares/{share}', [NoteShareController::class, 'revoke']);
 
     // Sync (Offline)
     Route::post('/sync/push', [SyncController::class, 'push']);
@@ -91,10 +93,8 @@ Route::middleware('auth:sanctum')->prefix('v1')->group(function () {
     // Note lock: verify password
     Route::post('/notes/{note}/verify-password', [NoteController::class, 'verifyPassword']);
 
-    // Note Sharing
-    Route::get('/notes/shared-with-me', [NoteShareController::class, 'sharedWithMe']);
-    Route::post('/notes/{note}/share', [NoteShareController::class, 'share']);
-    Route::put('/notes/{note}/shares/{share}', [NoteShareController::class, 'update']);
-    Route::delete('/notes/{note}/shares/{share}', [NoteShareController::class, 'revoke']);
+    // Core Resources
+    Route::apiResource('notes', NoteController::class)->names('v1.notes');
+    Route::apiResource('labels', LabelController::class)->names('v1.labels');
 });
 

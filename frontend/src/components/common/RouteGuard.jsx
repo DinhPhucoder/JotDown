@@ -5,7 +5,7 @@ import { Navigate } from 'react-router-dom';
  * Nếu chưa có auth_token → redirect về /login.
  */
 export function ProtectedRoute({ children }) {
-  const token = localStorage.getItem('auth_token');
+  const token = sessionStorage.getItem('auth_token');
   if (!token) {
     return <Navigate to="/login" replace />;
   }
@@ -17,7 +17,7 @@ export function ProtectedRoute({ children }) {
  * Nếu đã có auth_token → redirect về /notes.
  */
 export function GuestRoute({ children }) {
-  const token = localStorage.getItem('auth_token');
+  const token = sessionStorage.getItem('auth_token');
   if (token) {
     return <Navigate to="/notes" replace />;
   }

@@ -31,15 +31,17 @@ export function normalizeLabels(entries) {
  * Normalizes a raw sharedWith array into a consistent shape.
  *
  * @param {unknown} entries
- * @returns {{ email: string, permission: 'read'|'edit', sharedAt: string }[]}
+ * @returns {{ id: any, email: string, permission: 'read'|'edit', sharedAt: string, receiver: any }[]}
  */
 export function normalizeSharedWith(entries) {
   return (Array.isArray(entries) ? entries : [])
     .filter(Boolean)
     .map((entry) => ({
-      email: String(entry.email || '').trim().toLowerCase(),
+      id: entry?.id,
+      email: String(entry.email || entry.receiver?.email || '').trim().toLowerCase(),
       permission: entry.permission === 'edit' ? 'edit' : 'read',
-      sharedAt: String(entry.sharedAt || new Date().toISOString()),
+      sharedAt: String(entry.sharedAt || entry.created_at || new Date().toISOString()),
+      receiver: entry?.receiver,
     }))
     .filter((entry) => entry.email.length > 0);
 }

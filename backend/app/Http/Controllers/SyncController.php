@@ -103,7 +103,7 @@ final class SyncController extends Controller
         $userId = (int) ($request->user()?->id ?? 1);
         $since = $this->resolveSince($request->query('since'));
         $changes = Note::withTrashed()
-            ->with('attachments')
+            ->with(['attachments', 'labels' => fn($q) => $q->where('labels.user_id', $userId)])
             ->where('user_id', $userId)
             ->where(function ($query) use ($since): void {
                 $query->where('updated_at', '>', $since)

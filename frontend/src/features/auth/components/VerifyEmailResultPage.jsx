@@ -14,9 +14,9 @@ const VerifyEmailResultPage = () => {
   useEffect(() => {
     if (isSuccess) {
       try {
-        const authUser = JSON.parse(localStorage.getItem('auth_user') || '{}');
+        const authUser = JSON.parse(sessionStorage.getItem('auth_user') || '{}');
         authUser.email_verified = true;
-        localStorage.setItem('auth_user', JSON.stringify(authUser));
+        sessionStorage.setItem('auth_user', JSON.stringify(authUser));
       } catch { /* ignore */ }
     }
   }, [isSuccess]);

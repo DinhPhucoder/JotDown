@@ -19,15 +19,11 @@ import {
   saveNoteAttachment,
   uploadImageToCloudinary,
 } from '../services/noteAttachmentService';
+import { resolveNoteShareMeta } from '../utils/noteShareResolver';
 import { removeOfflineAttachmentById, saveOfflineAttachment } from '../services/offlineAttachmentStore';
+import { subscribeToNoteChannel } from '../../../services/noteRealtime';
 
-const collaboratorEmailSuggestions = [
-  'dinhphan1209@gmail.com',
-  'partner@example.com',
-  'manager@example.com',
-  'team.design@example.com',
-  'product.owner@example.com',
-];
+
 
 function normalizeLabels(entries) {
   const seen = new Set();
@@ -96,9 +92,11 @@ function normalizeSharedWith(entries) {
   return (Array.isArray(entries) ? entries : [])
     .filter(Boolean)
     .map((entry) => ({
-      email: String(entry.email || '').trim().toLowerCase(),
-      permission: entry.permission === 'edit' ? 'edit' : 'read',
-      sharedAt: String(entry.sharedAt || new Date().toISOString()),
+      id: entry?.id,
+      email: String(entry.email || entry.receiver?.email || '').trim().toLowerCase(),
+      permission: String(entry.permission || entry.accessPermission || '').toLowerCase() === 'edit' ? 'edit' : 'read',
+      sharedAt: String(entry.sharedAt || entry.created_at || entry.createdAt || new Date().toISOString()),
+      receiver: entry?.receiver,
     }))
     .filter((entry) => entry.email.length > 0);
 }
@@ -151,12 +149,21 @@ function NoteEditorModal({
   note,
   open,
   defaultColor,
+  currentUserEmail,
   isOffline = false,
   availableLabels = [],
   onClose,
   onDelete,
   onSave,
 }) {
+  const shareMeta = useMemo(() => {
+    if (!note || !currentUserEmail) return null;
+    return resolveNoteShareMeta(note, currentUserEmail);
+  }, [note, currentUserEmail]);
+
+  const isReadOnly = shareMeta ? (shareMeta.isReceivedShared && shareMeta.myPermission === 'read') : false;
+  const canModifySecurity = !shareMeta || shareMeta.isOwnedByMe;
+
   const initialTitle = note?.title || '';
   const initialContent = note?.content || '';
   const initialPinned = Boolean(note?.isPinned);
@@ -266,8 +273,8 @@ function NoteEditorModal({
   );
   const isDirty = hasMeaningfulData && currentSnapshot !== savedSnapshot;
   const remainingImageSlots = Math.max(3 - images.length, 0);
-  const canManageCollaborators = !isLocked;
-  const canManageLock = sharedWith.length === 0;
+  const canManageCollaborators = canModifySecurity && !isLocked;
+  const canManageLock = canModifySecurity && sharedWith.length === 0;
 
   function setSnapshotFromDraft(draft) {
     setSavedSnapshot(
@@ -638,6 +645,71 @@ function NoteEditorModal({
     };
   }, [open, isDirty, buildDraft, onSave]);
 
+  // Subscribe to realtime note updates
+  useEffect(() => {
+    if (!open || !note?.id || !(/^\d+$/.test(String(note.id)))) {
+      return undefined;
+    }
+
+    let unsubscribe = () => {};
+
+    subscribeToNoteChannel(note.id, (payload) => {
+      console.log(`[NoteEditorModal] Received update for note ${note.id}:`, payload);
+      if (!payload?.note) {
+        console.log(`[NoteEditorModal] No payload.note found, skipping update`);
+        return;
+      }
+
+      const updatedNote = payload.note;
+      
+      // Only update if it's from another user (not from current session)
+      if (String(updatedNote.id) === String(note.id)) {
+        // Update title and content
+        setTitle(updatedNote.title || '');
+        setContent(updatedNote.content || '');
+        setLastEditedAt(updatedNote.updated_at || new Date().toISOString());
+        
+        // Update images/attachments if they changed
+        if (Array.isArray(updatedNote.attachments)) {
+          setAttachmentItems(updatedNote.attachments.filter(Boolean).slice(0, 3));
+          setImageMetas(
+            updatedNote.attachments
+              .filter(Boolean)
+              .slice(0, 3)
+              .map((attachment) => ({
+                file_size: Number(attachment.file_size || 0),
+              }))
+          );
+        }
+
+        // Update shared info
+        if (Array.isArray(updatedNote.shares)) {
+          const normalizedState = normalizeSecurityState(
+            updatedNote.is_protected,
+            '',
+            updatedNote.shares
+          );
+          setSharedWith(normalizedState.sharedWith);
+        }
+
+        // Update locked state if changed
+        if (updatedNote.is_protected !== note.isLocked) {
+          setIsLocked(Boolean(updatedNote.is_protected));
+        }
+      }
+    })
+      .then((unsubscribeFn) => {
+        unsubscribe = unsubscribeFn;
+      })
+      .catch(() => {
+        // Realtime unavailable, that's ok
+      });
+
+    return () => {
+      unsubscribe();
+    };
+  }, [open, note?.id]);
+
   function handleHide() {
     if (open && isDirty) {
       const now = new Date().toISOString();
@@ -728,15 +800,17 @@ function NoteEditorModal({
 
           <input
             type="text"
-            className="note-editor__title"
+            className={`note-editor__title ${isReadOnly ? 'note-editor__title--readonly' : ''}`}
             placeholder="Tiêu đề"
             value={title}
+            readOnly={isReadOnly}
             onChange={(event) => setTitle(event.target.value)}
           />
           <TiptapEditor
             content={content}
             onChange={setContent}
             placeholder="Nội dung ghi chú..."
+            readOnly={isReadOnly}
           />
 
           <input
@@ -774,7 +848,7 @@ function NoteEditorModal({
                 type="button"
                 className="notes-icon-btn"
                 onClick={() => fileInputRef.current?.click()}
-                disabled={remainingImageSlots <= 0 || isUploadingImage}
+                disabled={isReadOnly || remainingImageSlots <= 0 || isUploadingImage}
                 title={
                   isOffline
                     ? `Thêm ảnh offline (${images.length}/3)`
@@ -797,7 +871,7 @@ function NoteEditorModal({
                 </button>
               ) : null}
 
-              {note ? (
+              {note && canModifySecurity ? (
                 <button type="button" className="notes-icon-btn notes-icon-btn--danger" onClick={handleDeleteClick}>
                   <FontAwesomeIcon icon={faTrash} />
                 </button>
@@ -863,16 +937,27 @@ function NoteEditorModal({
       {isCollaboratorsOpen ? (
         <NoteCollaboratorsModal
           open={isCollaboratorsOpen}
-          onCancel={() => setIsCollaboratorsOpen(false)}
-          onSave={(nextCollaborators) => {
+          onClose={() => setIsCollaboratorsOpen(false)}
+          noteId={note?.id ?? null}
+          ownerName={undefined}
+          ownerEmail={undefined}
+          initialCollaborators={sharedWith}
+          onCollaboratorsChange={(nextCollaborators) => {
             const normalizedState = normalizeSecurityState(false, '', nextCollaborators);
+            const now = new Date().toISOString();
+            const nextDraft = {
+              ...buildDraft(now),
+              isLocked: normalizedState.isLocked,
+              lockPassword: normalizedState.lockPassword,
+              sharedWith: normalizedState.sharedWith,
+              updatedAt: now,
+            };
             setSharedWith(normalizedState.sharedWith);
             setIsLocked(normalizedState.isLocked);
             setLockPassword(normalizedState.lockPassword);
-            setIsCollaboratorsOpen(false);
+            onSave(nextDraft);
+            setSnapshotFromDraft(nextDraft);
           }}
-          collaborators={sharedWith}
-          suggestions={collaboratorEmailSuggestions}
         />
       ) : null}
 

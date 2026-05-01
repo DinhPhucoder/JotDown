@@ -37,6 +37,8 @@ function getCollaboratorEmail(entry) {
 
   return String(entry.email || '')
     .trim()
+    .toLowerCase() || String(entry.receiver?.email || '')
+    .trim()
     .toLowerCase();
 }
 
@@ -72,6 +74,7 @@ function NoteCard({
   const displayedCollaborators = collaboratorEmails.slice(0, 5);
   const hiddenCollaboratorCount = Math.max(collaboratorEmails.length - displayedCollaborators.length, 0);
   const hasBadges = note.isLocked || collaboratorEmails.length > 0 || showPermissionBadge || isOffline;
+  const canEdit = !shareScope || shareScope === 'owned' || normalizedPermission === 'edit';
 
   function handleCardKeyDown(event) {
     if (event.key === 'Enter' || event.key === ' ') {
@@ -190,15 +193,17 @@ function NoteCard({
         </span> 
       </div> 
 
-      <button
-        type="button"
-        className={`note-card__pin-corner ${note.isPinned ? 'active' : ''}`}
-        onClick={handleTogglePin}
-        title={note.isPinned ? 'Bỏ ghim' : 'Ghim ghi chú'}
-        aria-label={note.isPinned ? 'Bỏ ghim' : 'Ghim ghi chú'}
-      >
-        <FontAwesomeIcon icon={faThumbtack} />
-      </button>
+      {canEdit ? (
+        <button
+          type="button"
+          className={`note-card__pin-corner ${note.isPinned ? 'active' : ''}`}
+          onClick={handleTogglePin}
+          title={note.isPinned ? 'Bỏ ghim' : 'Ghim ghi chú'}
+          aria-label={note.isPinned ? 'Bỏ ghim' : 'Ghim ghi chú'}
+        >
+          <FontAwesomeIcon icon={faThumbtack} />
+        </button>
+      ) : null}
     </div> 
   ); 
 } 

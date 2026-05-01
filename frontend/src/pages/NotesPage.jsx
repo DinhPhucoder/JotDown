@@ -22,6 +22,7 @@ import {
   deleteNoteOnServer,
   detachLabelsFromNoteOnServer,
   fetchNotes,
+  fetchSharedWithMe,
   pullSyncChanges,
   pushSyncChanges,
   updateNoteOnServer,
@@ -52,7 +53,7 @@ import {
   setLastSyncCursor,
   upsertCachedNote,
 } from '../services/noteOfflineSync';
-import { subscribeToNoteChannel } from '../services/noteRealtime';
+import { subscribeToNoteChannel, subscribeToUserChannel } from '../services/noteRealtime';
 import '../features/notes/styles/index.css';
 
 const DEFAULT_NOTE_PREFERENCES = {
@@ -133,8 +134,8 @@ function NotesPage() {
   const [initialWorkspace] = useState(() => loadNoteWorkspace());
   const [notes, setNotes] = useState(() => {
     // Nếu có token, ưu tiên bắt đầu với mảng rỗng để đợi dữ liệu từ server,
-    // tránh hiện tượng flash dữ liệu cũ từ localStorage.
-    if (localStorage.getItem('auth_token')) {
+    // tránh hiện tượng flash dữ liệu cũ từ sessionStorage.
+    if (sessionStorage.getItem('auth_token')) {
       return [];
     }
     return sortNotes(initialWorkspace.notes);
@@ -143,7 +144,7 @@ function NotesPage() {
   const [user, setUser] = useState(() => {
     // Lấy user từ backend (đã lưu khi login)
     try {
-      const authUser = JSON.parse(localStorage.getItem('auth_user'));
+      const authUser = JSON.parse(sessionStorage.getItem('auth_user'));
       if (authUser) {
         return {
           ...initialWorkspace.user,
@@ -222,7 +223,7 @@ function NotesPage() {
     import('../features/auth/services/authService').then(m => {
       m.getUser().then(res => {
         if (res.data?.user) {
-          localStorage.setItem('auth_user', JSON.stringify(res.data.user));
+          sessionStorage.setItem('auth_user', JSON.stringify(res.data.user));
           setUser(prev => ({
             ...prev,
             ...res.data.user,
@@ -250,7 +251,7 @@ function NotesPage() {
   }, []);
 
   useEffect(() => {
-    const token = localStorage.getItem('auth_token');
+    const token = sessionStorage.getItem('auth_token');
 
     if (!token) {
       return;
@@ -270,14 +271,61 @@ function NotesPage() {
       }
 
       try {
-        const remoteNotes = await fetchNotes();
+        // Gọi song song cả owned notes và shared-with-me
+        const [remoteNotes, sharedRaw] = await Promise.all([
+          fetchNotes(),
+          fetchSharedWithMe().catch(() => []),
+        ]);
 
-        if (isCancelled) {
-          return;
-        }
+        if (isCancelled) return;
 
-        setNotes(sortNotes(remoteNotes));
-        await cacheNotes(remoteNotes);
+        // Normalize shared notes từ NoteShareResource
+        const sharedNotes = sharedRaw
+          .map((share) => {
+            const n = share?.note ?? share;
+            if (!n?.id) return null;
+            const attachments = Array.isArray(n.attachments) ? n.attachments : [];
+            return {
+              id: String(n.id),
+              title: String(n.title || ''),
+              content: String(n.content || ''),
+              color: n.color || 'default',
+              isPinned: Boolean(n.is_pinned),
+              pinnedAt: n.pinned_at || undefined,
+              isLocked: Boolean(n.is_protected),
+              lockPassword: '',
+              labels: Array.isArray(n.labels) ? n.labels.map(l => String(l.name || '')) : [],
+              images: attachments.map((a) => String(a?.file_url || '')).filter(Boolean),
+              attachments,
+              sharedWith: Array.isArray(n.shares) 
+                ? n.shares.map(s => ({
+                    id: s?.id,
+                    email: s.receiver?.email,
+                    permission: s.permission,
+                    receiver: s?.receiver,
+                  }))
+                : [],
+              ownerEmail: share?.sender?.email || null,
+              ownerName: share?.sender?.name || null,
+              accessPermission: share?.permission || null,
+              createdAt: n.created_at || new Date().toISOString(),
+              updatedAt: n.updated_at || new Date().toISOString(),
+              version: Number(n.version || 1),
+            };
+          })
+          .filter(Boolean);
+
+        const remoteNotesNormalized = remoteNotes;
+
+        // Gộp, ưu tiên owned notes khi trùng ID
+        const ownedIds = new Set(remoteNotesNormalized.map((n) => String(n.id)));
+        const merged = [
+          ...remoteNotesNormalized,
+          ...sharedNotes.filter((n) => !ownedIds.has(String(n.id))),
+        ];
+
+        setNotes(sortNotes(merged));
+        await cacheNotes(merged);
         await setLastSyncCursor(new Date().toISOString());
 
         try {
@@ -305,7 +353,7 @@ function NotesPage() {
   }, [isOffline]);
 
   useEffect(() => {
-    const token = localStorage.getItem('auth_token');
+    const token = sessionStorage.getItem('auth_token');
 
     if (!token || isOffline) {
       return;
@@ -429,7 +477,7 @@ function NotesPage() {
                     createdAt: item.server_note.created_at || new Date().toISOString(),
                     updatedAt: item.server_note.updated_at || new Date().toISOString(),
                     version: Number(item.server_note.version || 1),
-                    labels: [],
+                    labels: Array.isArray(item.server_note.labels) ? item.server_note.labels.map(l => String(l.name || '')) : [],
                     attachments: Array.isArray(item.server_note.attachments) ? item.server_note.attachments : [],
                     images: Array.isArray(item.server_note.attachments)
                       ? item.server_note.attachments.map((attachment) => String(attachment?.file_url || '')).filter(Boolean)
@@ -474,11 +522,55 @@ function NotesPage() {
 
         await setLastSyncCursor(pulled.syncedAt);
 
-        const refreshedNotes = await fetchNotes();
+        const [refreshedNotes, refreshedSharedRaw] = await Promise.all([
+          fetchNotes(),
+          fetchSharedWithMe().catch(() => []),
+        ]);
 
         if (!isCancelled) {
-          setNotes(sortNotes(refreshedNotes));
-          await cacheNotes(refreshedNotes);
+          const refreshedSharedNotes = refreshedSharedRaw
+            .map((share) => {
+              const n = share?.note ?? share;
+              if (!n?.id) return null;
+              const attachments = Array.isArray(n.attachments) ? n.attachments : [];
+              return {
+                id: String(n.id),
+                title: String(n.title || ''),
+                content: String(n.content || ''),
+                color: n.color || 'default',
+                isPinned: Boolean(n.is_pinned),
+                pinnedAt: n.pinned_at || undefined,
+                isLocked: Boolean(n.is_protected),
+                lockPassword: '',
+                labels: Array.isArray(n.labels) ? n.labels.map(l => String(l.name || '')) : [],
+                images: attachments.map((a) => String(a?.file_url || '')).filter(Boolean),
+                attachments,
+                sharedWith: Array.isArray(n.shares) 
+                  ? n.shares.map(s => ({
+                      id: s?.id,
+                      email: s.receiver?.email,
+                      permission: s.permission,
+                      receiver: s?.receiver,
+                    }))
+                  : [],
+                ownerEmail: share?.sender?.email || null,
+                ownerName: share?.sender?.name || null,
+                accessPermission: share?.permission || null,
+                createdAt: n.created_at || new Date().toISOString(),
+                updatedAt: n.updated_at || new Date().toISOString(),
+                version: Number(n.version || 1),
+              };
+            })
+            .filter(Boolean);
+
+          const ownedIds = new Set(refreshedNotes.map((n) => String(n.id)));
+          const merged = [
+            ...refreshedNotes,
+            ...refreshedSharedNotes.filter((n) => !ownedIds.has(String(n.id))),
+          ];
+
+          setNotes(sortNotes(merged));
+          await cacheNotes(merged);
         }
 
         if (shouldNotifyReconnectSync && !isCancelled) {
@@ -523,7 +615,7 @@ function NotesPage() {
   }, [networkNotice, isOffline]);
 
   useEffect(() => {
-    const token = localStorage.getItem('auth_token');
+    const token = sessionStorage.getItem('auth_token');
 
     if (!token || isOffline || notes.length === 0) {
       return;
@@ -560,6 +652,11 @@ function NotesPage() {
           images: Array.isArray(remote.attachments)
             ? remote.attachments.map((attachment) => String(attachment?.file_url || '')).filter(Boolean)
             : note.images,
+          ownerEmail: remote.user?.email || note.ownerEmail,
+          ownerName: remote.user?.name || note.ownerName,
+          sharedWith: Array.isArray(remote.shares)
+            ? remote.shares.map(s => ({ email: s.receiver?.email, permission: s.permission }))
+            : note.sharedWith,
         };
 
         setNotes((currentNotes) =>
@@ -569,6 +666,14 @@ function NotesPage() {
             ),
           ),
         );
+        
+        setEditingNote((currentEditing) => {
+          if (currentEditing && String(currentEditing.id) === String(normalized.id)) {
+            return { ...currentEditing, ...normalized };
+          }
+          return currentEditing;
+        });
+        
         void upsertCachedNote(normalized);
       }).then((unsubscribe) => {
         unsubscribers.push(unsubscribe);
@@ -579,6 +684,228 @@ function NotesPage() {
       unsubscribers.forEach((unsubscribe) => unsubscribe());
     };
   }, [isOffline, notes]);
+
+  // Subscribe kênh cá nhân của user để nhận NoteShared event realtime
+  useEffect(() => {
+    const token = sessionStorage.getItem('auth_token');
+    const userId = user?.id;
+
+    if (!token || !userId || isOffline) {
+      return;
+    }
+
+    let unsubscribe = () => {};
+
+    void subscribeToUserChannel(userId, {
+      onNoteShared: (payload) => {
+        const remote = payload?.note;
+        if (!remote || remote.id === undefined) return;
+
+        const normalized = {
+          id: String(remote.id),
+          title: String(remote.title || ''),
+          content: String(remote.content || ''),
+          color: remote.color || 'default',
+          isPinned: Boolean(remote.is_pinned),
+          pinnedAt: remote.pinned_at || undefined,
+          isLocked: Boolean(remote.is_protected),
+          lockPassword: '',
+          labels: [],
+          images: Array.isArray(remote.attachments)
+            ? remote.attachments.map((a) => String(a?.file_url || '')).filter(Boolean)
+            : [],
+          attachments: Array.isArray(remote.attachments) ? remote.attachments : [],
+          sharedWith: Array.isArray(remote.shares) 
+            ? remote.shares.map(s => ({ email: s.receiver?.email, permission: s.permission })) 
+            : [],
+          ownerEmail: payload?.sender?.email || null,
+          ownerName: payload?.sender?.name || null,
+          accessPermission: payload?.permission || null,
+          createdAt: remote.created_at || new Date().toISOString(),
+          updatedAt: remote.updated_at || new Date().toISOString(),
+          version: Number(remote.version || 1),
+        };
+
+        setNotes((currentNotes) => {
+          const index = currentNotes.findIndex((n) => String(n.id) === String(normalized.id));
+
+          if (index !== -1) {
+            // Cập nhật note đã tồn tại (bao gồm cả quyền truy cập)
+            const next = [...currentNotes];
+            next[index] = { ...next[index], ...normalized };
+            return sortNotes(next);
+          }
+
+          // Thêm note mới được chia sẻ
+          import('sonner').then(({ toast }) =>
+            toast.success(`Bạn vừa được chia sẻ một ghi chú mới!`)
+          );
+          return sortNotes([normalized, ...currentNotes]);
+        });
+
+        void upsertCachedNote(normalized);
+
+        // Subscribe channel của note mới để nhận NoteUpdated realtime
+        void subscribeToNoteChannel(remote.id, (updatePayload) => {
+          const updatedNote = updatePayload?.note;
+          if (!updatedNote || updatedNote.id === undefined) return;
+
+          setNotes((currentNotes) =>
+            sortNotes(
+              currentNotes.map((n) =>
+                String(n.id) === String(updatedNote.id)
+                  ? {
+                      ...n,
+                      title: String(updatedNote.title || ''),
+                      content: String(updatedNote.content || ''),
+                      color: updatedNote.color || n.color,
+                      isPinned: Boolean(updatedNote.is_pinned),
+                      pinnedAt: updatedNote.pinned_at || undefined,
+                      updatedAt: updatedNote.updated_at || new Date().toISOString(),
+                      version: Number(updatedNote.version || n.version || 1),
+                      attachments: Array.isArray(updatedNote.attachments) ? updatedNote.attachments : [],
+                      images: Array.isArray(updatedNote.attachments)
+                        ? updatedNote.attachments.map((a) => String(a?.file_url || '')).filter(Boolean)
+                        : n.images,
+                    }
+                  : n
+              )
+            )
+          );
+          
+          setEditingNote((currentEditing) => {
+            if (currentEditing && String(currentEditing.id) === String(updatedNote.id)) {
+              return {
+                ...currentEditing,
+                title: String(updatedNote.title || ''),
+                content: String(updatedNote.content || ''),
+                color: updatedNote.color || currentEditing.color,
+                isPinned: Boolean(updatedNote.is_pinned),
+                pinnedAt: updatedNote.pinned_at || undefined,
+                updatedAt: updatedNote.updated_at || new Date().toISOString(),
+                version: Number(updatedNote.version || currentEditing.version || 1),
+                attachments: Array.isArray(updatedNote.attachments) ? updatedNote.attachments : [],
+                images: Array.isArray(updatedNote.attachments)
+                  ? updatedNote.attachments.map((a) => String(a?.file_url || '')).filter(Boolean)
+                  : currentEditing.images,
+              };
+            }
+            return currentEditing;
+          });
+        });
+      },
+      onNoteRevoked: (payload) => {
+        const noteId = String(payload?.note_id);
+        if (!noteId) return;
+
+        setNotes((currentNotes) => {
+          const exists = currentNotes.some((n) => String(n.id) === noteId);
+          if (exists) {
+            import('sonner').then(({ toast }) =>
+              toast.info(`Quyền truy cập một ghi chú đã bị thu hồi.`)
+            );
+          }
+          return currentNotes.filter((n) => String(n.id) !== noteId);
+        });
+      },
+    }).then((fn) => {
+      unsubscribe = fn;
+    });
+
+    return () => unsubscribe();
+  }, [isOffline, user?.id]);
+
+  // Subscribe to realtime updates for all owned notes
+  useEffect(() => {
+    if (isOffline || !Array.isArray(notes)) {
+      return undefined;
+    }
+
+    const unsubscribers = [];
+
+    // Subscribe to each note that belongs to current user
+    const ownedNotes = notes.filter((n) => /^\d+$/.test(String(n.id)));
+
+    for (const note of ownedNotes) {
+      subscribeToNoteChannel(note.id, (payload) => {
+        if (!payload?.note) return;
+
+        const updatedNote = payload.note;
+
+        setNotes((currentNotes) => {
+          const index = currentNotes.findIndex((n) => String(n.id) === String(updatedNote.id));
+          if (index === -1) return currentNotes;
+
+          const normalized = {
+            ...currentNotes[index],
+            title: String(updatedNote.title || ''),
+            content: String(updatedNote.content || ''),
+            color: updatedNote.color || 'default',
+            updatedAt: updatedNote.updated_at || new Date().toISOString(),
+            sharedWith: Array.isArray(updatedNote.shares)
+              ? updatedNote.shares.map((s) => ({
+                  id: s?.id,
+                  email: s.receiver?.email,
+                  permission: s.permission,
+                  receiver: s?.receiver,
+                }))
+              : [],
+            isLocked: Boolean(updatedNote.is_protected),
+            attachments: Array.isArray(updatedNote.attachments) ? updatedNote.attachments : [],
+            images: Array.isArray(updatedNote.attachments)
+              ? updatedNote.attachments.map((a) => String(a?.file_url || '')).filter(Boolean)
+              : [],
+          };
+
+          const nextNotes = [...currentNotes];
+          nextNotes[index] = normalized;
+          return sortNotes(nextNotes);
+        });
+        
+        setEditingNote((currentEditing) => {
+          if (currentEditing && String(currentEditing.id) === String(updatedNote.id)) {
+            return {
+              ...currentEditing,
+              title: String(updatedNote.title || ''),
+              content: String(updatedNote.content || ''),
+              color: updatedNote.color || 'default',
+              updatedAt: updatedNote.updated_at || new Date().toISOString(),
+              sharedWith: Array.isArray(updatedNote.shares)
+                ? updatedNote.shares.map((s) => ({
+                    id: s?.id,
+                    email: s.receiver?.email,
+                    permission: s.permission,
+                    receiver: s?.receiver,
+                  }))
+                : [],
+              isLocked: Boolean(updatedNote.is_protected),
+              attachments: Array.isArray(updatedNote.attachments) ? updatedNote.attachments : [],
+              images: Array.isArray(updatedNote.attachments)
+                ? updatedNote.attachments.map((a) => String(a?.file_url || '')).filter(Boolean)
+                : [],
+            };
+          }
+          return currentEditing;
+        });
+      })
+        .then((unsubscribe) => {
+          unsubscribers.push(unsubscribe);
+        })
+        .catch(() => {
+          // Realtime unavailable
+        });
+    }
+
+    return () => {
+      unsubscribers.forEach((fn) => {
+        try {
+          fn();
+        } catch {
+          // Ignore errors
+        }
+      });
+    };
+  }, [notes.length, isOffline]);
 
   const normalizedSearch = deferredSearch.trim().toLowerCase();
 
@@ -734,7 +1061,7 @@ function NotesPage() {
 
     void upsertCachedNote(noteWithVersion);
 
-    const token = localStorage.getItem('auth_token');
+    const token = sessionStorage.getItem('auth_token');
 
     if (!token) {
       return;
@@ -830,6 +1157,15 @@ function NotesPage() {
       return;
     }
 
+    const originalNote = notes.find((n) => n.id === noteWithVersion.id);
+    const shareMeta = originalNote && user?.email ? resolveNoteShareMeta(originalNote, user.email) : null;
+    const isReadOnly = shareMeta ? (shareMeta.isReceivedShared && shareMeta.myPermission === 'read') : false;
+
+    if (isReadOnly) {
+      void syncNoteLabels(noteWithVersion.id);
+      return;
+    }
+
     if (pendingUpdatesRef.current.has(noteWithVersion.id)) {
       pendingUpdatesRef.current.set(noteWithVersion.id, noteWithVersion);
       return;
@@ -911,7 +1247,7 @@ function NotesPage() {
     setEditingNote(null);
     setEditorOpen(false);
 
-    const token = localStorage.getItem('auth_token');
+    const token = sessionStorage.getItem('auth_token');
 
     if (!token) {
       return;
@@ -967,7 +1303,7 @@ function NotesPage() {
 
     void upsertCachedNote(toggledNote);
 
-    const token = localStorage.getItem('auth_token');
+    const token = sessionStorage.getItem('auth_token');
 
     if (!token) {
       return;
@@ -1008,7 +1344,7 @@ function NotesPage() {
       return;
     }
 
-    const token = localStorage.getItem('auth_token');
+    const token = sessionStorage.getItem('auth_token');
     if (token && !isOffline) {
       void createLabel(normalizedName)
         .then((created) => {
@@ -1052,7 +1388,7 @@ function NotesPage() {
       return;
     }
 
-    const token = localStorage.getItem('auth_token');
+    const token = sessionStorage.getItem('auth_token');
     if (token && !isOffline) {
       void updateLabel(labelId, normalizedNextName).catch(() => {
         // no-op: keep optimistic UI even if request fails
@@ -1082,7 +1418,7 @@ function NotesPage() {
       return;
     }
 
-    const token = localStorage.getItem('auth_token');
+    const token = sessionStorage.getItem('auth_token');
     if (token && !isOffline) {
       void deleteLabel(labelId).catch(() => {
         // no-op: preserve UI even if request fails
@@ -1144,8 +1480,8 @@ function NotesPage() {
     setLogoutConfirmOpen(false);
     // Gọi API logout (fire-and-forget) và xóa dữ liệu local
     import('../features/auth/services/authService').then(m => m.logout()).catch(() => { });
-    localStorage.removeItem('auth_token');
-    localStorage.removeItem('auth_user');
+    sessionStorage.removeItem('auth_token');
+    sessionStorage.removeItem('auth_user');
     navigate('/login');
   }
 
@@ -1286,6 +1622,7 @@ function NotesPage() {
           key="active-editor-modal"
           note={editingNote}
           open={editorOpen}
+          currentUserEmail={user?.email}
           defaultColor={resolvedNotePreferences.defaultNoteColor}
           isOffline={isOffline}
           availableLabels={labels.map((label) => label.name)}

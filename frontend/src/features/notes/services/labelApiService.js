@@ -4,7 +4,7 @@ if (base !== '' && !base.endsWith('/api')) base += '/api';
 const API_BASE = base;
 
 function getAuthHeaders(extraHeaders = {}) {
-  const token = localStorage.getItem('auth_token');
+  const token = sessionStorage.getItem('auth_token');
 
   return {
     Accept: 'application/json',

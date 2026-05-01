@@ -14,7 +14,7 @@ const NOTE_COLOR_TO_HEX = {
 };
 
 function getToken() {
-  return localStorage.getItem('auth_token');
+  return sessionStorage.getItem('auth_token');
 }
 
 function toIsoStringOrNow(value) {
@@ -34,10 +34,20 @@ function normalizeNoteFromApi(note) {
     pinnedAt: note?.pinned_at ? String(note.pinned_at) : undefined,
     isLocked: Boolean(note?.is_protected),
     lockPassword: '',
-    labels: [],
+    labels: Array.isArray(note?.labels) ? note.labels.map(l => String(l?.name || '')) : [],
     images: attachments.map((item) => String(item?.file_url || '')).filter(Boolean),
     attachments,
-    sharedWith: [],
+    sharedWith: Array.isArray(note?.shares)
+      ? note.shares.map((s) => ({
+          id: s?.id,
+          email: s?.receiver?.email,
+          permission: s?.permission,
+          receiver: s?.receiver,
+          sender: s?.sender,
+        }))
+      : [],
+    ownerEmail: note?.user?.email || null,
+    ownerName: note?.user?.name || null,
     createdAt: toIsoStringOrNow(note?.created_at),
     updatedAt: toIsoStringOrNow(note?.updated_at),
     version: Number(note?.version || 1),
@@ -178,7 +188,7 @@ export async function attachLabelsToNoteOnServer(noteId, labelIds) {
     return null;
   }
 
-  return request(`/notes/${noteId}/labels/attach`, {
+  return request(`/v1/notes/${noteId}/labels/attach`, {
     method: 'POST',
     body: JSON.stringify({ label_ids: normalizedLabelIds }),
   });
@@ -195,7 +205,7 @@ export async function detachLabelsFromNoteOnServer(noteId, labelIds) {
     return null;
   }
 
-  return request(`/notes/${noteId}/labels/detach`, {
+  return request(`/v1/notes/${noteId}/labels/detach`, {
     method: 'POST',
     body: JSON.stringify({ label_ids: normalizedLabelIds }),
   });

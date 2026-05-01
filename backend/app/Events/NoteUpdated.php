@@ -36,4 +36,9 @@ class NoteUpdated implements ShouldBroadcast
             'updated_by' => $this->updatedByUserId,
         ];
     }
+
+    public function broadcastAs(): string
+    {
+        return 'NoteUpdated';
+    }
 }

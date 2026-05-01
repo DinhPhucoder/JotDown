@@ -3,7 +3,7 @@ import { Container, Row, Col, Form, Button, Spinner } from 'react-bootstrap';
 import { Mail, Lock, User, Camera, Eye, EyeOff } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import { register as registerApi } from '../services/authService';
+import { register as registerApi, login as loginApi, uploadAvatar } from '../services/authService';
 import '../styles/Auth.css';
 
 const SignupPage = () => {
@@ -61,8 +61,22 @@ const SignupPage = () => {
         password,
         password_confirmation: confirmPassword,
       });
-      toast.success(res.message);
-      navigate('/login');
+      
+      // Auto-login
+      await loginApi({ email, password });
+
+      // Upload avatar if selected
+      const file = fileInputRef.current?.files?.[0];
+      if (file) {
+        try {
+          await uploadAvatar(file);
+        } catch {
+          toast.error('Đăng ký thành công nhưng tải ảnh đại diện thất bại.');
+        }
+      }
+
+      toast.success(res.message || 'Đăng ký thành công!');
+      navigate('/notes');
     } catch (err) {
       toast.error(err.message);
     } finally {
