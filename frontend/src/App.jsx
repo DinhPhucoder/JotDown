@@ -5,6 +5,7 @@ import { ForgotPasswordPage, LoginPage, SignupPage, OtpVerificationPage, ResetPa
 import LandingPage from './pages/LandingPage';
 import NotesPage from './pages/NotesPage';
 import NotFoundPage from './pages/NotFoundPage';
+import { ProtectedRoute, GuestRoute } from './components/common/RouteGuard';
 
 
 function App() {
@@ -23,13 +24,13 @@ function App() {
       <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route path="/landing" element={<LandingPage />} />
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/signup" element={<SignupPage />} />
+        <Route path="/login" element={<GuestRoute><LoginPage /></GuestRoute>} />
+        <Route path="/signup" element={<GuestRoute><SignupPage /></GuestRoute>} />
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         <Route path="/verify-otp" element={<OtpVerificationPage />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
         <Route path="/verify-email-result" element={<VerifyEmailResultPage />} />
-        <Route path="/notes" element={<NotesPage />} />
+        <Route path="/notes" element={<ProtectedRoute><NotesPage /></ProtectedRoute>} />
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </BrowserRouter>
