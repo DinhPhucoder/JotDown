@@ -88,6 +88,9 @@ Route::middleware('auth:sanctum')->prefix('v1')->group(function () {
     Route::post('/notes/{note}/attachments', [NoteAttachmentController::class, 'store']);
     Route::delete('/notes/{note}/attachments/{attachment}', [NoteAttachmentController::class, 'destroy']);
 
+    // Note lock: verify password
+    Route::post('/notes/{note}/verify-password', [NoteController::class, 'verifyPassword']);
+
     // Note Sharing
     Route::get('/notes/shared-with-me', [NoteShareController::class, 'sharedWithMe']);
     Route::post('/notes/{note}/share', [NoteShareController::class, 'share']);

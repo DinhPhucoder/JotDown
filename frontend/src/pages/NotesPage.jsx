@@ -25,6 +25,7 @@ import {
   pullSyncChanges,
   pushSyncChanges,
   updateNoteOnServer,
+  verifyNotePassword,
 } from '../features/notes/services/noteApiService';
 import {
   getNoteAttachmentSignature,
@@ -91,13 +92,20 @@ function resolveApiColor(color) {
 }
 
 function toSyncPayload(note) {
-  return {
+  const payload = {
     title: String(note?.title || ''),
     content: String(note?.content || ''),
     color: resolveApiColor(note?.color),
     is_pinned: Boolean(note?.isPinned),
+    is_protected: Boolean(note?.isLocked),
     version: Math.max(Number(note?.version || 1), 1),
   };
+
+  if (note?.lockPassword && String(note.lockPassword).trim().length > 0) {
+    payload.password = String(note.lockPassword).trim();
+  }
+
+  return payload;
 }
 
 function normalizeLabelNames(list) {
@@ -625,9 +633,7 @@ function NotesPage() {
   }
 
   function openEditor(note = null) {
-    const requiredPassword = String(note?.lockPassword || '').trim();
-
-    if (note?.isLocked && requiredPassword.length > 0) {
+    if (note?.isLocked) {
       setUnlockingNote(note);
       setUnlockPassword('');
       setUnlockError('');
@@ -644,16 +650,45 @@ function NotesPage() {
     setUnlockError('');
   }
 
-  function handleConfirmUnlock() {
+  async function handleConfirmUnlock() {
     if (!unlockingNote) {
       return;
     }
 
-    const expectedPassword = String(unlockingNote.lockPassword || '').trim();
+    const noteId = unlockingNote.id;
+    const inputPassword = unlockPassword.trim();
 
-    if (expectedPassword.length > 0 && unlockPassword.trim() !== expectedPassword) {
-      setUnlockError('Mật khẩu không đúng.');
+    if (!inputPassword) {
+      setUnlockError('Vui lòng nhập mật khẩu.');
       return;
+    }
+
+    // Nếu note có ID từ server, gọi API verify
+    if (isServerBackedId(noteId)) {
+      try {
+        const result = await verifyNotePassword(noteId, inputPassword);
+        if (result?.valid && result?.note) {
+          const unlockedNote = {
+            ...result.note,
+            labels: unlockingNote.labels, // Giữ nguyên nhãn vì API có thể chưa load labels
+            lockPassword: inputPassword, // Lưu lại password ở client để sửa và lưu note
+          };
+          setEditingNote(unlockedNote);
+          setEditorOpen(true);
+          handleCancelUnlock();
+          return;
+        }
+      } catch {
+        setUnlockError('Mật khẩu không đúng.');
+        return;
+      }
+    } else {
+      // Note local-only: so sánh client-side
+      const expectedPassword = String(unlockingNote.lockPassword || '').trim();
+      if (expectedPassword.length > 0 && inputPassword !== expectedPassword) {
+        setUnlockError('Mật khẩu không đúng.');
+        return;
+      }
     }
 
     setEditingNote(unlockingNote);

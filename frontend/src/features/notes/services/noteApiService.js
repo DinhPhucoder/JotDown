@@ -53,13 +53,21 @@ function normalizeColorForApi(color) {
 }
 
 function toApiPayload(note) {
-  return {
+  const payload = {
     title: String(note?.title ?? ''),
     content: String(note?.content ?? ''),
     color: normalizeColorForApi(note?.color),
     is_pinned: Boolean(note?.isPinned),
+    is_protected: Boolean(note?.isLocked),
     version: Math.max(Number(note?.version || 1), 1),
   };
+
+  // Chỉ gửi password khi có giá trị (khi đặt khóa mới hoặc đổi mật khẩu)
+  if (note?.lockPassword && String(note.lockPassword).trim().length > 0) {
+    payload.password = String(note.lockPassword).trim();
+  }
+
+  return payload;
 }
 
 function toCreateNotePayload(note) {
@@ -146,6 +154,17 @@ export async function updateNoteOnServer(noteId, note) {
 
 export async function deleteNoteOnServer(noteId) {
   await request(`/v1/notes/${noteId}`, { method: 'DELETE' });
+}
+
+export async function verifyNotePassword(noteId, password) {
+  const data = await request(`/v1/notes/${noteId}/verify-password`, {
+    method: 'POST',
+    body: JSON.stringify({ password }),
+  });
+  if (data?.note) {
+    data.note = normalizeNoteFromApi(data.note);
+  }
+  return data;
 }
 
 export async function attachLabelsToNoteOnServer(noteId, labelIds) {
