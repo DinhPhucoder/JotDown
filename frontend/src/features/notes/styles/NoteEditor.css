@@ -247,6 +247,13 @@ html[data-bs-theme='light'] .note-editor__floating-panel { background: rgba(255,
   flex: 0 0 auto;
 }
 
+.note-editor__avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+}
+
 .note-editor__avatar--muted { background: rgba(148, 163, 184, 0.24); color: var(--bs-secondary-color); }
 .note-editor__collaborator-meta { min-width: 0; flex: 1 1 auto; }
 .note-editor__collaborator-name { color: var(--bs-emphasis-color); font-weight: 600; line-height: 1.2; }

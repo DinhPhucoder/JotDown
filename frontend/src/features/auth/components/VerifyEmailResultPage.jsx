@@ -46,8 +46,8 @@ const VerifyEmailResultPage = () => {
               </p>
             </>
           )}
-          <Link to="/notes" className="btn btn-primary px-4">
-            Về trang ghi chú
+          <Link to="/login" className="btn btn-primary px-4">
+            Về trang đăng nhập
           </Link>
         </div>
       </div>

@@ -46,7 +46,11 @@ class NoteController extends Controller
         if ($note->is_protected) {
             // Chuỗi giả để UI có chữ tạo hiệu ứng blur (bảo mật tuyệt đối vì text thật đã bị xóa)
             $note->content = '<p>Đã khoá bằng mật mã Da Vinci. <br/>PSG vs Bayern <br/>Ars vs Aletico</p>';
-            $note->setRelation('attachments', collect([])); // Ẩn ảnh đính kèm
+            
+            // Làm mờ ảnh từ phía Cloudinary Server để tránh lộ nội dung gốc qua URL
+            foreach ($note->attachments as $attachment) {
+                $attachment->file_url = $this->attachmentService->getBlurredUrl($attachment->file_url);
+            }
         }
         return $note;
     }
@@ -89,7 +93,8 @@ class NoteController extends Controller
             }
         }
 
-        return response()->json($note->refresh()->load(['attachments', 'shares.receiver', 'user', 'labels' => fn($q) => $q->where('labels.user_id', request()->user()?->id)]), 201);
+        $note->refresh()->load(['attachments', 'shares.receiver', 'user', 'labels' => fn($q) => $q->where('labels.user_id', request()->user()?->id)]);
+        return response()->json($this->maskProtectedNote($note), 201);
     }
 
     //  GET ONE
@@ -148,15 +153,17 @@ class NoteController extends Controller
 
         $note->refresh()->load(['attachments', 'shares.receiver', 'user', 'labels' => fn($q) => $q->where('labels.user_id', request()->user()?->id)]);
         
-        \Log::info('Broadcasting NoteUpdated event', [
-            'note_id' => $note->id,
+        $maskedNote = $this->maskProtectedNote($note);
+
+        \Illuminate\Support\Facades\Log::info('Broadcasting NoteUpdated event', [
+            'note_id' => $maskedNote->id,
             'user_id' => $request->user()?->id,
             'broadcast_connection' => config('broadcasting.default'),
         ]);
         
-        event(new NoteUpdated($note, (string) ($request->user()?->id ?? 'system')));
+        event(new \App\Events\NoteUpdated($maskedNote, (string) ($request->user()?->id ?? 'system')));
 
-        return $note;
+        return $maskedNote;
     }
 
     // DELETE

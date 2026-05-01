@@ -26,20 +26,23 @@ const formatter = new Intl.DateTimeFormat('vi-VN', {
   year: 'numeric',
 });
 
-function getCollaboratorEmail(entry) {
+function getCollaboratorMeta(entry) {
   if (!entry) {
-    return '';
+    return null;
   }
 
   if (typeof entry === 'string') {
-    return entry.trim().toLowerCase();
+    return {
+      email: entry.trim().toLowerCase(),
+      avatar: null,
+    };
   }
 
-  return String(entry.email || '')
-    .trim()
-    .toLowerCase() || String(entry.receiver?.email || '')
-    .trim()
-    .toLowerCase();
+  const receiver = entry.receiver || entry;
+  const email = String(receiver.email || '').trim().toLowerCase();
+  const avatar = receiver.avatar_url || receiver.avatar || null;
+
+  return email ? { email, avatar } : null;
 }
 
 function getAvatarInitial(email) {
@@ -68,12 +71,29 @@ function NoteCard({
   const hiddenImageCount = Math.max(note.images.length - 3, 0);
   const normalizedPermission = accessPermission === 'edit' ? 'edit' : 'read';
   const showPermissionBadge = shareScope === 'received';
-  const collaboratorEmails = (Array.isArray(note.sharedWith) ? note.sharedWith : [])
-    .map(getCollaboratorEmail)
+  const collaborators = (Array.isArray(note.sharedWith) ? note.sharedWith : [])
+    .map(getCollaboratorMeta)
     .filter(Boolean);
-  const displayedCollaborators = collaboratorEmails.slice(0, 5);
-  const hiddenCollaboratorCount = Math.max(collaboratorEmails.length - displayedCollaborators.length, 0);
-  const hasBadges = note.isLocked || collaboratorEmails.length > 0 || showPermissionBadge || isOffline;
+
+  // Xây dựng danh sách hiển thị cuối cùng
+  let finalCollaborators = [...collaborators];
+  
+  // Nếu là người nhận (Recipient), hiển thị thêm Owner ở đầu danh sách
+  if (shareScope === 'received' && note.ownerEmail) {
+    const ownerMeta = {
+      email: note.ownerEmail,
+      avatar: note.ownerAvatar,
+      isOwner: true
+    };
+    // Tránh trùng lặp
+    if (!finalCollaborators.some(c => c.email === ownerMeta.email)) {
+      finalCollaborators.unshift(ownerMeta);
+    }
+  }
+
+  const displayedCollaborators = finalCollaborators.slice(0, 5);
+  const hiddenCollaboratorCount = Math.max(finalCollaborators.length - displayedCollaborators.length, 0);
+  const hasBadges = note.isLocked || finalCollaborators.length > 0 || showPermissionBadge || isOffline;
   const canEdit = !shareScope || shareScope === 'owned' || normalizedPermission === 'edit';
 
   function handleCardKeyDown(event) {
@@ -127,7 +147,7 @@ function NoteCard({
                 <span>Khóa</span> 
               </span>
             ) : null}
-            {collaboratorEmails.length > 0 ? (
+            {collaborators.length > 0 ? (
               <span className="note-meta-badge note-meta-badge--shared">
                 <FontAwesomeIcon icon={faShareNodes} />
                 <span>Chia sẻ</span>
@@ -167,11 +187,27 @@ function NoteCard({
         </div>
       ) : null}
 
-      {collaboratorEmails.length > 0 ? (
+      {finalCollaborators.length > 0 ? (
         <div className={`note-card__collaborators ${note.labels.length === 0 ? 'note-card__collaborators--top' : ''}`}>
-          {displayedCollaborators.map((email) => (
-            <span key={email} className="note-card__avatar" title={email} aria-label={email}>
-              {getAvatarInitial(email)}
+          {displayedCollaborators.map((c) => (
+            <span 
+              key={c.email} 
+              className="note-card__avatar" 
+              title={c.isOwner ? `${c.email} (Chủ sở hữu)` : c.email} 
+              aria-label={c.isOwner ? `${c.email} (Chủ sở hữu)` : c.email}
+            >
+              {c.avatar ? (
+                <img 
+                  src={c.avatar} 
+                  alt={c.email} 
+                  onError={(e) => {
+                    e.target.style.display = 'none';
+                    e.target.parentElement.innerText = getAvatarInitial(c.email);
+                  }}
+                />
+              ) : (
+                getAvatarInitial(c.email)
+              )}
             </span>
           ))}
           {hiddenCollaboratorCount > 0 ? (

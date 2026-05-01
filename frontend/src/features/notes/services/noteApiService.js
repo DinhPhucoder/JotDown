@@ -48,6 +48,7 @@ function normalizeNoteFromApi(note) {
       : [],
     ownerEmail: note?.user?.email || null,
     ownerName: note?.user?.name || null,
+    ownerAvatar: note?.user?.avatar_url || null,
     createdAt: toIsoStringOrNow(note?.created_at),
     updatedAt: toIsoStringOrNow(note?.updated_at),
     version: Number(note?.version || 1),

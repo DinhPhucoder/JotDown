@@ -39,6 +39,7 @@ function NoteCollaboratorsModal({
   noteId,
   ownerName = 'Bạn (Chủ sở hữu)',
   ownerEmail = '',
+  ownerAvatar = null,
   initialCollaborators = [],
   onCollaboratorsChange,
 }) {
@@ -176,7 +177,20 @@ function NoteCollaboratorsModal({
         <div className="note-editor__collaborator-list">
           {/* Owner row */}
           <div className="note-editor__collaborator-item">
-            <div className="note-editor__avatar">{getAvatarText(ownerEmail || ownerName)}</div>
+            <div className="note-editor__avatar">
+              {ownerAvatar ? (
+                <img 
+                  src={ownerAvatar} 
+                  alt={ownerName} 
+                  onError={(e) => {
+                    e.target.style.display = 'none';
+                    e.target.parentElement.innerText = getAvatarText(ownerEmail || ownerName);
+                  }}
+                />
+              ) : (
+                getAvatarText(ownerEmail || ownerName)
+              )}
+            </div>
             <div className="note-editor__collaborator-meta">
               <div className="note-editor__collaborator-name">{ownerName}</div>
               <div className="note-editor__collaborator-email">{ownerEmail}</div>
@@ -198,7 +212,20 @@ function NoteCollaboratorsModal({
 
             return (
               <div key={key} className="note-editor__collaborator-item">
-                <div className="note-editor__avatar">{getAvatarText(email)}</div>
+                <div className="note-editor__avatar">
+                  {share.receiver?.avatar_url ? (
+                    <img 
+                      src={share.receiver.avatar_url} 
+                      alt={name} 
+                      onError={(e) => {
+                        e.target.style.display = 'none';
+                        e.target.parentElement.innerText = getAvatarText(email);
+                      }}
+                    />
+                  ) : (
+                    getAvatarText(email)
+                  )}
+                </div>
                 <div className="note-editor__collaborator-meta">
                   <div className="note-editor__collaborator-name">{name}</div>
                   <div className="note-editor__collaborator-email">{email}</div>

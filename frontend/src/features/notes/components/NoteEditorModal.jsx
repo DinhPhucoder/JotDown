@@ -493,6 +493,12 @@ function NoteEditorModal({
       return;
     }
 
+    if (nextFiles.some((file) => file.size > 5 * 1024 * 1024)) {
+      setUploadError('Kích thước mỗi ảnh không được vượt quá 5MB.');
+      event.target.value = '';
+      return;
+    }
+
     if (currentSize + newSize > 15 * 1024 * 1024) {
       setUploadError('Tổng dung lượng ảnh không được vượt quá 15MB.');
       event.target.value = '';
@@ -966,8 +972,9 @@ function NoteEditorModal({
           open={isCollaboratorsOpen}
           onClose={() => setIsCollaboratorsOpen(false)}
           noteId={note?.id ?? null}
-          ownerName={undefined}
-          ownerEmail={undefined}
+          ownerName={note?.ownerName}
+          ownerEmail={note?.ownerEmail}
+          ownerAvatar={note?.ownerAvatar}
           initialCollaborators={sharedWith}
           onCollaboratorsChange={(nextCollaborators) => {
             const normalizedState = normalizeSecurityState(false, '', nextCollaborators);

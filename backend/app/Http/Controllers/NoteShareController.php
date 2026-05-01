@@ -39,11 +39,26 @@ final class NoteShareController extends Controller
 
         $permission = strtoupper($request->validated('permission'));
 
-        // updateOrCreate để tránh duplicate, cập nhật permission nếu đã share
-        $share = NoteShare::updateOrCreate(
-            ['note_id' => $note->id, 'receiver_id' => $receiver->id],
-            ['sender_id' => $sender->id, 'permission' => $permission],
-        );
+        // Restore soft-deleted share if it exists, otherwise create new
+        $share = NoteShare::withTrashed()
+            ->where('note_id', $note->id)
+            ->where('receiver_id', $receiver->id)
+            ->first();
+
+        if ($share) {
+            $share->restore();
+            $share->update([
+                'sender_id' => $sender->id,
+                'permission' => $permission,
+            ]);
+        } else {
+            $share = NoteShare::create([
+                'note_id' => $note->id,
+                'receiver_id' => $receiver->id,
+                'sender_id' => $sender->id,
+                'permission' => $permission,
+            ]);
+        }
 
         $share->load('receiver', 'sender');
 
@@ -71,6 +86,7 @@ final class NoteShareController extends Controller
         $shares = NoteShare::with([
             'note.attachments', 
             'note.shares.receiver', 
+            'note.user',
             'sender', 
             'receiver',
             'note.labels' => fn($q) => $q->where('labels.user_id', $userId)

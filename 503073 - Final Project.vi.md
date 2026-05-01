@@ -349,7 +349,8 @@ một số lỗi nghiêm trọng
 Tính năng đã được triển khai đúng theo
 yêu cầu, không có lỗi
 hoặc chỉ có lỗi không đáng kể.
-23 Chia sẻ và nhận ghi chú
+## 23 
+Chia sẻ và nhận ghi chú
 ## 0.5
 
 Tính năng không có

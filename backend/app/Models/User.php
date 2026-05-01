@@ -18,6 +18,8 @@ class User extends Authenticatable
     /** @use HasFactory<UserFactory> */
     use HasApiTokens, HasFactory, Notifiable;
 
+    protected $appends = ['avatar_url'];
+
     /**
      * Get the attributes that should be cast.
      *
@@ -81,5 +83,18 @@ class User extends Authenticatable
     public function receivedShares(): HasMany
     {
         return $this->hasMany(NoteShare::class, 'receiver_id');
+    }
+
+    public function getAvatarUrlAttribute(): ?string
+    {
+        if (!$this->avatar) {
+            return null;
+        }
+
+        if (str_starts_with($this->avatar, 'http')) {
+            return $this->avatar;
+        }
+
+        return asset('storage/' . $this->avatar);
     }
 }

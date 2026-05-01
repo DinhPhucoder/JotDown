@@ -113,3 +113,35 @@ Artisan::command('cloudinary:cleanup-orphans {--dry-run} {--older-than-days=7}',
     $this->info("Checked: {$checked}. Deleted: {$deleted}.");
     return 0;
 })->purpose('Delete orphaned Cloudinary files not referenced by note_attachments');
+
+Artisan::command('db:cleanup {--days=3}', function () {
+    $days = (int) $this->option('days');
+    $threshold = now()->subDays($days);
+
+    $this->info("Đang dọn dẹp các bản ghi cũ hơn {$days} ngày...");
+
+    // 1. Xóa vĩnh viễn các bản ghi Soft Delete
+    $notesCount = \App\Models\Note::onlyTrashed()->where('deleted_at', '<', $threshold)->forceDelete();
+    $sharesCount = \App\Models\NoteShare::onlyTrashed()->where('deleted_at', '<', $threshold)->forceDelete();
+    $attachmentsCount = \App\Models\NoteAttachment::onlyTrashed()->where('deleted_at', '<', $threshold)->forceDelete();
+
+    // 2. Dọn dẹp Sync Queue (Audit logs)
+    $syncCount = DB::table('sync_queue')->where('created_at', '<', $threshold)->delete();
+
+    // 3. Dọn dẹp Sessions hết hạn (Laravel lưu last_activity là timestamp)
+    $sessionsCount = 0;
+    if (config('session.driver') === 'database') {
+        $sessionsCount = DB::table('sessions')
+            ->where('last_activity', '<', $threshold->getTimestamp())
+            ->delete();
+    }
+
+    $this->line("- Ghi chú (SoftDeleted): {$notesCount}");
+    $this->line("- Quyền chia sẻ (SoftDeleted): {$sharesCount}");
+    $this->line("- File đính kèm (SoftDeleted): {$attachmentsCount}");
+    $this->line("- Lịch sử đồng bộ (Sync Queue): {$syncCount}");
+    $this->line("- Phiên làm việc cũ (Sessions): {$sessionsCount}");
+    
+    $this->info('Đã hoàn thành dọn dẹp hệ thống.');
+})->purpose('Dọn dẹp định kỳ các dữ liệu rác, phiên làm việc cũ và lịch sử đồng bộ');
+

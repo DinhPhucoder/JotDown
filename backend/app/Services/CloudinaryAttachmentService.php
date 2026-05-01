@@ -108,4 +108,9 @@ class CloudinaryAttachmentService
             ]);
         }
     }
+    public function getBlurredUrl(string $url): string
+    {
+        // Chèn transformation e_blur:2000 của Cloudinary vào URL để làm mờ từ phía server
+        return str_replace('/upload/', '/upload/e_blur:2000/', $url);
+    }
 }

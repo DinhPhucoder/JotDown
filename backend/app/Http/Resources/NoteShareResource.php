@@ -19,11 +19,13 @@ class NoteShareResource extends JsonResource
                 'id'    => $this->sender->id,
                 'name'  => $this->sender->name,
                 'email' => $this->sender->email,
+                'avatar' => $this->sender->avatar_url,
             ]),
             'receiver'   => $this->whenLoaded('receiver', fn () => [
                 'id'    => $this->receiver->id,
                 'name'  => $this->receiver->name,
                 'email' => $this->receiver->email,
+                'avatar' => $this->receiver->avatar_url,
             ]),
             'note'       => $this->whenLoaded('note', fn () => $this->note->toArray()),
             'permission' => $this->permission,

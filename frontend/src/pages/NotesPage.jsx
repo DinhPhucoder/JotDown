@@ -307,6 +307,7 @@ function NotesPage() {
                 : [],
               ownerEmail: share?.sender?.email || null,
               ownerName: share?.sender?.name || null,
+              ownerAvatar: share?.sender?.avatar || null,
               accessPermission: share?.permission || null,
               createdAt: n.created_at || new Date().toISOString(),
               updatedAt: n.updated_at || new Date().toISOString(),
@@ -555,6 +556,7 @@ function NotesPage() {
                   : [],
                 ownerEmail: share?.sender?.email || null,
                 ownerName: share?.sender?.name || null,
+                ownerAvatar: share?.sender?.avatar || null,
                 accessPermission: share?.permission || null,
                 createdAt: n.created_at || new Date().toISOString(),
                 updatedAt: n.updated_at || new Date().toISOString(),
@@ -1209,23 +1211,7 @@ function NotesPage() {
               ),
             ),
           );
-
-          const shouldKeepLocal = window.confirm(
-            'Ghi chu nay da duoc cap nhat boi nguoi khac. Chon OK de giu ban sua cua ban va dong bo lai sau.',
-          );
-
-          if (shouldKeepLocal) {
-            void enqueueSyncChange({
-              action: 'UPDATE',
-              entity_id: String(error.serverNote.id),
-              payload: {
-                ...toSyncPayload(noteWithVersion),
-                version: Number(error.serverNote.version || 1),
-              },
-              timestamp: new Date().toISOString(),
-            });
-          }
-
+          toast.warning('Ghi chú đã được cập nhật bởi người khác. Dữ liệu mới nhất đã được tải về.');
           return;
         }
 

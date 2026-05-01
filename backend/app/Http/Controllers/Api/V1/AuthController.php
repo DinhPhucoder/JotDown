@@ -21,6 +21,22 @@ use Illuminate\Support\Facades\URL;
 class AuthController extends Controller
 {
     /**
+     * Resolve avatar url to support both local and Cloudinary urls
+     */
+    private function resolveAvatarUrl(?string $avatar): ?string
+    {
+        if (!$avatar) {
+            return null;
+        }
+
+        if (str_starts_with($avatar, 'http')) {
+            return $avatar;
+        }
+
+        return asset('storage/' . $avatar);
+    }
+
+    /**
      * Đăng ký tài khoản mới.
      * Không gửi OTP — user đăng nhập ngay, xác thực email sau.
      */
@@ -69,7 +85,7 @@ class AuthController extends Controller
                     'id' => $user->id,
                     'name' => $user->name,
                     'email' => $user->email,
-                    'avatar' => $user->avatar,
+                    'avatar' => $this->resolveAvatarUrl($user->avatar),
                     'email_verified' => !is_null($user->email_verified_at),
                 ],
             ],
@@ -283,7 +299,7 @@ class AuthController extends Controller
                     'id' => $user->id,
                     'name' => $user->name,
                     'email' => $user->email,
-                    'avatar' => $user->avatar,
+                    'avatar' => $this->resolveAvatarUrl($user->avatar),
                     'email_verified' => !is_null($user->email_verified_at),
                     'preferences' => $user->preferences,
                     'created_at' => $user->created_at,
@@ -312,7 +328,7 @@ class AuthController extends Controller
                     'id' => $user->id,
                     'name' => $user->name,
                     'email' => $user->email,
-                    'avatar' => $user->avatar ? asset('storage/' . $user->avatar) : null,
+                    'avatar' => $this->resolveAvatarUrl($user->avatar),
                     'email_verified' => !is_null($user->email_verified_at),
                 ],
             ],
@@ -330,19 +346,66 @@ class AuthController extends Controller
 
         $user = $request->user();
 
-        // Xóa avatar cũ nếu có
-        if ($user->avatar && \Illuminate\Support\Facades\Storage::disk('public')->exists($user->avatar)) {
+        $cloudName = (string) config('cloudinary.cloud_name');
+        $apiKey = (string) config('cloudinary.api_key');
+        $apiSecret = (string) config('cloudinary.api_secret');
+
+        if ($cloudName === '' || $apiKey === '' || $apiSecret === '') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Cloudinary chưa được cấu hình.',
+                'data' => null,
+            ], 500);
+        }
+
+        $file = $request->file('avatar');
+        $timestamp = now()->timestamp;
+        $folder = 'avatars';
+        
+        // Thêm tham số cắt ảnh vuông tập trung vào khuôn mặt
+        $transformation = 'c_fill,g_face,w_256,h_256';
+
+        $paramsArray = [
+            'folder' => $folder,
+            'timestamp' => $timestamp,
+            'transformation' => $transformation,
+        ];
+        ksort($paramsArray);
+        $paramsToSign = urldecode(http_build_query($paramsArray));
+        $signature = sha1($paramsToSign . $apiSecret);
+
+        $response = \Illuminate\Support\Facades\Http::attach(
+            'file',
+            file_get_contents($file->getRealPath()),
+            $file->getClientOriginalName()
+        )->post("https://api.cloudinary.com/v1_1/{$cloudName}/image/upload", array_merge($paramsArray, [
+            'api_key' => $apiKey,
+            'signature' => $signature,
+        ]));
+
+        if (!$response->successful()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Lỗi khi upload ảnh lên Cloudinary.',
+                'data' => null,
+            ], 500);
+        }
+
+        $cloudinaryData = $response->json();
+        $avatarUrl = $cloudinaryData['secure_url'];
+
+        // Xóa avatar cũ nếu là file local
+        if ($user->avatar && !str_starts_with($user->avatar, 'http') && \Illuminate\Support\Facades\Storage::disk('public')->exists($user->avatar)) {
             \Illuminate\Support\Facades\Storage::disk('public')->delete($user->avatar);
         }
 
-        $path = $request->file('avatar')->store('avatars', 'public');
-        $user->update(['avatar' => $path]);
+        $user->update(['avatar' => $avatarUrl]);
 
         return response()->json([
             'success' => true,
             'message' => 'Cập nhật ảnh đại diện thành công!',
             'data' => [
-                'avatar' => asset('storage/' . $path),
+                'avatar' => $avatarUrl,
             ],
         ]);
     }

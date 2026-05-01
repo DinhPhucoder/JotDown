@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Modal, Button, Form, Tab, Row, Col, Nav, Spinner } from 'react-bootstrap';
 import { User, Mail, PaintBucket, Shield, Camera, Lock, Eye, EyeOff, X, Type, AlertTriangle, CheckCircle } from 'lucide-react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -18,6 +18,7 @@ function UserProfileModal({ open, onClose, theme, onToggleTheme, preferences, on
     const [activeTab, setActiveTab] = useState('profile');
     const fileInputRef = useRef(null);
     const [saving, setSaving] = useState(false);
+    const [saved, setSaved] = useState(false);
     const [uploadingAvatar, setUploadingAvatar] = useState(false);
     const [sendingLink, setSendingLink] = useState(false);
     const verifyStorageKey = `verify_link_sent_at_${user?.id || 'unknown'}`;
@@ -85,24 +86,38 @@ function UserProfileModal({ open, onClose, theme, onToggleTheme, preferences, on
         setFormData(prev => ({ ...prev, [name]: value }));
     };
 
-    const handleSaveProfile = async (e) => {
-        e.preventDefault();
-        if (!formData.displayName.trim()) return toast.warning('Vui lòng nhập họ và tên');
-        setSaving(true);
-        try {
-            const res = await updateProfile({ name: formData.displayName.trim() });
-            toast.success(res.message);
-            // Cập nhật user ở parent + localStorage
-            const updatedUser = res.data.user;
-            sessionStorage.setItem('auth_user', JSON.stringify(updatedUser));
-            if (typeof onUserUpdate === 'function') {
-                onUserUpdate({ displayName: updatedUser.name, name: updatedUser.name });
+    // Auto-save cho Họ và tên
+    useEffect(() => {
+        // Chỉ auto-save nếu tên đã thay đổi so với giá trị ban đầu (tránh chạy khi vừa mount)
+        const currentName = user?.displayName || user?.name || '';
+        if (formData.displayName === currentName) return;
+
+        const timer = setTimeout(async () => {
+            if (!formData.displayName.trim()) return;
+            
+            setSaving(true);
+            try {
+                const res = await updateProfile({ name: formData.displayName.trim() });
+                const updatedUser = res.data.user;
+                sessionStorage.setItem('auth_user', JSON.stringify(updatedUser));
+                if (typeof onUserUpdate === 'function') {
+                    onUserUpdate({ displayName: updatedUser.name, name: updatedUser.name });
+                }
+                setSaved(true);
+                setTimeout(() => setSaved(false), 3000);
+            } catch (err) {
+                toast.error(err.message);
+            } finally {
+                setSaving(false);
             }
-        } catch (err) {
-            toast.error(err.message);
-        } finally {
-            setSaving(false);
-        }
+        }, 800); // 0.8s debounce
+
+        return () => clearTimeout(timer);
+    }, [formData.displayName, user?.displayName, user?.name, onUserUpdate]);
+
+    const handleSaveProfile = async (e) => {
+        if (e) e.preventDefault();
+        // Giữ lại hàm này phòng trường hợp cần gọi thủ công, nhưng bỏ Logic cũ vì đã có useEffect
     };
 
     const handleAvatarClick = () => {
@@ -308,7 +323,18 @@ function UserProfileModal({ open, onClose, theme, onToggleTheme, preferences, on
                                                     value={formData.displayName}
                                                     onChange={handleFormChange}
                                                     className="profile-input-control"
+                                                    placeholder="Nhập họ và tên của bạn..."
                                                 />
+                                                {saving && (
+                                                    <div className="position-absolute end-0 top-50 translate-middle-y pe-3">
+                                                        <Spinner animation="border" size="sm" variant="primary" style={{ width: '14px', height: '14px', borderWidth: '2px' }} />
+                                                    </div>
+                                                )}
+                                                {!saving && saved && (
+                                                    <div className="position-absolute end-0 top-50 translate-middle-y pe-3 text-success animate-in fade-in zoom-in duration-300">
+                                                        <CheckCircle size={14} strokeWidth={3} />
+                                                    </div>
+                                                )}
                                             </div>
                                         </Form.Group>
 
@@ -378,11 +404,7 @@ function UserProfileModal({ open, onClose, theme, onToggleTheme, preferences, on
                                             )}
                                         </Form.Group>
 
-                                        <div className="d-flex justify-content-end">
-                                            <Button variant="primary" type="submit" disabled={saving}>
-                                                {saving ? <Spinner animation="border" size="sm" /> : 'Lưu hồ sơ'}
-                                            </Button>
-                                        </div>
+                                        {/* Nút lưu đã được gỡ bỏ để sử dụng auto-save */}
                                     </Form>
                                 </Tab.Pane>
 

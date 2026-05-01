@@ -17,6 +17,9 @@ use Throwable;
 
 final class SyncController extends Controller
 {
+    public function __construct(private readonly \App\Services\CloudinaryAttachmentService $attachmentService)
+    {
+    }
     public function push(SyncRequest $request): SyncResultResource
     {
         $userId = (int) ($request->user()?->id ?? 1);
@@ -119,6 +122,10 @@ final class SyncController extends Controller
             ->filter(fn (Note $note): bool => $note->deleted_at !== null)
             ->pluck('id')
             ->values();
+
+        $activeNotes->transform(function ($note) {
+            return $this->maskProtectedNote($note);
+        });
 
         return response()->json([
             'notes' => $activeNotes,
@@ -333,5 +340,15 @@ final class SyncController extends Controller
         } catch (Throwable) {
             return now()->subDays(30)->toImmutable();
         }
+    }
+    private function maskProtectedNote(Note $note): Note
+    {
+        if ($note->is_protected) {
+            $note->content = '<p>Đã khoá bằng mật mã Da Vinci. <br/>PSG vs Bayern <br/>Ars vs Aletico</p>';
+            foreach ($note->attachments as $attachment) {
+                $attachment->file_url = $this->attachmentService->getBlurredUrl($attachment->file_url);
+            }
+        }
+        return $note;
     }
 }

@@ -20,4 +20,5 @@ return Application::configure(basePath: dirname(__DIR__))
     })
     ->withSchedule(function (Schedule $schedule): void {
         $schedule->command('cloudinary:cleanup-orphans --older-than-days=7')->daily();
+        $schedule->command('db:cleanup --days=3')->daily();
     })->create();

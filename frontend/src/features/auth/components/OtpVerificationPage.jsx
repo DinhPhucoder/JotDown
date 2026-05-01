@@ -10,7 +10,12 @@ const OtpVerificationPage = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const purpose = searchParams.get('purpose') || 'verify';
-  const email = localStorage.getItem('reset_email') || '';
+  const email = localStorage.getItem('reset_email') || (() => {
+    try {
+      const user = JSON.parse(sessionStorage.getItem('auth_user'));
+      return user?.email || '';
+    } catch { return ''; }
+  })();
 
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [loading, setLoading] = useState(false);
@@ -119,7 +124,7 @@ const OtpVerificationPage = () => {
               <h2 className="fw-bold mb-3">Xác thực Email</h2>
               <p className="text-secondary">
                 Chúng tôi đã gửi mã 6 chữ số đến <br />
-                <strong className="text-body mt-1 d-inline-block">name@example.com</strong>
+                <strong className="text-body mt-1 d-inline-block">{email || 'người dùng'}</strong>
               </p>
             </div>
 
