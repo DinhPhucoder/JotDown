@@ -28,7 +28,7 @@ const LoginPage = () => {
       const res = await loginApi({ email, password });
       // Lưu thông tin user
       localStorage.setItem('auth_user', JSON.stringify(res.data.user));
-      toast.success(res.message);
+      toast.success(res.message, { duration: 2000 });
       navigate('/notes');
     } catch (err) {
       toast.error(err.message);
