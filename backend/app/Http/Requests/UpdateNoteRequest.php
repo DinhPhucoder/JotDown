@@ -19,6 +19,8 @@ class UpdateNoteRequest extends FormRequest
             'content' => 'nullable|string|max:10000',
             'color' => 'nullable|regex:/^#[0-9A-F]{6}$/i',
             'is_pinned' => 'nullable|boolean',
+            'is_protected' => 'nullable|boolean',
+            'password' => 'nullable|string|min:4|max:255',
         ];
     }
 

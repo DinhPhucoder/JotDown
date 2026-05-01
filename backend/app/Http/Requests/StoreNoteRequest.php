@@ -18,6 +18,8 @@ class StoreNoteRequest extends FormRequest
             'title' => 'nullable|string|max:255',
             'content' => 'nullable|string|max:10000',
             'color' => 'nullable|regex:/^#[0-9A-F]{6}$/i',
+            'is_protected' => 'nullable|boolean',
+            'password' => 'nullable|string|min:4|max:255',
             'attachments' => 'nullable|array|min:1',
             'attachments.*.file_url' => 'required|string',
             'attachments.*.file_size' => 'required|integer|min:1',

@@ -11,6 +11,8 @@ use App\Models\Note;
 use App\Models\NoteAttachment;
 use App\Services\CloudinaryAttachmentService;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Http\Request;
 
 class NoteController extends Controller
 {
@@ -30,7 +32,23 @@ class NoteController extends Controller
             $query->where('user_id', $userId);
         }
 
-        return $query->get();
+        $notes = $query->get();
+
+        $notes->transform(function ($note) {
+            return $this->maskProtectedNote($note);
+        });
+
+        return $notes;
+    }
+
+    private function maskProtectedNote($note)
+    {
+        if ($note->is_protected) {
+            // Chuỗi giả để UI có chữ tạo hiệu ứng blur (bảo mật tuyệt đối vì text thật đã bị xóa)
+            $note->content = '<p>Đã khoá bằng mật mã Da Vinci. <br/>PSG vs Bayern <br/>Ars vs Aletico</p>';
+            $note->setRelation('attachments', collect([])); // Ẩn ảnh đính kèm
+        }
+        return $note;
     }
 
     //  CREATE
@@ -38,11 +56,16 @@ class NoteController extends Controller
     {
         $userId = $request->user()?->id ?? 1;
         $validated = $request->validated();
+        $isProtected = !empty($validated['is_protected']);
         $note = Note::create([
             'user_id' => $userId,
             'title' => (string) ($validated['title'] ?? ''),
             'content' => $validated['content'] ?? null,
             'color' => $validated['color'] ?? '#ffffff',
+            'is_protected' => $isProtected,
+            'password' => $isProtected && !empty($validated['password'])
+                ? Hash::make($validated['password'])
+                : null,
             'version' => 1,
         ]);
 
@@ -72,7 +95,8 @@ class NoteController extends Controller
     //  GET ONE
     public function show($id)
     {
-        return Note::with('attachments')->findOrFail($id);
+        $note = Note::with('attachments')->findOrFail($id);
+        return $this->maskProtectedNote($note);
     }
 
     // UPDATE
@@ -95,7 +119,7 @@ class NoteController extends Controller
         $hasPinnedFlag = Arr::has($validated, 'is_pinned');
         $nextPinned = $hasPinnedFlag ? (bool) $validated['is_pinned'] : (bool) $note->is_pinned;
 
-        $note->update([
+        $updateData = [
             'title' => $validated['title'] ?? $note->title,
             'content' => $validated['content'] ?? $note->content,
             'color' => $validated['color'] ?? $note->color,
@@ -104,7 +128,21 @@ class NoteController extends Controller
                 ? ($nextPinned ? now() : null)
                 : $note->pinned_at,
             'version' => $note->version + 1,
-        ]);
+        ];
+
+        // Xử lý khóa ghi chú
+        if (Arr::has($validated, 'is_protected')) {
+            $nextProtected = (bool) $validated['is_protected'];
+            $updateData['is_protected'] = $nextProtected;
+
+            if ($nextProtected && !empty($validated['password'])) {
+                $updateData['password'] = Hash::make($validated['password']);
+            } elseif (!$nextProtected) {
+                $updateData['password'] = null;
+            }
+        }
+
+        $note->update($updateData);
 
         $note->refresh()->load('attachments');
         event(new NoteUpdated($note, (string) ($request->user()?->id ?? 'system')));
@@ -121,6 +159,24 @@ class NoteController extends Controller
         return response()->json([
             'message' => 'Deleted successfully',
         ]);
+    }
+
+    // VERIFY NOTE PASSWORD
+    public function verifyPassword(Request $request, $id)
+    {
+        $note = Note::findOrFail($id);
+
+        if (!$note->is_protected || !$note->password) {
+            return response()->json(['valid' => true, 'note' => $note->load('attachments')]);
+        }
+
+        $inputPassword = (string) $request->input('password', '');
+
+        if (Hash::check($inputPassword, $note->password)) {
+            return response()->json(['valid' => true, 'note' => $note->load('attachments')]);
+        }
+
+        return response()->json(['valid' => false, 'message' => 'Mật khẩu không đúng.'], 403);
     }
 
     // ATTACH LABELS

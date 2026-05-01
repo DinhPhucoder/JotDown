@@ -20,7 +20,23 @@ function UserProfileModal({ open, onClose, theme, onToggleTheme, preferences, on
     const [saving, setSaving] = useState(false);
     const [uploadingAvatar, setUploadingAvatar] = useState(false);
     const [sendingLink, setSendingLink] = useState(false);
-    const [linkSent, setLinkSent] = useState(false);
+    const verifyStorageKey = `verify_link_sent_at_${user?.id || 'unknown'}`;
+    const [linkSent, setLinkSent] = useState(() => {
+        // Nếu user đã xác thực rồi thì không cần giữ trạng thái "đã gửi"
+        if (user?.isVerified) {
+            localStorage.removeItem(verifyStorageKey);
+            return false;
+        }
+        try {
+            const sentAt = localStorage.getItem(verifyStorageKey);
+            if (sentAt) {
+                const elapsed = Date.now() - Number(sentAt);
+                // Link hết hạn sau 60 phút → cho phép gửi lại
+                return elapsed < 60 * 60 * 1000;
+            }
+        } catch { /* ignore */ }
+        return false;
+    });
 
     const selectedFontSize = noteFontSizeOptions.some((option) => option.value === preferences?.fontSize)
         ? preferences.fontSize
@@ -347,6 +363,7 @@ function UserProfileModal({ open, onClose, theme, onToggleTheme, preferences, on
                                                                     const res = await sendVerificationLink();
                                                                     toast.success(res.message);
                                                                     setLinkSent(true);
+                                                                    localStorage.setItem(verifyStorageKey, String(Date.now()));
                                                                 } catch (err) {
                                                                     toast.error(err.message);
                                                                 } finally {
