@@ -13,6 +13,7 @@ use App\Models\SyncQueue;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Throwable;
 
 final class SyncController extends Controller
@@ -35,6 +36,14 @@ final class SyncController extends Controller
             $entityId = (int) ($change['entity_id'] ?? 0);
             $payload = is_array($change['payload'] ?? null) ? $change['payload'] : [];
             $timestamp = (string) ($change['timestamp'] ?? now()->toIso8601String());
+
+            Log::info("Sync Push Entry", [
+                'action' => $action,
+                'entity_id' => $entityId,
+                'version' => $payload['version'] ?? 'MISSING',
+                'has_labels' => isset($payload['label_names']),
+                'labels' => $payload['label_names'] ?? []
+            ]);
 
             SyncQueue::create([
                 'user_id' => $userId,
@@ -93,7 +102,13 @@ final class SyncController extends Controller
                 }
 
                 $result['failed_count']++;
-            } catch (Throwable) {
+            } catch (Throwable $e) {
+                Log::error("Sync Entry Failed", [
+                    'action' => $action,
+                    'entity_id' => $entityId,
+                    'error' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString()
+                ]);
                 $result['failed_count']++;
             }
         }
@@ -138,7 +153,7 @@ final class SyncController extends Controller
     {
         $parsedTime = CarbonImmutable::parse($timestamp);
 
-        Note::create([
+        $note = Note::create([
             'user_id' => $userId,
             'title' => (string) ($payload['title'] ?? ''),
             'content' => (string) ($payload['content'] ?? ''),
@@ -147,6 +162,11 @@ final class SyncController extends Controller
             'pinned_at' => !empty($payload['is_pinned']) ? $parsedTime : null,
             'version' => max((int) ($payload['version'] ?? 1), 1),
         ]);
+
+        // Sync label_names nếu note mới được tạo kèm labels
+        if (array_key_exists('label_names', $payload) && is_array($payload['label_names'])) {
+            $this->syncNoteLabels($note, $userId, $payload['label_names']);
+        }
     }
 
     private function applyUpdate(
@@ -156,12 +176,13 @@ final class SyncController extends Controller
         string $timestamp,
         string $updatedByUserId
     ): ?array {
-        $note = Note::with('attachments')
+        $note = Note::with(['attachments', 'labels'])
             ->where('id', $entityId)
             ->where('user_id', $userId)
             ->first();
 
         if (!$note) {
+            Log::warning("Sync Update Failed: Note Not Found", ['entity_id' => $entityId, 'user_id' => $userId]);
             return [
                 'entity_id' => (string) $entityId,
                 'reason' => 'NOTE_NOT_FOUND',
@@ -171,6 +192,11 @@ final class SyncController extends Controller
         $incomingVersion = max((int) ($payload['version'] ?? 0), 0);
 
         if ($incomingVersion < (int) $note->version) {
+            Log::warning("Sync Update Failed: Stale Version", [
+                'entity_id' => $entityId,
+                'client_v' => $incomingVersion,
+                'server_v' => $note->version
+            ]);
             return [
                 'entity_id' => (string) $entityId,
                 'reason' => 'STALE_VERSION',
@@ -195,10 +221,49 @@ final class SyncController extends Controller
             'version' => ((int) $note->version) + 1,
         ]);
 
-        $note->refresh()->load('attachments');
+        // Đồng bộ label_names nếu có trong payload
+        if (array_key_exists('label_names', $payload) && is_array($payload['label_names'])) {
+            $this->syncNoteLabels($note, $userId, $payload['label_names']);
+        }
+
+        $note->refresh()->load('attachments', 'labels');
         event(new NoteUpdated($note, $updatedByUserId));
 
         return null;
+    }
+
+    /**
+     * Đồng bộ labels cho note dựa trên danh sách tên.
+     * Attach labels mới, detach labels bị xóa.
+     */
+    private function syncNoteLabels(\App\Models\Note $note, int $userId, array $labelNames): void
+    {
+        Log::info("Syncing labels for note {$note->id}", ['names' => $labelNames]);
+        // Normalize tên
+        $incomingNames = collect($labelNames)
+            ->map(fn($name) => mb_strtolower(trim((string) $name)))
+            ->filter()
+            ->unique()
+            ->values();
+
+        // Tìm hoặc tạo labels theo tên
+        $targetLabelIds = $incomingNames->map(function ($name) use ($userId) {
+            $label = \App\Models\Label::firstOrCreate(
+                ['user_id' => $userId, 'name' => $name],
+            );
+            return $label->id;
+        })->filter()->values();
+
+        Log::info("Target label IDs for note {$note->id}", ['ids' => $targetLabelIds->toArray()]);
+
+        // Tạo mảng data cho sync với extra pivot data (user_id)
+        $syncData = [];
+        foreach ($targetLabelIds as $id) {
+            $syncData[$id] = ['user_id' => $userId];
+        }
+
+        // Sync: chỉ giữ lại đúng danh sách targetLabelIds kèm user_id
+        $note->labels()->sync($syncData);
     }
 
     private function applyDelete(int $userId, int $entityId): bool

@@ -127,11 +127,27 @@ async function createEchoInstance() {
     cluster: import.meta.env.VITE_PUSHER_APP_CLUSTER,
     forceTLS: true,
     authEndpoint: BROADCAST_AUTH_ENDPOINT,
-    auth: {
-      headers: {
-        Authorization: `Bearer ${sessionStorage.getItem('auth_token') || ''}`,
+    // Dùng authorizer thay vì auth.headers để token được đọc
+    // fresh mỗi lần Pusher reconnect (tránh 403 sau khi offline)
+    authorizer: (channel) => ({
+      authorize: (socketId, callback) => {
+        fetch(BROADCAST_AUTH_ENDPOINT, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Accept: 'application/json',
+            Authorization: `Bearer ${sessionStorage.getItem('auth_token') || ''}`,
+          },
+          body: JSON.stringify({
+            socket_id: socketId,
+            channel_name: channel.name,
+          }),
+        })
+          .then((res) => res.json())
+          .then((data) => callback(null, data))
+          .catch((err) => callback(err, null));
       },
-    },
+    }),
   });
 
   bindPusherDebugListeners(echoInstance);

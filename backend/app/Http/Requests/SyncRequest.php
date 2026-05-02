@@ -20,6 +20,13 @@ class SyncRequest extends FormRequest
             'changes.*.action' => ['required', 'string', 'in:CREATE,UPDATE,DELETE,ATTACHMENT_ADD,ATTACHMENT_REMOVE'],
             'changes.*.entity_id' => ['required', 'string'],
             'changes.*.payload' => ['nullable', 'array'],
+            'changes.*.payload.version' => ['sometimes', 'integer'],
+            'changes.*.payload.title' => ['sometimes', 'nullable', 'string'],
+            'changes.*.payload.content' => ['sometimes', 'nullable', 'string'],
+            'changes.*.payload.color' => ['sometimes', 'nullable', 'string'],
+            'changes.*.payload.is_pinned' => ['sometimes', 'boolean'],
+            'changes.*.payload.label_names' => ['sometimes', 'nullable', 'array'],
+            'changes.*.payload.label_names.*' => ['sometimes', 'string', 'max:100'],
             'changes.*.timestamp' => ['required', 'date'],
         ];
     }

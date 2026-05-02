@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, useDeferredValue } from 'react';
 import { Button, Modal, Offcanvas } from 'react-bootstrap';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faPlus, faStickyNote } from '@fortawesome/free-solid-svg-icons';
+import { faPlus, faStickyNote, faTrash } from '@fortawesome/free-solid-svg-icons';
 import { useNavigate } from 'react-router-dom';
 import NoteCard from '../features/notes/components/NoteCard';
 import NoteEditorModal from '../features/notes/components/NoteEditorModal';
@@ -9,6 +9,7 @@ import NoteSettingsModal from '../features/notes/components/NoteSettingsModal';
 import UserProfileModal from '../features/profile/components/UserProfileModal';
 import NotesHeader from '../features/notes/components/NotesHeader';
 import NotesSidebar from '../features/notes/components/NotesSidebar';
+import NoteDeleteConfirmDialog from '../features/notes/components/NoteDeleteConfirmDialog';
 import { loadNoteWorkspace, saveNoteWorkspace } from '../data/noteWorkspace';
 import { useTheme } from '../hooks/useTheme';
 import { useOnlineStatus } from '../hooks/useOnlineStatus';
@@ -46,10 +47,14 @@ import {
 import {
   cacheNotes,
   clearQueuedSyncChanges,
+  clearQueuedLabelChanges,
   enqueueSyncChange,
+  enqueueLabelChange,
   getCachedNotes,
   getLastSyncCursor,
   getQueuedSyncChanges,
+  getQueuedLabelChanges,
+  purgeStaleQueueEntries,
   setLastSyncCursor,
   upsertCachedNote,
 } from '../services/noteOfflineSync';
@@ -99,7 +104,11 @@ function toSyncPayload(note) {
     color: resolveApiColor(note?.color),
     is_pinned: Boolean(note?.isPinned),
     is_protected: Boolean(note?.isLocked),
-    version: Math.max(Number(note?.version || 1), 1),
+    version: Math.max(Number(note?.version || 0), 0),
+    // Gửi kèm danh sách tên label để server đồng bộ attach/detach
+    label_names: Array.isArray(note?.labels)
+      ? note.labels.map((l) => String(l || '').trim()).filter(Boolean)
+      : [],
   };
 
   if (note?.lockPassword && String(note.lockPassword).trim().length > 0) {
@@ -107,6 +116,7 @@ function toSyncPayload(note) {
   }
 
   return payload;
+
 }
 
 function normalizeLabelNames(list) {
@@ -179,12 +189,13 @@ function NotesPage() {
   const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [desktopSidebarOpen, setDesktopSidebarOpen] = useState(true);
+  const [deleteConfirmNote, setDeleteConfirmNote] = useState(null);
   const [networkNotice, setNetworkNotice] = useState(() =>
     isOffline
       ? {
-          variant: 'warning',
-          message: 'Bạn đang offline. Dữ liệu sẽ được lưu cục bộ và chờ đồng bộ.',
-        }
+        variant: 'warning',
+        message: 'Bạn đang offline. Dữ liệu sẽ được lưu cục bộ và chờ đồng bộ.',
+      }
       : null,
   );
   const wasOfflineRef = useRef(isOffline);
@@ -231,7 +242,7 @@ function NotesPage() {
             displayName: res.data.user.name,
           }));
         }
-      }).catch(() => {});
+      }).catch(() => { });
     });
 
     // Listen to storage event to sync cross-tab (like when they verify in another tab)
@@ -297,13 +308,13 @@ function NotesPage() {
               labels: Array.isArray(n.labels) ? n.labels.map(l => String(l.name || '')) : [],
               images: attachments.map((a) => String(a?.file_url || '')).filter(Boolean),
               attachments,
-              sharedWith: Array.isArray(n.shares) 
+              sharedWith: Array.isArray(n.shares)
                 ? n.shares.map(s => ({
-                    id: s?.id,
-                    email: s.receiver?.email,
-                    permission: s.permission,
-                    receiver: s?.receiver,
-                  }))
+                  id: s?.id,
+                  email: s.receiver?.email,
+                  permission: s.permission,
+                  receiver: s?.receiver,
+                }))
                 : [],
               ownerEmail: share?.sender?.email || null,
               ownerName: share?.sender?.name || null,
@@ -447,54 +458,128 @@ function NotesPage() {
       }
     }
 
+    async function flushLabelQueue() {
+      const labelChanges = await getQueuedLabelChanges();
+      if (labelChanges.length === 0) return;
+
+      // Xử lý theo thứ tự: CREATE trước, sau đó UPDATE, cuối cùng DELETE
+      const ordered = [
+        ...labelChanges.filter((c) => c.action === 'CREATE'),
+        ...labelChanges.filter((c) => c.action === 'UPDATE'),
+        ...labelChanges.filter((c) => c.action === 'DELETE'),
+      ];
+
+      // Map temp_id → server_id để UPDATE/DELETE sau CREATE dùng đúng ID
+      const tempToServerId = new Map();
+
+      for (const change of ordered) {
+        try {
+          if (change.action === 'CREATE') {
+            const created = await createLabel(change.payload.name);
+            if (change.payload.temp_id) {
+              tempToServerId.set(change.payload.temp_id, created.id);
+              // Cập nhật UI: đổi tempId → serverId
+              setLabels((currentLabels) =>
+                currentLabels.map((l) =>
+                  l.id === change.payload.temp_id ? { ...l, id: created.id } : l,
+                ),
+              );
+            }
+          } else if (change.action === 'UPDATE') {
+            const realId = tempToServerId.get(change.payload.id) || change.payload.id;
+            if (/^\d+$/.test(String(realId))) {
+              await updateLabel(realId, change.payload.name);
+            }
+          } else if (change.action === 'DELETE') {
+            const realId = tempToServerId.get(change.payload.id) || change.payload.id;
+            if (/^\d+$/.test(String(realId))) {
+              await deleteLabel(realId);
+            }
+          }
+        } catch {
+          // bỏ qua lỗi từng entry, tiếp tục flush các entry còn lại
+        }
+      }
+
+      await clearQueuedLabelChanges();
+
+      // Refresh lại labels từ server sau khi flush
+      try {
+        const freshLabels = await fetchLabelsFromServer();
+        if (!isCancelled) {
+          setLabels(freshLabels);
+        }
+      } catch {
+        // giữ nguyên UI nếu fetch thất bại
+      }
+    }
+
     async function flushAndPullChanges() {
       const shouldNotifyReconnectSync = reconnectSyncPendingRef.current;
 
       try {
         await syncOfflineAttachments();
 
+        // Dọn entries stale (LABEL_CREATE, etc.) từ DB version cũ
+        try { await purgeStaleQueueEntries(); } catch { /* no-op */ }
+
+        // Label queue được flush độc lập — lỗi ở đây không được làm hỏng sync note
+        try {
+          await flushLabelQueue();
+        } catch {
+          // no-op: giữ nguyên note sync flow
+        }
+
         const queuedChanges = await getQueuedSyncChanges();
 
+        // Các action hợp lệ cho note sync/push endpoint
+        const VALID_NOTE_ACTIONS = new Set(['CREATE', 'UPDATE', 'DELETE', 'ATTACHMENT_ADD', 'ATTACHMENT_REMOVE']);
+
         if (queuedChanges.length > 0) {
-          const changes = queuedChanges.map((entry) => ({
-            action: entry.action,
-            entity_id: entry.entity_id,
-            payload: entry.payload,
-            timestamp: entry.timestamp,
-          }));
+          const changes = queuedChanges
+            .filter((entry) => VALID_NOTE_ACTIONS.has(String(entry.action || '').toUpperCase()))
+            .map((entry) => ({
+              action: entry.action,
+              entity_id: entry.entity_id,
+              payload: entry.payload,
+              timestamp: entry.timestamp,
+            }));
 
-          const syncResult = await pushSyncChanges(changes);
+          if (changes.length > 0) {
+            const syncResult = await pushSyncChanges(changes);
 
-          if (!isCancelled && Array.isArray(syncResult.conflicts) && syncResult.conflicts.length > 0) {
-            setNotes((currentNotes) => {
-              const conflictMap = new Map(
-                syncResult.conflicts
-                  .filter((item) => item?.server_note?.id !== undefined)
-                  .map((item) => [String(item.server_note.id), {
-                    ...item.server_note,
-                    id: String(item.server_note.id),
-                    isPinned: Boolean(item.server_note.is_pinned),
-                    pinnedAt: item.server_note.pinned_at || undefined,
-                    createdAt: item.server_note.created_at || new Date().toISOString(),
-                    updatedAt: item.server_note.updated_at || new Date().toISOString(),
-                    version: Number(item.server_note.version || 1),
-                    labels: Array.isArray(item.server_note.labels) ? item.server_note.labels.map(l => String(l.name || '')) : [],
-                    attachments: Array.isArray(item.server_note.attachments) ? item.server_note.attachments : [],
-                    images: Array.isArray(item.server_note.attachments)
-                      ? item.server_note.attachments.map((attachment) => String(attachment?.file_url || '')).filter(Boolean)
-                      : [],
-                    sharedWith: [],
-                    isLocked: Boolean(item.server_note.is_protected),
-                    lockPassword: '',
-                  }]),
-              );
+            if (!isCancelled && Array.isArray(syncResult.conflicts) && syncResult.conflicts.length > 0) {
+              setNotes((currentNotes) => {
+                const conflictMap = new Map(
+                  syncResult.conflicts
+                    .filter((item) => item?.server_note?.id !== undefined)
+                    .map((item) => [String(item.server_note.id), {
+                      ...item.server_note,
+                      id: String(item.server_note.id),
+                      isPinned: Boolean(item.server_note.is_pinned),
+                      pinnedAt: item.server_note.pinned_at || undefined,
+                      createdAt: item.server_note.created_at || new Date().toISOString(),
+                      updatedAt: item.server_note.updated_at || new Date().toISOString(),
+                      version: Number(item.server_note.version || 1),
+                      labels: Array.isArray(item.server_note.labels) ? item.server_note.labels.map(l => String(l.name || '')) : [],
+                      attachments: Array.isArray(item.server_note.attachments) ? item.server_note.attachments : [],
+                      images: Array.isArray(item.server_note.attachments)
+                        ? item.server_note.attachments.map((attachment) => String(attachment?.file_url || '')).filter(Boolean)
+                        : [],
+                      sharedWith: [],
+                      isLocked: Boolean(item.server_note.is_protected),
+                      lockPassword: '',
+                    }]),
+                );
 
-              return sortNotes(
-                currentNotes.map((note) => conflictMap.get(String(note.id)) || note),
-              );
-            });
+                return sortNotes(
+                  currentNotes.map((note) => conflictMap.get(String(note.id)) || note),
+                );
+              });
+            }
           }
 
+          // Luôn clear queue dù có valid changes hay không (dọn entries stale)
           await clearQueuedSyncChanges();
         }
 
@@ -546,13 +631,13 @@ function NotesPage() {
                 labels: Array.isArray(n.labels) ? n.labels.map(l => String(l.name || '')) : [],
                 images: attachments.map((a) => String(a?.file_url || '')).filter(Boolean),
                 attachments,
-                sharedWith: Array.isArray(n.shares) 
+                sharedWith: Array.isArray(n.shares)
                   ? n.shares.map(s => ({
-                      id: s?.id,
-                      email: s.receiver?.email,
-                      permission: s.permission,
-                      receiver: s?.receiver,
-                    }))
+                    id: s?.id,
+                    email: s.receiver?.email,
+                    permission: s.permission,
+                    receiver: s?.receiver,
+                  }))
                   : [],
                 ownerEmail: share?.sender?.email || null,
                 ownerName: share?.sender?.name || null,
@@ -676,14 +761,14 @@ function NotesPage() {
             ),
           ),
         );
-        
+
         setEditingNote((currentEditing) => {
           if (currentEditing && String(currentEditing.id) === String(normalized.id)) {
             return { ...currentEditing, ...normalized };
           }
           return currentEditing;
         });
-        
+
         void upsertCachedNote(normalized);
       }).then((unsubscribe) => {
         unsubscribers.push(unsubscribe);
@@ -693,8 +778,8 @@ function NotesPage() {
     return () => {
       unsubscribers.forEach((unsubscribe) => unsubscribe());
     };
-  // subscribedNoteIdsKey thay cho `notes`: chỉ re-subscribe khi danh sách ID thay đổi.
-  // Nếu dùng `notes`, mỗi WS event → setNotes → notes ref mới → cleanup → gap không có sub → miss events.
+    // subscribedNoteIdsKey thay cho `notes`: chỉ re-subscribe khi danh sách ID thay đổi.
+    // Nếu dùng `notes`, mỗi WS event → setNotes → notes ref mới → cleanup → gap không có sub → miss events.
   }, [isOffline, subscribedNoteIdsKey]);
 
   // Subscribe kênh cá nhân của user để nhận NoteShared event realtime
@@ -706,7 +791,7 @@ function NotesPage() {
       return;
     }
 
-    let unsubscribe = () => {};
+    let unsubscribe = () => { };
 
     void subscribeToUserChannel(userId, {
       onNoteShared: (payload) => {
@@ -727,8 +812,8 @@ function NotesPage() {
             ? remote.attachments.map((a) => String(a?.file_url || '')).filter(Boolean)
             : [],
           attachments: Array.isArray(remote.attachments) ? remote.attachments : [],
-          sharedWith: Array.isArray(remote.shares) 
-            ? remote.shares.map(s => ({ email: s.receiver?.email, permission: s.permission })) 
+          sharedWith: Array.isArray(remote.shares)
+            ? remote.shares.map(s => ({ email: s.receiver?.email, permission: s.permission }))
             : [],
           ownerEmail: payload?.sender?.email || null,
           ownerName: payload?.sender?.name || null,
@@ -767,24 +852,24 @@ function NotesPage() {
               currentNotes.map((n) =>
                 String(n.id) === String(updatedNote.id)
                   ? {
-                      ...n,
-                      title: String(updatedNote.title || ''),
-                      content: String(updatedNote.content || ''),
-                      color: updatedNote.color || n.color,
-                      isPinned: Boolean(updatedNote.is_pinned),
-                      pinnedAt: updatedNote.pinned_at || undefined,
-                      updatedAt: updatedNote.updated_at || new Date().toISOString(),
-                      version: Number(updatedNote.version || n.version || 1),
-                      attachments: Array.isArray(updatedNote.attachments) ? updatedNote.attachments : [],
-                      images: Array.isArray(updatedNote.attachments)
-                        ? updatedNote.attachments.map((a) => String(a?.file_url || '')).filter(Boolean)
-                        : n.images,
-                    }
+                    ...n,
+                    title: String(updatedNote.title || ''),
+                    content: String(updatedNote.content || ''),
+                    color: updatedNote.color || n.color,
+                    isPinned: Boolean(updatedNote.is_pinned),
+                    pinnedAt: updatedNote.pinned_at || undefined,
+                    updatedAt: updatedNote.updated_at || new Date().toISOString(),
+                    version: Number(updatedNote.version || n.version || 1),
+                    attachments: Array.isArray(updatedNote.attachments) ? updatedNote.attachments : [],
+                    images: Array.isArray(updatedNote.attachments)
+                      ? updatedNote.attachments.map((a) => String(a?.file_url || '')).filter(Boolean)
+                      : n.images,
+                  }
                   : n
               )
             )
           );
-          
+
           setEditingNote((currentEditing) => {
             if (currentEditing && String(currentEditing.id) === String(updatedNote.id)) {
               return {
@@ -857,11 +942,11 @@ function NotesPage() {
             version: Number(updatedNote.version || currentNotes[index]?.version || 1),
             sharedWith: Array.isArray(updatedNote.shares)
               ? updatedNote.shares.map((s) => ({
-                  id: s?.id,
-                  email: s.receiver?.email,
-                  permission: s.permission,
-                  receiver: s?.receiver,
-                }))
+                id: s?.id,
+                email: s.receiver?.email,
+                permission: s.permission,
+                receiver: s?.receiver,
+              }))
               : [],
             isLocked: Boolean(updatedNote.is_protected),
             attachments: Array.isArray(updatedNote.attachments) ? updatedNote.attachments : [],
@@ -874,7 +959,7 @@ function NotesPage() {
           nextNotes[index] = normalized;
           return sortNotes(nextNotes);
         });
-        
+
         setEditingNote((currentEditing) => {
           if (currentEditing && String(currentEditing.id) === String(updatedNote.id)) {
             return {
@@ -886,11 +971,11 @@ function NotesPage() {
               version: Number(updatedNote.version || currentEditing.version || 1),
               sharedWith: Array.isArray(updatedNote.shares)
                 ? updatedNote.shares.map((s) => ({
-                    id: s?.id,
-                    email: s.receiver?.email,
-                    permission: s.permission,
-                    receiver: s?.receiver,
-                  }))
+                  id: s?.id,
+                  email: s.receiver?.email,
+                  permission: s.permission,
+                  receiver: s?.receiver,
+                }))
                 : [],
               isLocked: Boolean(updatedNote.is_protected),
               attachments: Array.isArray(updatedNote.attachments) ? updatedNote.attachments : [],
@@ -1006,6 +1091,10 @@ function NotesPage() {
 
     // Nếu note có ID từ server, gọi API verify
     if (isServerBackedId(noteId)) {
+      if (isOffline) {
+        setUnlockError('Bạn cần có kết nối mạng để mở ghi chú đã khóa.');
+        return;
+      }
       try {
         const result = await verifyNotePassword(noteId, inputPassword);
         if (result?.valid && result?.note) {
@@ -1126,7 +1215,7 @@ function NotesPage() {
         pendingCreatesRef.current.set(noteWithVersion.id, noteWithVersion);
         return;
       }
-      
+
       pendingCreatesRef.current.set(noteWithVersion.id, null);
 
       void createNoteOnServer(noteWithVersion)
@@ -1151,7 +1240,7 @@ function NotesPage() {
               return upsertCachedNote(mergedCreatedNote).then(() => {
                 const latestDraft = pendingCreatesRef.current.get(noteWithVersion.id);
                 pendingCreatesRef.current.delete(noteWithVersion.id);
-                
+
                 if (latestDraft) {
                   // Re-trigger save with the new server ID and latest content
                   handleSave({ ...latestDraft, id: createdNote.id });
@@ -1206,7 +1295,7 @@ function NotesPage() {
             return upsertCachedNote(mergedUpdatedNote).then(() => {
               const latestDraft = pendingUpdatesRef.current.get(noteWithVersion.id);
               pendingUpdatesRef.current.delete(noteWithVersion.id);
-              
+
               if (latestDraft) {
                 handleSave({ ...latestDraft, version: mergedUpdatedNote.version });
               }
@@ -1237,6 +1326,7 @@ function NotesPage() {
   }
 
   function handleDelete(noteId) {
+    // Thực hiện xóa thật sự
     setNotes((currentNotes) => {
       const nextNotes = currentNotes.filter((item) => item.id !== noteId);
       void cacheNotes(nextNotes);
@@ -1244,19 +1334,19 @@ function NotesPage() {
     });
     setEditingNote(null);
     setEditorOpen(false);
+    setDeleteConfirmNote(null); // Đóng modal nếu đang mở
 
     const token = sessionStorage.getItem('auth_token');
+    if (!token) return;
 
-    if (!token) {
-      return;
-    }
+    const timestamp = new Date().toISOString();
 
     if (isOffline || !isServerBackedId(noteId)) {
       void enqueueSyncChange({
         action: 'DELETE',
         entity_id: String(noteId),
         payload: null,
-        timestamp: new Date().toISOString(),
+        timestamp,
       });
       return;
     }
@@ -1266,9 +1356,14 @@ function NotesPage() {
         action: 'DELETE',
         entity_id: String(noteId),
         payload: null,
-        timestamp: new Date().toISOString(),
+        timestamp,
       });
     });
+  }
+
+  function requestDelete(note) {
+    // Luôn yêu cầu xác nhận trước khi xóa, đặc biệt là ghi chú bị khóa
+    setDeleteConfirmNote(note);
   }
 
   function handleToggleNotePin(noteId) {
@@ -1354,23 +1449,37 @@ function NotesPage() {
           });
         })
         .catch(() => {
+          // Gọi API thất bại khi đang online → fallback thêm local + enqueue
+          const tempId = crypto.randomUUID();
           setLabels((currentLabels) => {
             const normalizedKey = normalizedName.toLowerCase();
             if (currentLabels.some((label) => label.name.trim().toLowerCase() === normalizedKey)) {
               return currentLabels;
             }
-            return [...currentLabels, { id: crypto.randomUUID(), name: normalizedName }];
+            return [...currentLabels, { id: tempId, name: normalizedName }];
+          });
+          void enqueueLabelChange({
+            action: 'CREATE',
+            payload: { temp_id: tempId, name: normalizedName },
+            timestamp: new Date().toISOString(),
           });
         });
       return;
     }
 
+    // Offline: thêm local optimistically + enqueue
+    const tempId = crypto.randomUUID();
     setLabels((currentLabels) => {
       const normalizedKey = normalizedName.toLowerCase();
       if (currentLabels.some((label) => label.name.trim().toLowerCase() === normalizedKey)) {
         return currentLabels;
       }
-      return [...currentLabels, { id: crypto.randomUUID(), name: normalizedName }];
+      return [...currentLabels, { id: tempId, name: normalizedName }];
+    });
+    void enqueueLabelChange({
+      action: 'CREATE',
+      payload: { temp_id: tempId, name: normalizedName },
+      timestamp: new Date().toISOString(),
     });
   }
 
@@ -1386,13 +1495,7 @@ function NotesPage() {
       return;
     }
 
-    const token = sessionStorage.getItem('auth_token');
-    if (token && !isOffline) {
-      void updateLabel(labelId, normalizedNextName).catch(() => {
-        // no-op: keep optimistic UI even if request fails
-      });
-    }
-
+    // Cập nhật UI ngay (optimistic)
     setLabels((currentLabels) =>
       currentLabels.map((label) => (label.id === labelId ? { ...label, name: normalizedNextName } : label)),
     );
@@ -1405,31 +1508,68 @@ function NotesPage() {
         labels: note.labels.map((labelName) => (labelName === currentLabel.name ? normalizedNextName : labelName)),
       })),
     );
+
+    const token = sessionStorage.getItem('auth_token');
+    if (!token) return;
+
+    if (isOffline || !/^\d+$/.test(String(labelId))) {
+      // Offline hoặc label chưa có server ID (tạo offline chưa sync) → enqueue
+      void enqueueLabelChange({
+        action: 'UPDATE',
+        payload: { id: String(labelId), name: normalizedNextName },
+        timestamp: new Date().toISOString(),
+      });
+      return;
+    }
+
+    void updateLabel(labelId, normalizedNextName).catch(() => {
+      void enqueueLabelChange({
+        action: 'UPDATE',
+        payload: { id: String(labelId), name: normalizedNextName },
+        timestamp: new Date().toISOString(),
+      });
+    });
   }
 
   function handleDeleteLabel(labelId) {
     const label = labels.find((item) => item.id === labelId);
 
     setLabels((currentLabels) => currentLabels.filter((item) => item.id !== labelId));
-
-    if (!label) {
-      return;
-    }
-
-    const token = sessionStorage.getItem('auth_token');
-    if (token && !isOffline) {
-      void deleteLabel(labelId).catch(() => {
-        // no-op: preserve UI even if request fails
-      });
-    }
-
-    setSelectedLabels((currentLabels) => currentLabels.filter((item) => item !== label.name));
+    setSelectedLabels((currentLabels) => currentLabels.filter((item) => item !== label?.name));
     setNotes((currentNotes) =>
       currentNotes.map((note) => ({
         ...note,
-        labels: note.labels.filter((item) => item !== label.name),
+        labels: note.labels.filter((item) => item !== label?.name),
       })),
     );
+
+    if (!label) return;
+
+    const token = sessionStorage.getItem('auth_token');
+    if (!token) return;
+
+    // Label chưa có server ID (UUID) → chỉ cần xóa khỏi queue CREATE nếu có, không cần gọi API
+    if (!/^\d+$/.test(String(labelId))) {
+      // no-op: server không biết label này tồn tại
+      return;
+    }
+
+    if (isOffline) {
+      void enqueueLabelChange({
+        action: 'DELETE',
+        payload: { id: String(labelId) },
+        timestamp: new Date().toISOString(),
+      });
+      return;
+    }
+
+    void deleteLabel(labelId).catch(() => {
+      void enqueueLabelChange({
+        action: 'DELETE',
+        payload: { id: String(labelId) },
+        timestamp: new Date().toISOString(),
+      });
+    });
   }
 
   function handleUpdateProfilePreferences(nextPreferences) {
@@ -1448,7 +1588,7 @@ function NotesPage() {
       preferences: newPreferences,
     }));
 
-    import('../features/auth/services/authService').then(m => m.updatePreferences(newPreferences)).catch(() => {});
+    import('../features/auth/services/authService').then(m => m.updatePreferences(newPreferences)).catch(() => { });
 
     if (!shouldSyncAllNoteColors) {
       return;
@@ -1643,7 +1783,7 @@ function NotesPage() {
               fontSize: resolveNoteFontSize(nextPreferences?.fontSize),
             },
           }));
-          import('../features/auth/services/authService').then(m => m.updatePreferences(nextPreferences)).catch(() => {});
+          import('../features/auth/services/authService').then(m => m.updatePreferences(nextPreferences)).catch(() => { });
         }}
       />
 
@@ -1663,6 +1803,7 @@ function NotesPage() {
           <Modal.Title>Nhập mật khẩu để mở ghi chú</Modal.Title>
         </Modal.Header>
         <Modal.Body className="pt-0">
+
           <input
             type="password"
             className="note-editor__panel-input"
@@ -1681,15 +1822,35 @@ function NotesPage() {
           />
           {unlockError ? <div className="note-editor__lock-error">{unlockError}</div> : null}
         </Modal.Body>
-        <Modal.Footer className="border-0 pt-0">
-          <Button variant="outline-secondary" onClick={handleCancelUnlock}>
-            Hủy
+        <Modal.Footer className="border-0 pt-0 d-flex justify-content-between align-items-center">
+          <Button
+            variant="outline-danger"
+            className="btn-sm fw-semibold d-flex align-items-center gap-2 px-3"
+            style={{ borderRadius: '8px' }}
+            onClick={() => {
+              setUnlockingNote(null);
+              requestDelete(unlockingNote);
+            }}
+          >
+            Xóa ghi chú
           </Button>
-          <Button variant="primary" onClick={handleConfirmUnlock}>
-            Mở ghi chú
-          </Button>
+          <div className="d-flex gap-2">
+            <Button variant="light" onClick={handleCancelUnlock} className="border">
+              Hủy
+            </Button>
+            <Button variant="primary" onClick={handleConfirmUnlock}>
+              Mở ghi chú
+            </Button>
+          </div>
         </Modal.Footer>
       </Modal>
+
+      <NoteDeleteConfirmDialog
+        open={Boolean(deleteConfirmNote)}
+        noteTitle={deleteConfirmNote?.title || 'Ghi chú đã khóa'}
+        onConfirm={() => handleDelete(deleteConfirmNote.id)}
+        onCancel={() => setDeleteConfirmNote(null)}
+      />
 
       <Modal show={logoutConfirmOpen} onHide={handleCloseLogoutConfirm} centered>
         <Modal.Header closeButton className="border-0">
