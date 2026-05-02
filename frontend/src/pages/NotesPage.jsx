@@ -616,6 +616,14 @@ function NotesPage() {
     return () => window.clearTimeout(timeoutId);
   }, [networkNotice, isOffline]);
 
+  // Key ổn định: chỉ thay đổi khi tập hợp note IDs thay đổi (thêm/xóa note),
+  // KHÔNG thay đổi khi nội dung note được cập nhật → tránh re-subscription loop.
+  const subscribedNoteIdsKey = notes
+    .filter((n) => isServerBackedId(String(n.id)))
+    .map((n) => String(n.id))
+    .sort()
+    .join(',');
+
   useEffect(() => {
     const token = sessionStorage.getItem('auth_token');
 
@@ -685,7 +693,9 @@ function NotesPage() {
     return () => {
       unsubscribers.forEach((unsubscribe) => unsubscribe());
     };
-  }, [isOffline, notes]);
+  // subscribedNoteIdsKey thay cho `notes`: chỉ re-subscribe khi danh sách ID thay đổi.
+  // Nếu dùng `notes`, mỗi WS event → setNotes → notes ref mới → cleanup → gap không có sub → miss events.
+  }, [isOffline, subscribedNoteIdsKey]);
 
   // Subscribe kênh cá nhân của user để nhận NoteShared event realtime
   useEffect(() => {
