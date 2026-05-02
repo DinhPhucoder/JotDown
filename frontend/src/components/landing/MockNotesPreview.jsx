@@ -50,6 +50,11 @@ const MockNotesPreview = () => {
             box-shadow: 0 15px 30px rgba(0,0,0,0.4) !important;
             z-index: 10;
           }
+          @media (min-width: 768px) {
+            .mock-note-offset {
+              margin-top: 30px;
+            }
+          }
         `}
       </style>
       <div className="row justify-content-center g-4">
@@ -70,7 +75,7 @@ const MockNotesPreview = () => {
 
         {/* Locked Note */}
         <div className="col-md-4 col-sm-6">
-          <div className="card panel-dark border-0 h-100 p-4 mock-note-card" style={{ marginTop: '30px' }}>
+          <div className="card panel-dark border-0 h-100 p-4 mock-note-card mock-note-offset">
             <div className="d-flex justify-content-between align-items-center mb-3">
               <span className="badge bg-danger text-white rounded-pill px-3 py-2">
                 <FontAwesomeIcon icon={faLock} className="me-2" />
