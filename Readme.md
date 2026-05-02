@@ -1,76 +1,46 @@
-# NOTE MANAGEMENT — Hướng dẫn chạy local
+# Đồ án cuối kỳ - Web Programming & Applications (503073)
 
-Tài liệu này hướng dẫn chạy dự án ở local bằng Docker Compose, cách reset database (đặc biệt trước khi chạy migration), và cách kiểm tra DB bằng extension MySQL trong VSCode.
 
-## 1) Yêu cầu
-- Đã cài Docker Desktop (có `docker compose`).
-- Chạy lệnh trong thư mục gốc dự án (nơi có `docker-compose.yml`).
+## 1. Thông tin Deploy Online 
+Nếu giám khảo muốn trải nghiệm trực tiếp hệ thống đã được triển khai, vui lòng truy cập: `https://www.jotdown.space`
 
-## 2) Thiết lập môi trường
-1. Vào `backend/`, tạo file `backend/.env` (copy từ `backend/.env.example`).
-2. Cấu hình DB mặc định chạy trong Docker (đã khớp với `.env.example`).
-3. **Lưu ý về App Key & Migration:** Dự án đã được cấu hình tự động chạy `php artisan key:generate --force` và `php artisan migrate --force` ngay khi bạn chạy lệnh `docker compose up`. Các thành viên **không cần** chạy tay các lệnh này.
 
-## 3) Khởi động dự án (lần đầu / bình thường)
+## 2. Tài khoản Test (Pre-loaded Data)
+Hệ thống đã có sẵn dữ liệu mẫu (Notes, Labels, Share...). Sử dụng các tài khoản sau để kiểm tra:
+
+**Tài khoản 1:**
+- Email: `phandinhphu93@gmail.com`
+- Password: `123123123`
+
+**Tài khoản 2:** *(Dùng để kiểm tra chức năng Share Note & Realtime)*
+- Email: `dinhphan1209@gmail.com`
+- Password: `123123123`
+
+> **Lưu ý:** Để kiểm tra chức năng **Real-time collaboration**, vui lòng mở 2 trình duyệt ẩn danh khác nhau và đăng nhập bằng 2 tài khoản trên để thấy dữ liệu đồng bộ tức thời.
+
+**Trong trường hợp môi trường online gặp trục trặc hãy sử dụng môi trường local sau đây.**
+## 3. Hướng dẫn chạy project ở Local (Sử dụng Docker Compose)
+
+Dự án đã được thiết lập sẵn môi trường tự động hóa bằng Docker Compose (Bao gồm Frontend, Backend Laravel, và MySQL Database). 
+
+### Yêu cầu cài đặt trước:
+- Máy tính cần cài đặt sẵn **Docker** và **Docker Compose**.
+
+### Các bước chạy:
+
+**Bước 1:** Mở terminal tại thư mục gốc của project (nơi chứa file `docker-compose.yml`).
+
+**Bước 2:** Khởi chạy toàn bộ hệ thống bằng lệnh:
 ```bash
-docker compose up --build -d
+docker-compose up -d --build
 ```
+*(Hệ thống sẽ tự động build image, cài đặt Composer packages, NPM packages, và chạy migrate database. Vui lòng chờ 1-5 phút cho lần chạy đầu tiên).*
 
-Xem log backend:
+**Bước 3:** Chạy lệnh sau để tạo dữ liệu mẫu (Seeding) cho Database:
 ```bash
-docker compose logs -f backend
+docker-compose exec backend php artisan db:seed
 ```
 
-Kiểm tra container:
-```bash
-docker compose ps
-```
-
-## 4) Reset database (Khi vừa thay đổi schema)
-Dự án đang mount dữ liệu MySQL vào `./docker/mysql_data` (bind mount), nên reset DB có 2 mức:
-
-### A) Reset schema bằng Laravel (giữ nguyên volume MySQL)
-Dùng khi muốn “đập lại” toàn bộ bảng theo migration hiện tại:
-```bash
-docker compose exec backend php artisan migrate:fresh --force
-```
-
-Nếu có seed:
-```bash
-docker compose exec backend php artisan migrate:fresh --seed --force
-```
-
-### B) Reset sạch MySQL 
-Dùng khi DB bị lệch lâu ngày, hoặc cần clean tuyệt đối:
-1) Dừng containers:
-```bash
-docker compose down
-```
-2) Xóa dữ liệu MySQL local:
-- Xóa thư mục `docker/mysql_data/` (xóa cả folder hoặc xóa toàn bộ file bên trong).
-(Lưu ý: `docker compose down -v` **không** xóa được dữ liệu trong trường hợp này vì MySQL đang dùng bind mount.)
-3) Chạy lại:
-```bash
-docker compose up --build -d
-```
-## 5) Truy cập & health check
-- Frontend (Vite dev server): http://localhost:5173
-- API (qua Nginx gateway): http://localhost/api
-- Backend health: http://localhost/api/health
-
-## 6) Kiểm tra database bằng VSCode MySQL extension
-MySQL được expose ra host ở `127.0.0.1:3306`:
-- Host: `127.0.0.1`
-- Port: `3306`
-- User: `root`
-- Password: `root`
-- Database: `notes_db`
-
-Chạy các query sau để kiểm tra migration + routines:
-```sql
-SHOW TABLES;
-SHOW TRIGGERS;
-SHOW PROCEDURE STATUS WHERE Db = DATABASE();
-SHOW FUNCTION STATUS WHERE Db = DATABASE();
-```
-Note Management Project — 2026
+**Bước 4:** Truy cập ứng dụng tại các địa chỉ sau:
+- **Trang web (Frontend):** [http://localhost:5173](http://localhost:5173)
+- **Backend API:** [http://localhost:8000](http://localhost:8000)
