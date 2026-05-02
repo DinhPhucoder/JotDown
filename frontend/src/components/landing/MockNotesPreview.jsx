@@ -59,7 +59,7 @@ const MockNotesPreview = () => {
       </style>
       <div className="row justify-content-center g-4">
         {/* Pinned Note */}
-        <div className="col-md-4 col-sm-6">
+        <div className="col-12 col-sm-6 col-md-4 mb-4 mb-md-0">
           <div className="card panel-dark border-0 h-100 p-4 mock-note-card">
             <div className="d-flex justify-content-between align-items-center mb-3">
               <span className="badge bg-primary text-white rounded-pill px-3 py-2">
@@ -74,7 +74,7 @@ const MockNotesPreview = () => {
         </div>
 
         {/* Locked Note */}
-        <div className="col-md-4 col-sm-6">
+        <div className="col-12 col-sm-6 col-md-4 mb-4 mb-md-0">
           <div className="card panel-dark border-0 h-100 p-4 mock-note-card mock-note-offset">
             <div className="d-flex justify-content-between align-items-center mb-3">
               <span className="badge bg-danger text-white rounded-pill px-3 py-2">
@@ -91,7 +91,7 @@ const MockNotesPreview = () => {
         </div>
 
         {/* Shared Note */}
-        <div className="col-md-4 col-sm-6">
+        <div className="col-12 col-sm-6 col-md-4 mb-4 mb-md-0">
           <div className="card panel-dark border-0 h-100 p-4 mock-note-card">
             <div className="d-flex justify-content-between align-items-center mb-3">
               <span className="badge bg-info text-dark rounded-pill px-3 py-2">
