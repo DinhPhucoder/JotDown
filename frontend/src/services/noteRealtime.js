@@ -28,12 +28,79 @@ function resolveBackendOrigin() {
 }
 
 const BROADCAST_AUTH_ENDPOINT = `${resolveBackendOrigin()}/broadcasting/auth`;
-const IS_DEV = import.meta.env.DEV;
+const REALTIME_DEBUG_ENABLED = import.meta.env.VITE_REALTIME_DEBUG !== 'false';
 
 function realtimeLog(...args) {
-  if (IS_DEV) {
+  if (REALTIME_DEBUG_ENABLED) {
     console.log(...args);
   }
+}
+
+function summarizeNote(note) {
+  if (!note) {
+    return null;
+  }
+
+  return {
+    id: note.id != null ? String(note.id) : null,
+    version: Number(note.version || 1),
+    updatedAt: note.updated_at || note.updatedAt || null,
+    title: String(note.title || ''),
+    titleLength: String(note.title || '').length,
+    contentLength: String(note.content || '').length,
+    isPinned: Boolean(note.is_pinned),
+    isProtected: Boolean(note.is_protected),
+    attachmentCount: Array.isArray(note.attachments) ? note.attachments.length : 0,
+    shareCount: Array.isArray(note.shares) ? note.shares.length : 0,
+  };
+}
+
+function summarizeRealtimePayload(eventName, payload) {
+  const note = payload?.note;
+
+  return {
+    event: eventName,
+    payloadKeys: payload ? Object.keys(payload) : [],
+    updatedBy: payload?.updated_by || null,
+    note: summarizeNote(note),
+  };
+}
+
+function bindPusherDebugListeners(echoInstance) {
+  const pusher = echoInstance?.connector?.pusher;
+  const connection = pusher?.connection;
+
+  if (!pusher || !connection) {
+    realtimeLog('[Realtime] Pusher debug listeners skipped: connection not available');
+    return;
+  }
+
+  connection.bind('state_change', (states) => {
+    realtimeLog('[Realtime] Pusher state change', {
+      previous: states?.previous || null,
+      current: states?.current || null,
+      socketId: getSocketId(),
+    });
+  });
+
+  connection.bind('connected', () => {
+    realtimeLog('[Realtime] Pusher connected', {
+      socketId: getSocketId(),
+    });
+  });
+
+  connection.bind('disconnected', () => {
+    realtimeLog('[Realtime] Pusher disconnected', {
+      socketId: getSocketId(),
+    });
+  });
+
+  connection.bind('error', (error) => {
+    realtimeLog('[Realtime] Pusher connection error', {
+      socketId: getSocketId(),
+      error,
+    });
+  });
 }
 
 let echoInstancePromise = null;
@@ -43,6 +110,8 @@ async function createEchoInstance() {
     key: import.meta.env.VITE_PUSHER_APP_KEY,
     cluster: import.meta.env.VITE_PUSHER_APP_CLUSTER,
     authEndpoint: BROADCAST_AUTH_ENDPOINT,
+    backendOrigin: resolveBackendOrigin(),
+    realtimeDebugEnabled: REALTIME_DEBUG_ENABLED,
   });
 
   const [{ default: Echo }, { default: Pusher }] = await Promise.all([
@@ -65,6 +134,12 @@ async function createEchoInstance() {
     },
   });
 
+  bindPusherDebugListeners(echoInstance);
+
+  realtimeLog('[Realtime] Echo auth bootstrap complete', {
+    authEndpoint: BROADCAST_AUTH_ENDPOINT,
+    hasAuthToken: Boolean(sessionStorage.getItem('auth_token')),
+  });
   realtimeLog('[Realtime] Echo instance created successfully');
   return echoInstance;
 }
@@ -81,25 +156,67 @@ async function getEchoInstance() {
   return echoInstancePromise;
 }
 
+export function getSocketId() {
+  return echoInstancePromise?.socketId ? echoInstancePromise.socketId() : null;
+}
+
 export async function subscribeToNoteChannel(noteId, onEvent) {
   try {
     const echo = await getEchoInstance();
     const channel = echo.private(`note.${noteId}`);
+    const channelName = `note.${noteId}`;
     
-    realtimeLog(`[Realtime] Subscribed to note.${noteId}`);
+    realtimeLog('[Realtime] Subscribing to note channel', {
+      channel: channelName,
+      socketId: getSocketId(),
+      hasHandler: typeof onEvent === 'function',
+      authEndpoint: BROADCAST_AUTH_ENDPOINT,
+    });
+    realtimeLog('[Realtime] Channel object created for note subscription', {
+      channel: channelName,
+      methods: {
+        listen: typeof channel.listen === 'function',
+        stopListening: typeof channel.stopListening === 'function',
+      },
+    });
     
     const handler = (payload) => {
-      realtimeLog(`[Realtime] Received event on note.${noteId}`);
+      const startedAt = performance.now();
+      realtimeLog('[Realtime] Note channel event received', {
+        channel: channelName,
+        ...summarizeRealtimePayload('NoteUpdated', payload),
+      });
+      realtimeLog('[Realtime] Dispatching NoteUpdated callback', {
+        channel: channelName,
+        hasHandler: typeof onEvent === 'function',
+      });
       if (typeof onEvent === 'function') {
         onEvent(payload);
       }
+      realtimeLog('[Realtime] NoteUpdated callback finished', {
+        channel: channelName,
+        durationMs: Number((performance.now() - startedAt).toFixed(2)),
+      });
     };
 
     channel.listen('.NoteUpdated', handler);
 
+    realtimeLog('[Realtime] Listening for NoteUpdated', {
+      channel: `note.${noteId}`,
+      event: '.NoteUpdated',
+    });
+
     return () => {
-      realtimeLog(`[Realtime] Unsubscribed from note.${noteId}`);
+      realtimeLog('[Realtime] Unsubscribing from note channel', {
+        channel: channelName,
+        event: '.NoteUpdated',
+        socketId: getSocketId(),
+      });
       channel.stopListening('.NoteUpdated', handler);
+      realtimeLog('[Realtime] Note channel listener removed', {
+        channel: channelName,
+        event: '.NoteUpdated',
+      });
       // We shouldn't leave the channel immediately if there are other listeners,
       // but Laravel Echo's leave() doesn't do reference counting. 
       // If we leave the channel, no one gets events. 
@@ -123,22 +240,90 @@ export async function subscribeToNoteChannel(noteId, onEvent) {
 export async function subscribeToUserChannel(userId, { onNoteShared, onNoteRevoked } = {}) {
   try {
     const echo = await getEchoInstance();
-    const channel = echo.private(`user.${userId}`);
+    const channelName = `user.${userId}`;
+    const channel = echo.private(channelName);
+
+    realtimeLog('[Realtime] Subscribing to user channel', {
+      channel: channelName,
+      socketId: getSocketId(),
+      listenNoteShared: typeof onNoteShared === 'function',
+      listenNoteRevoked: typeof onNoteRevoked === 'function',
+      authEndpoint: BROADCAST_AUTH_ENDPOINT,
+    });
+    realtimeLog('[Realtime] Channel object created for user subscription', {
+      channel: channelName,
+      methods: {
+        listen: typeof channel.listen === 'function',
+        stopListening: typeof channel.stopListening === 'function',
+      },
+    });
 
     if (typeof onNoteShared === 'function') {
-      channel.listen('.NoteShared', onNoteShared);
+      channel.listen('.NoteShared', (payload) => {
+        const startedAt = performance.now();
+        realtimeLog('[Realtime] User channel event received', {
+          channel: channelName,
+          ...summarizeRealtimePayload('NoteShared', payload),
+        });
+        realtimeLog('[Realtime] Dispatching NoteShared callback', {
+          channel: channelName,
+          hasHandler: true,
+        });
+        onNoteShared(payload);
+        realtimeLog('[Realtime] NoteShared callback finished', {
+          channel: channelName,
+          durationMs: Number((performance.now() - startedAt).toFixed(2)),
+        });
+      });
+      realtimeLog('[Realtime] Listening for NoteShared', {
+        channel: channelName,
+        event: '.NoteShared',
+      });
     }
 
     if (typeof onNoteRevoked === 'function') {
-      channel.listen('.NoteRevoked', onNoteRevoked);
+      channel.listen('.NoteRevoked', (payload) => {
+        const startedAt = performance.now();
+        realtimeLog('[Realtime] User channel event received', {
+          channel: channelName,
+          event: 'NoteRevoked',
+          payloadKeys: payload ? Object.keys(payload) : [],
+          noteId: payload?.note_id != null ? String(payload.note_id) : null,
+        });
+        realtimeLog('[Realtime] Dispatching NoteRevoked callback', {
+          channel: channelName,
+          hasHandler: true,
+        });
+        onNoteRevoked(payload);
+        realtimeLog('[Realtime] NoteRevoked callback finished', {
+          channel: channelName,
+          durationMs: Number((performance.now() - startedAt).toFixed(2)),
+        });
+      });
+      realtimeLog('[Realtime] Listening for NoteRevoked', {
+        channel: channelName,
+        event: '.NoteRevoked',
+      });
     }
 
     return () => {
+      realtimeLog('[Realtime] Unsubscribing from user channel', {
+        channel: channelName,
+        socketId: getSocketId(),
+      });
       if (typeof onNoteShared === 'function') {
-        channel.stopListening('.NoteShared', onNoteShared);
+        channel.stopListening('.NoteShared');
+        realtimeLog('[Realtime] User channel listener removed', {
+          channel: channelName,
+          event: '.NoteShared',
+        });
       }
       if (typeof onNoteRevoked === 'function') {
-        channel.stopListening('.NoteRevoked', onNoteRevoked);
+        channel.stopListening('.NoteRevoked');
+        realtimeLog('[Realtime] User channel listener removed', {
+          channel: channelName,
+          event: '.NoteRevoked',
+        });
       }
     };
   } catch {
