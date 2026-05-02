@@ -4,6 +4,9 @@ use App\Http\Controllers\Api\V1\AuthController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Http\Request;
 use App\Http\Controllers\NoteController;
+use Illuminate\Support\Facades\Broadcast;
+use Illuminate\Http\Request as HttpRequest;
+use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\NoteShareController;
 use App\Http\Controllers\LabelController;
 use App\Http\Controllers\NoteAttachmentController;
@@ -69,6 +72,21 @@ Route::prefix('v1/auth')->group(function () {
 });
 
 Route::apiResource('notes', NoteController::class);
+
+// Wrapper for broadcasting auth with extra error logging to capture 500s during channel authorization
+Route::post('/broadcasting/auth', function (HttpRequest $request) {
+    try {
+        return Broadcast::auth($request);
+    } catch (\Throwable $e) {
+        Log::error('Broadcasting auth failed', [
+            'message' => $e->getMessage(),
+            'trace' => $e->getTraceAsString(),
+            'payload' => $request->all(),
+        ]);
+
+        return response()->json(['message' => 'Broadcasting auth failed'], 500);
+    }
+})->middleware('auth:sanctum');
 
 Route::middleware('auth:sanctum')->prefix('v1')->group(function () {
     // Label attachment routes

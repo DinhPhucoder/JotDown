@@ -2,12 +2,44 @@ let base = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || 
 if (base.endsWith('/')) base = base.slice(0, -1);
 if (base !== '' && !base.endsWith('/api')) base += '/api';
 const API_BASE = base;
-const BROADCAST_AUTH_ENDPOINT = `${API_BASE.replace(/\/api\/?$/, '')}/broadcasting/auth`;
+
+function resolveBackendOrigin() {
+  const backendBase = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL;
+
+  if (backendBase && /^https?:\/\//i.test(String(backendBase))) {
+    try {
+      return new URL(backendBase, window.location.origin).origin;
+    } catch {
+      return window.location.origin;
+    }
+  }
+
+  const proxyTarget = import.meta.env.VITE_PROXY_TARGET;
+
+  if (proxyTarget) {
+    try {
+      return new URL(proxyTarget, window.location.origin).origin;
+    } catch {
+      return window.location.origin;
+    }
+  }
+
+  return window.location.origin;
+}
+
+const BROADCAST_AUTH_ENDPOINT = `${resolveBackendOrigin()}/broadcasting/auth`;
+const IS_DEV = import.meta.env.DEV;
+
+function realtimeLog(...args) {
+  if (IS_DEV) {
+    console.log(...args);
+  }
+}
 
 let echoInstancePromise = null;
 
 async function createEchoInstance() {
-  console.log('[Realtime] Creating Echo instance with:', {
+  realtimeLog('[Realtime] Creating Echo instance with:', {
     key: import.meta.env.VITE_PUSHER_APP_KEY,
     cluster: import.meta.env.VITE_PUSHER_APP_CLUSTER,
     authEndpoint: BROADCAST_AUTH_ENDPOINT,
@@ -33,7 +65,7 @@ async function createEchoInstance() {
     },
   });
 
-  console.log('[Realtime] Echo instance created successfully');
+  realtimeLog('[Realtime] Echo instance created successfully');
   return echoInstance;
 }
 
@@ -54,10 +86,10 @@ export async function subscribeToNoteChannel(noteId, onEvent) {
     const echo = await getEchoInstance();
     const channel = echo.private(`note.${noteId}`);
     
-    console.log(`[Realtime] Subscribed to note.${noteId}`);
+    realtimeLog(`[Realtime] Subscribed to note.${noteId}`);
     
     const handler = (payload) => {
-      console.log(`[Realtime] Received event on note.${noteId}:`, payload);
+      realtimeLog(`[Realtime] Received event on note.${noteId}`);
       if (typeof onEvent === 'function') {
         onEvent(payload);
       }
@@ -66,7 +98,7 @@ export async function subscribeToNoteChannel(noteId, onEvent) {
     channel.listen('.NoteUpdated', handler);
 
     return () => {
-      console.log(`[Realtime] Unsubscribed from note.${noteId}`);
+      realtimeLog(`[Realtime] Unsubscribed from note.${noteId}`);
       channel.stopListening('.NoteUpdated', handler);
       // We shouldn't leave the channel immediately if there are other listeners,
       // but Laravel Echo's leave() doesn't do reference counting. 

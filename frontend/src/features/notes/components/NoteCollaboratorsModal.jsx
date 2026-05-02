@@ -21,6 +21,29 @@ function getDisplayName(receiver) {
   return receiver?.name || receiver?.email?.split('@')[0] || 'Unknown';
 }
 
+function isEmailNotFoundShareError(error) {
+  if (error?.status !== 422) {
+    return false;
+  }
+
+  const emailErrors = Array.isArray(error?.payload?.errors?.email)
+    ? error.payload.errors.email
+    : [];
+
+  if (emailErrors.length === 0) {
+    return false;
+  }
+
+  const normalizedMessage = emailErrors.join(' ').toLowerCase();
+  return (
+    normalizedMessage.includes('selected')
+    || normalizedMessage.includes('exist')
+    || normalizedMessage.includes('invalid')
+    || normalizedMessage.includes('khong ton tai')
+    || normalizedMessage.includes('không tồn tại')
+  );
+}
+
 /**
  * NoteCollaboratorsModal — API-connected version.
  *
@@ -90,6 +113,11 @@ function NoteCollaboratorsModal({
       setQuery('');
       toast.success(`Đã chia sẻ với ${email}`);
     } catch (err) {
+      if (isEmailNotFoundShareError(err)) {
+        toast.error('Email không tồn tại trong hệ thống.');
+        return;
+      }
+
       toast.error(err?.message || 'Không thể chia sẻ. Vui lòng thử lại.');
     } finally {
       setIsAdding(false);
