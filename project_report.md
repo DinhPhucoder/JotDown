@@ -15,17 +15,10 @@
 
 | Thành phần | Công nghệ |
 |---|---|
-| Framework UI | **React 19** (Vite 8) |
-| Styling | **Bootstrap 5.3** + Tailwind CSS 4 + Vanilla CSS |
-| Rich-text Editor | **Tiptap 3** (ProseMirror-based) |
-| Animation | **Framer Motion 12** + GSAP 3 |
+| Framework UI | **React 19**|
+| Styling | **Bootstrap 5.3**|
 | WebSocket Client | **Laravel Echo** + **Pusher JS** |
-| Icon Library | **FontAwesome 7** |
-| Routing | React Router v7 |
-| Layout Grid | react-masonry-css |
-| Toast Notification | Sonner |
 | HTTP Client | Fetch API (qua service layer) |
-| Build Tool | Vite 8 |
 
 ### 2.2 Backend
 
@@ -33,10 +26,9 @@
 |---|---|
 | Framework | **Laravel 13** (PHP 8.3) |
 | Authentication | **Laravel Sanctum 4** (token-based) |
-| Broadcasting | **Pusher** (via `pusher/pusher-php-server`) |
-| Email Service | **Resend** (`resend/resend-laravel`) |
-| File Storage | **Cloudinary** (upload ảnh đính kèm & avatar) |
-| Testing | **PHPUnit 12** |
+| Broadcasting | **Pusher** |
+| Email Service | **Resend** |
+| File Storage | **Cloudinary**|
 
 ### 2.3 Database
 
@@ -46,6 +38,7 @@
 | CSDL cục bộ | **IndexedDB** (JavaScript, hỗ trợ offline) |
 | Migrations | Laravel Migrations (100% schema được quản lý) |
 | Stored Logic | DB Functions, Procedures, Triggers |
+| ORM | **Eloquent ORM** |
 
 ### 2.4 Hạ tầng & Triển khai
 
@@ -56,7 +49,6 @@
 | Database | **Aiven** (MySQL cloud) |
 | Containerization | **Docker** + **Docker Compose** (môi trường dev & prod) |
 | Reverse Proxy | **Nginx** |
-| CI/CD | GitHub Actions |
 
 ---
 
@@ -161,102 +153,4 @@ backend/app/
 └── Mail/            # Mailable (verify email, share notification)
 ```
 
----
 
-## 4. Các chức năng nổi bật
-
-### 4.1 Quản lý tài khoản
-- ✅ **Đăng ký / Đăng nhập / Đăng xuất** — Sanctum token, auto-login sau register
-- ✅ **Xác thực email** — Gửi link signed URL hoặc OTP qua email (Resend)
-- ✅ **Đặt lại mật khẩu** — Nhập OTP từ email trước khi đặt mật khẩu mới
-- ✅ **Đổi mật khẩu** — Yêu cầu nhập mật khẩu cũ trước khi thay đổi
-- ✅ **Hồ sơ & Avatar** — Xem/chỉnh sửa thông tin, upload ảnh lên Cloudinary
-- ✅ **Tùy chọn người dùng** — Cỡ chữ, màu ghi chú, dark/light mode
-
-### 4.2 Quản lý ghi chú cơ bản
-- ✅ **Grid view / List view** — Chuyển đổi linh hoạt, masonry layout
-- ✅ **Tạo & Chỉnh sửa** — Cùng một modal editor (Tiptap), không tách màn hình
-- ✅ **Tự động lưu** — Autosave sau mỗi thay đổi, không cần nhấn "Lưu"
-- ✅ **Xóa có xác nhận** — Hộp thoại confirm trước khi xóa
-- ✅ **Đính kèm ảnh** — Upload nhiều ảnh, lưu Cloudinary, xem inline trong editor
-- ✅ **Ghim ghi chú** — Ghi chú ghim luôn hiển thị đầu, sắp theo thứ tự ghim
-- ✅ **Live search** — Tìm kiếm real-time theo tiêu đề & nội dung, debounce 300ms
-- ✅ **Quản lý nhãn** — CRUD nhãn, gắn/bỏ nhãn, lọc ghi chú theo nhãn
-- ✅ **Biểu tượng trạng thái** — Icon nhận biết ghi chú ghim / bảo vệ / chia sẻ ở cả hai view
-
-### 4.3 Quản lý ghi chú nâng cao
-- ✅ **Khóa ghi chú bằng mật khẩu** — Mỗi ghi chú có password riêng (hash bcrypt), yêu cầu nhập password trước khi xem/sửa/xóa
-- ✅ **Đổi / Tắt mật khẩu ghi chú** — Phải nhập password cũ, nhập mới 2 lần để xác nhận
-- ✅ **Chia sẻ ghi chú** — Chia sẻ qua email đã đăng ký, chọn quyền `READ` hoặc `WRITE`, chia sẻ cho nhiều người
-- ✅ **Thu hồi / Thay đổi quyền chia sẻ** — Chủ sở hữu xem danh sách người nhận, cập nhật hoặc revoke từng người
-- ✅ **Khu vực "Shared with me"** — Hiển thị ghi chú được chia sẻ kèm thông tin người chia sẻ, timestamp, quyền truy cập
-- ✅ **Cộng tác thời gian thực (WebSocket)** — Ghi chú `WRITE` hỗ trợ nhiều người chỉnh sửa đồng thời qua Pusher/Laravel Echo, broadcast sự kiện `NoteUpdated`
-
-### 4.4 Yêu cầu bổ sung
-- ✅ **Responsive Design** — Bootstrap Grid, tối ưu smartphone / tablet / desktop
-- ✅ **Offline (PWA)** — IndexedDB cache ghi chú khi offline; sync queue push/pull khi có mạng trở lại
-- ✅ **Online Deployment** — Frontend (Vercel) + Backend (Render) + Database (Aiven), HTTPS đầy đủ
-- ✅ **Docker Compose** — Có thể chạy toàn bộ stack cục bộ qua Docker
-
----
-
-## 5. Schema Database
-
-| Bảng | Mô tả |
-|---|---|
-| `users` | Tài khoản người dùng, password hash, OTP, email verify |
-| `notes` | Ghi chú (title, content, is_pinned, is_protected, password_hash, soft delete) |
-| `labels` | Nhãn thuộc về user |
-| `note_labels` | Quan hệ nhiều-nhiều note ↔ label |
-| `note_attachments` | URL ảnh đính kèm (Cloudinary) |
-| `note_shares` | Chia sẻ ghi chú (owner, recipient, permission: READ/WRITE) |
-| `sync_queue` | Hàng đợi đồng bộ offline (action: CREATE/UPDATE/DELETE) |
-| `personal_access_tokens` | Sanctum tokens |
-
----
-
-## 6. Luồng thực thi chính (Key Flows)
-
-### Offline Sync Flow
-```
-User offline → Thao tác ghi chú → IndexedDB (enqueueSyncChange)
-     ↓
-Network restored → SyncController.push() → Áp dụng queue
-     ↓
-SyncController.pull() → Kéo thay đổi mới từ server → cacheNotes()
-```
-
-### Real-time Collaboration Flow
-```
-User A chỉnh sửa ghi chú (WRITE) → Autosave → API PATCH /notes/{id}
-     ↓
-NoteController → NoteUpdated event → Pusher broadcast
-     ↓
-User B (đang mở ghi chú) → Laravel Echo nhận .NoteUpdated
-     ↓
-Frontend cập nhật state → Editor re-render nội dung mới
-```
-
-### Note Sharing Flow
-```
-Owner → POST /api/v1/notes/{id}/share → NoteShareController
-     ↓
-Tạo NoteShare record → NoteShared event → Pusher broadcast user.{id}
-     ↓
-Recipient nhận real-time notification → "Shared with me" panel cập nhật
-```
-
----
-
-## 7. Điểm kỹ thuật nổi bật
-
-| Điểm mạnh | Chi tiết |
-|---|---|
-| **Architecture clean** | Feature-based frontend, Skinny Controller + Service layer backend |
-| **Security** | Password hash bcrypt (user & note), Sanctum token, Authorization Policies, Signed URL email |
-| **Realtime first** | Toàn bộ sharing/collaboration qua Pusher WebSocket, không cần polling |
-| **Offline-first** | IndexedDB + sync queue 2 chiều (push/pull) với cursor tracking |
-| **Cloud storage** | Cloudinary cho tất cả media (avatar, note images), 5MB upload limit |
-| **DB integrity** | Stored procedures, triggers, soft deletes đảm bảo toàn vẹn dữ liệu |
-| **Email service** | Resend API cho verify email, OTP reset password, share notification |
-| **Testing** | PHPUnit 12, test Feature + Unit layer (27 test symbols) |

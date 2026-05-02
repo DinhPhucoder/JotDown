@@ -69,13 +69,13 @@ const Hero = () => {
 
       <h1 className="hero-title hero-element">
         Jot Down <br />
-          {typedText}
-          <span className="typing-cursor"></span>
-        
+        {typedText}
+        <span className="typing-cursor"></span>
+
       </h1>
 
       <p className="hero-subtitle mb-5 hero-element">
-        Ghi chú an toàn, hoạt động ngoại tuyến cho những ý tưởng tuyệt vời của bạn. Bảo vệ mạnh mẽ, đồng bộ liền mạch trên mọi thiết bị.
+        Ghi chú tiện lợi, lưu trữ an toàn cho những ý tưởng tuyệt vời của bạn.
       </p>
 
       <div className="hero-element">

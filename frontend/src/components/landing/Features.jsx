@@ -8,8 +8,8 @@ gsap.registerPlugin(ScrollTrigger);
 
 const featuresData = [
   {
-    title: 'Hoạt động không kết nối',
-    description: 'Tiếp tục ghi chú ngay cả khi mất kết nối. Dữ liệu của bạn tự động đồng bộ với máy chủ khi quay lại trực tuyến.',
+    title: 'Hoạt động ngoại tuyến',
+    description: 'Tiếp tục ghi chú ngay cả khi mất kết nối. Dữ liệu của bạn tự động đồng bộ khi trực tuyến.',
     icon: faWifi
   },
   {
@@ -19,7 +19,7 @@ const featuresData = [
   },
   {
     title: 'Cộng tác thời gian thực',
-    description: 'Chia sẻ ý tưởng với đồng nghiệp hoặc bạn bè. Đồng bộ trực tiếp mà không cần làm mới.',
+    description: 'Chia sẻ ý tưởng với đồng nghiệp hoặc bạn bè. Đồng bộ trực tiếp',
     icon: faUsersViewfinder
   }
 ];
