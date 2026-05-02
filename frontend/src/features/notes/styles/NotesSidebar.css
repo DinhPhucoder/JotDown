@@ -83,6 +83,16 @@ html[data-bs-theme='light'] .notes-sidebar-btn.active .flex-grow-1 {
   opacity: 1;
 }
 
+.notes-sidebar-btn:focus-within .notes-sidebar-actions {
+  opacity: 1;
+}
+
+@media (hover: none), (pointer: coarse) {
+  .notes-sidebar-actions {
+    opacity: 1;
+  }
+}
+
 .notes-sidebar-create,
 .notes-sidebar-edit {
   display: flex;
