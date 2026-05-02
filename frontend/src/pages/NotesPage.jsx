@@ -844,6 +844,7 @@ function NotesPage() {
             content: String(updatedNote.content || ''),
             color: updatedNote.color || 'default',
             updatedAt: updatedNote.updated_at || new Date().toISOString(),
+            version: Number(updatedNote.version || currentNotes[index]?.version || 1),
             sharedWith: Array.isArray(updatedNote.shares)
               ? updatedNote.shares.map((s) => ({
                   id: s?.id,
@@ -872,6 +873,7 @@ function NotesPage() {
               content: String(updatedNote.content || ''),
               color: updatedNote.color || 'default',
               updatedAt: updatedNote.updated_at || new Date().toISOString(),
+              version: Number(updatedNote.version || currentEditing.version || 1),
               sharedWith: Array.isArray(updatedNote.shares)
                 ? updatedNote.shares.map((s) => ({
                     id: s?.id,
