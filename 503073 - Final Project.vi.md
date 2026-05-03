@@ -1,6 +1,3 @@
-
-
-
 ## 503073 – LẬP TRÌNH WEB & ỨNG DỤNG
 ## ĐỒ ÁN CUỐI KỲ – HỌC KỲ II/2024-2025
 Cập nhật lần cuối: 02/01/2025
@@ -80,39 +77,22 @@ Quản lý tài khoản
 ## 1
 Đăng ký người dùng
 ## 0.25
-Tính năng không có
-hoặc hoàn toàn không hoạt động hoặc
-được làm hoàn toàn sai
-Tính năng đã được triển khai nhưng
-không hoạt động đúng hoặc vẫn còn
-một số lỗi nghiêm trọng
-Tính năng đã được triển khai đúng theo
-yêu cầu, không có lỗi
-hoặc chỉ có lỗi không đáng kể.
+Tính năng không có hoặc hoàn toàn không hoạt động hoặc được làm hoàn toàn sai
+Tính năng đã được triển khai nhưng không hoạt động đúng hoặc vẫn còn một số lỗi nghiêm trọng
+Tính năng đã được triển khai đúng theo yêu cầu, không có lỗi hoặc chỉ có lỗi không đáng kể.
 ## 2
 Kích hoạt tài khoản
 ## 0.25
-Tính năng không có
-hoặc hoàn toàn không hoạt động hoặc
-được làm hoàn toàn sai
-Tính năng đã được triển khai nhưng
-không hoạt động đúng hoặc vẫn còn
+Tính năng không có hoặc hoàn toàn không hoạt động hoặc được làm hoàn toàn sai
+Tính năng đã được triển khai nhưng không hoạt động đúng hoặc vẫn còn
 một số lỗi nghiêm trọng
-Tính năng đã được triển khai đúng theo
-yêu cầu, không có lỗi
-hoặc chỉ có lỗi không đáng kể.
+Tính năng đã được triển khai đúng theo yêu cầu, không có lỗi hoặc chỉ có lỗi không đáng kể.
 ## 3
 Đăng nhập và đăng xuất
 ## 0.25
-Tính năng không có
-hoặc hoàn toàn không hoạt động hoặc
-được làm hoàn toàn sai
-Tính năng đã được triển khai nhưng
-không hoạt động đúng hoặc vẫn còn
-một số lỗi nghiêm trọng
-Tính năng đã được triển khai đúng theo
-yêu cầu, không có lỗi
-hoặc chỉ có lỗi không đáng kể.
+Tính năng không có hoặc hoàn toàn không hoạt động hoặc được làm hoàn toàn sai
+Tính năng đã được triển khai nhưng không hoạt động đúng hoặc vẫn còn một số lỗi nghiêm trọng
+Tính năng đã được triển khai đúng theo yêu cầu, không có lỗi hoặc chỉ có lỗi không đáng kể.
 ## 4
 Đặt lại mật khẩu
 ## 0.25
