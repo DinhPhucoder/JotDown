@@ -24,7 +24,7 @@ class DatabaseSeeder extends Seeder
             User::where('email', 'test@example.com')->delete();
 
             $teacherAccount = User::updateOrCreate(
-                ['email' => 'phandinhphu93@gmail.com'],
+                ['email' => 'coding1703@gmail.com'],
                 [
                     'name' => 'Phan Đình Phú',
                     'password' => '123123123',

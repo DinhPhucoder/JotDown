@@ -43,7 +43,8 @@ services:
       - DB_USERNAME=root
       - DB_PASSWORD=root
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     ports:
       - "8000:80"
 
@@ -61,8 +62,12 @@ services:
       MYSQL_ROOT_PASSWORD: root
     ports:
       - "3306:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
     volumes:
-      # Mount folder dữ liệu cố định tránh mất sau mỗi lần khởi động
       - ./docker/mysql_data:/var/lib/mysql
 
 volumes:
