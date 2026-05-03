@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Button, Modal } from 'react-bootstrap';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { toast } from 'sonner';
 import { 
   faImage, 
   faLock, 
@@ -21,6 +22,7 @@ import {
 } from '../services/noteAttachmentService';
 import { resolveNoteShareMeta } from '../utils/noteShareResolver';
 import { removeOfflineAttachmentById, saveOfflineAttachment } from '../services/offlineAttachmentStore';
+import { enqueueSyncChange } from '../../../services/noteOfflineSync';
 import { subscribeToNoteChannel } from '../../../services/noteRealtime';
 
 
@@ -160,8 +162,21 @@ function NoteEditorModal({
     if (!note || !currentUserEmail) return null;
     return resolveNoteShareMeta(note, currentUserEmail);
   }, [note, currentUserEmail]);
+  // Nếu shareMeta không có (ví dụ currentUserEmail không truyền),
+  // fallback kiểm tra trực tiếp trong danh sách shares của note.
+  const computedIsReadOnlyFromMeta = shareMeta ? (shareMeta.isReceivedShared && shareMeta.myPermission === 'read') : false;
 
-  const isReadOnly = shareMeta ? (shareMeta.isReceivedShared && shareMeta.myPermission === 'read') : false;
+  const isRecipientRead = useMemo(() => {
+    if (!currentUserEmail || !note || !Array.isArray(note.shares)) return false;
+    const lowerEmail = String(currentUserEmail || '').trim().toLowerCase();
+    return note.shares.some((s) => {
+      const receiverEmail = String(s?.receiver?.email || s?.receiver_email || s?.email || '').trim().toLowerCase();
+      const permission = String(s?.permission || s?.accessPermission || '').trim().toLowerCase();
+      return receiverEmail === lowerEmail && permission === 'read';
+    });
+  }, [note?.shares, currentUserEmail]);
+
+  const isReadOnly = computedIsReadOnlyFromMeta || isRecipientRead;
   const canModifySecurity = !shareMeta || shareMeta.isOwnedByMe;
 
   const initialTitle = note?.title || '';
@@ -348,6 +363,11 @@ function NoteEditorModal({
 
   function handleOpenLockSetup() {
     if (!canManageLock) {
+      return;
+    }
+
+    if (isOffline) {
+      toast.error('Chức năng khóa note không khả dụng khi offline. Vui lòng kết nối internet.');
       return;
     }
 
@@ -614,8 +634,37 @@ function NoteEditorModal({
     }
 
     try {
+      if (isOffline) {
+        await enqueueSyncChange({
+          action: 'ATTACHMENT_REMOVE',
+          entity_id: note.id,
+          payload: { attachment_id: attachmentToDelete.id },
+          timestamp: new Date().toISOString(),
+        });
+        return;
+      }
+
       await deleteNoteAttachment(note.id, attachmentToDelete.id);
     } catch (error) {
+      if (!isOffline && isNetworkUploadFailure(error)) {
+        try {
+          await enqueueSyncChange({
+            action: 'ATTACHMENT_REMOVE',
+            entity_id: note.id,
+            payload: { attachment_id: attachmentToDelete.id },
+            timestamp: new Date().toISOString(),
+          });
+          setUploadError('');
+          return;
+        } catch (offlineError) {
+          setImages(images);
+          setImageMetas(imageMetas);
+          setAttachmentItems(attachmentItems);
+          setUploadError(offlineError?.message || 'Không thể xóa ảnh ngay lúc này.');
+          return;
+        }
+      }
+
       setImages(images);
       setImageMetas(imageMetas);
       setAttachmentItems(attachmentItems);
@@ -813,19 +862,20 @@ function NoteEditorModal({
                   }}
                 >
                   <img src={image} alt={`attachment-${index + 1}`} />
-                  <button
-                    type="button"
-                    className="note-editor__remove-btn"
-                    disabled={isOffline && !attachmentItems[index]?.is_local_only}
-                    onClick={async (event) => {
-                      event.stopPropagation();
-                      await handleRemoveImage(index);
-                    }}
-                    aria-label="Xóa ảnh"
-                    title="Xóa ảnh"
-                  >
-                    <FontAwesomeIcon icon={faXmark} />
-                  </button>
+                  {!isReadOnly ? (
+                    <button
+                      type="button"
+                      className="note-editor__remove-btn"
+                      onClick={async (event) => {
+                        event.stopPropagation();
+                        await handleRemoveImage(index);
+                      }}
+                      aria-label="Xóa ảnh"
+                      title="Xóa ảnh"
+                    >
+                      <FontAwesomeIcon icon={faXmark} />
+                    </button>
+                  ) : null}
                 </div>
               ))}
             </div>
@@ -860,9 +910,10 @@ function NoteEditorModal({
               {canManageCollaborators ? (
                 <button 
                   type="button" 
-                  className={`notes-icon-btn ${sharedWith.length > 0 ? 'active' : ''}`} 
+                  className={`notes-icon-btn ${sharedWith.length > 0 ? 'active' : ''}`}
+                  disabled={isOffline}
                   onClick={() => setIsCollaboratorsOpen(true)}
-                  title="Mời cộng tác viên"
+                  title={isOffline ? "Mời cộng tác viên (không khả dụng khi offline)" : "Mời cộng tác viên"}
                 >
                   <FontAwesomeIcon icon={faUserPlus} />
                 </button>
@@ -897,8 +948,9 @@ function NoteEditorModal({
                 <button
                   type="button"
                   className={`notes-icon-btn ${isLocked ? 'active' : ''}`}
+                  disabled={isOffline}
                   onClick={handleOpenLockSetup}
-                  title={isLocked ? 'Quản lý khóa' : 'Thêm khóa'}
+                  title={isOffline ? 'Khóa note không khả dụng khi offline' : (isLocked ? 'Quản lý khóa' : 'Thêm khóa')}
                 >
                   <FontAwesomeIcon icon={faLock} />
                 </button>
@@ -976,6 +1028,7 @@ function NoteEditorModal({
           ownerEmail={note?.ownerEmail}
           ownerAvatar={note?.ownerAvatar}
           initialCollaborators={sharedWith}
+          isOffline={isOffline}
           onCollaboratorsChange={(nextCollaborators) => {
             const normalizedState = normalizeSecurityState(false, '', nextCollaborators);
             const now = new Date().toISOString();

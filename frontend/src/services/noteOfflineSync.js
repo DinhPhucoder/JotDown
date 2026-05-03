@@ -107,7 +107,7 @@ export async function enqueueSyncChange(change) {
         return;
       }
 
-      if (existing) {
+      if (existing && !['ATTACHMENT_ADD', 'ATTACHMENT_REMOVE'].includes(nextAction)) {
         store.put({ ...change, id: existing.id });
         return;
       }

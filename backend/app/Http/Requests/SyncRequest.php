@@ -27,6 +27,11 @@ class SyncRequest extends FormRequest
             'changes.*.payload.is_pinned' => ['sometimes', 'boolean'],
             'changes.*.payload.label_names' => ['sometimes', 'nullable', 'array'],
             'changes.*.payload.label_names.*' => ['sometimes', 'string', 'max:100'],
+            'changes.*.payload.attachment_id' => ['sometimes', 'integer'],
+            'changes.*.payload.file_url' => ['sometimes', 'string'],
+            'changes.*.payload.file_size' => ['sometimes', 'integer'],
+            'changes.*.payload.file_type' => ['sometimes', 'string'],
+            'changes.*.payload.original_name' => ['sometimes', 'nullable', 'string'],
             'changes.*.timestamp' => ['required', 'date'],
         ];
     }

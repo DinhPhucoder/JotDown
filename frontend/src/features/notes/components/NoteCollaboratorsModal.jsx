@@ -55,6 +55,7 @@ function isEmailNotFoundShareError(error) {
  *   ownerEmail  {string}
  *   initialCollaborators {Array}  — danh sách share đã có (từ local state)
  *   onCollaboratorsChange {Function}  — callback cập nhật local state cha
+ *   isOffline   {boolean}  — chế độ offline
  */
 function NoteCollaboratorsModal({
   open,
@@ -65,6 +66,7 @@ function NoteCollaboratorsModal({
   ownerAvatar = null,
   initialCollaborators = [],
   onCollaboratorsChange,
+  isOffline = false,
 }) {
   const isServerNote = noteId && /^\d+$/.test(String(noteId));
 
@@ -100,6 +102,11 @@ function NoteCollaboratorsModal({
       onCollaboratorsChange?.(next);
       setQuery('');
       toast.success(`Đã thêm ${email} (sẽ chia sẻ khi lưu note)`);
+      return;
+    }
+
+    if (isOffline) {
+      toast.error('Chức năng không khả dụng. Vui lòng kiểm tra internet.');
       return;
     }
 
@@ -305,9 +312,9 @@ function NoteCollaboratorsModal({
               <input
                 type="email"
                 className="note-editor__share-input"
-                placeholder="Nhập email để chia sẻ..."
+                placeholder={isOffline ? "Không khả dụng khi offline..." : "Nhập email để chia sẻ..."}
                 value={query}
-                disabled={isAdding}
+                disabled={isAdding || isOffline}
                 onChange={(e) => setQuery(e.target.value)}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') {
@@ -321,8 +328,8 @@ function NoteCollaboratorsModal({
               type="button"
               className="notes-icon-btn"
               onClick={handleAdd}
-              disabled={!canAdd || isAdding}
-              title="Chia sẻ"
+              disabled={!canAdd || isAdding || isOffline}
+              title={isOffline ? "Chức năng thêm cộng tác viên không khả dụng khi offline" : "Chia sẻ"}
             >
               {isAdding ? <Spinner animation="border" size="sm" /> : <FontAwesomeIcon icon={faPlus} />}
             </button>
