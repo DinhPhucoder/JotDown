@@ -61,12 +61,15 @@ function stripHtml(html) {
 function NoteCard({
   note,
   viewMode,
+  defaultColor = 'default',
   onOpen,
   onTogglePin,
   isOffline = false,
   shareScope = null,
   accessPermission = null,
 }) {
+  // Làm giống hệt font size: màu áp dụng toàn cục cho tất cả notes dựa trên setting
+  const resolvedColor = defaultColor || 'default';
   const previewImages = note.images.slice(0, 3);
   const hiddenImageCount = Math.max(note.images.length - 3, 0);
   const normalizedPermission = accessPermission === 'edit' ? 'edit' : 'read';
@@ -113,7 +116,7 @@ function NoteCard({
 
   return ( 
     <div 
-      className={`note-card ${colorClassNames[note.color] || colorClassNames.default} ${ 
+      className={`note-card ${colorClassNames[resolvedColor] || colorClassNames.default} ${ 
         viewMode === 'list' ? 'note-card--list' : '' 
       }`} 
       onClick={() => onOpen(note)} 

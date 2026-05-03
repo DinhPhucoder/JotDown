@@ -7,7 +7,7 @@ import NoteCard from '../../features/notes/components/NoteCard';
  *
  * @param {{ note: object, viewMode: string, onOpen: Function, onTogglePin: Function, isOffline: boolean, shareScope: string|null, accessPermission: string|null }} props
  */
-function AnimatedNoteCard({ note, viewMode, onOpen, onTogglePin, isOffline, shareScope, accessPermission }) {
+function AnimatedNoteCard({ note, viewMode, defaultColor, onOpen, onTogglePin, isOffline, shareScope, accessPermission }) {
   const prefersReducedMotion = useReducedMotion();
 
   const motionProps = {
@@ -25,6 +25,7 @@ function AnimatedNoteCard({ note, viewMode, onOpen, onTogglePin, isOffline, shar
       <NoteCard
         note={note}
         viewMode={viewMode}
+        defaultColor={defaultColor}
         onOpen={onOpen}
         onTogglePin={onTogglePin}
         isOffline={isOffline}

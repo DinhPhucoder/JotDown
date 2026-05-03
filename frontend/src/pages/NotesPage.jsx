@@ -207,20 +207,6 @@ function NotesPage() {
     saveNoteWorkspace({ notes, labels, user, viewMode });
   }, [notes, labels, user, viewMode]);
 
-  // Tự động áp dụng màu mặc định từ preferences cho notes có color='default'
-  useEffect(() => {
-    const prefColor = resolvedNotePreferences.defaultNoteColor;
-    if (!prefColor || prefColor === 'default') return;
-
-    setNotes((currentNotes) => {
-      const hasDefault = currentNotes.some((n) => n.color === 'default');
-      if (!hasDefault) return currentNotes;
-      return currentNotes.map((n) =>
-        n.color === 'default' ? { ...n, color: prefColor } : n,
-      );
-    });
-  }, [resolvedNotePreferences.defaultNoteColor]);
-
   useEffect(() => {
     if (isOffline) {
       reconnectSyncPendingRef.current = false;
@@ -255,15 +241,6 @@ function NotesPage() {
             isVerified: res.data.user.email_verified || false,
             displayName: res.data.user.name,
           }));
-          // Áp dụng lại màu note từ preferences mới nhất của server
-          const prefColor = res.data.user.preferences?.defaultNoteColor;
-          if (prefColor && prefColor !== 'default') {
-            setNotes((currentNotes) =>
-              currentNotes.map((note) =>
-                note.color === 'default' ? { ...note, color: prefColor } : note,
-              ),
-            );
-          }
         }
       }).catch(() => { });
     });
@@ -359,17 +336,8 @@ function NotesPage() {
           ...sharedNotes.filter((n) => !ownedIds.has(String(n.id))),
         ];
 
-        // Áp dụng màu mặc định từ preferences cho note chưa có màu riêng
-        const authUser = JSON.parse(sessionStorage.getItem('auth_user') || '{}');
-        const preferredColor = authUser?.preferences?.defaultNoteColor || 'default';
-        const coloredMerged = merged.map((note) =>
-          note.color === 'default' && preferredColor !== 'default'
-            ? { ...note, color: preferredColor }
-            : note,
-        );
-
-        setNotes(sortNotes(coloredMerged));
-        await cacheNotes(coloredMerged);
+        setNotes(sortNotes(merged));
+        await cacheNotes(merged);
         await setLastSyncCursor(new Date().toISOString());
 
         try {
@@ -1077,6 +1045,7 @@ function NotesPage() {
         key={note.id}
         note={note}
         viewMode={viewMode}
+        defaultColor={resolvedNotePreferences.defaultNoteColor}
         onOpen={openEditor}
         onTogglePin={handleToggleNotePin}
         isOffline={isOffline}
@@ -1605,10 +1574,6 @@ function NotesPage() {
   }
 
   function handleUpdateProfilePreferences(nextPreferences) {
-    const nextDefaultColor = String(nextPreferences?.defaultNoteColor || '').trim();
-    const shouldSyncAllNoteColors =
-      nextDefaultColor.length > 0 && nextDefaultColor !== resolvedNotePreferences.defaultNoteColor;
-
     const newPreferences = {
       ...resolvedNotePreferences,
       ...nextPreferences,
@@ -1628,21 +1593,6 @@ function NotesPage() {
     } catch { /* ignore */ }
 
     import('../features/auth/services/authService').then(m => m.updatePreferences(newPreferences)).catch(() => { });
-
-    if (!shouldSyncAllNoteColors) {
-      return;
-    }
-
-    setNotes((currentNotes) =>
-      currentNotes.map((note) =>
-        note.color === nextDefaultColor
-          ? note
-          : {
-            ...note,
-            color: nextDefaultColor,
-          },
-      ),
-    );
   }
 
   function handleOpenLogoutConfirm() {
@@ -1814,15 +1764,21 @@ function NotesPage() {
         preferences={resolvedNotePreferences}
         onClose={() => setSettingsOpen(false)}
         onUpdate={(nextPreferences) => {
+          const newPrefs = {
+            ...(user?.preferences || DEFAULT_NOTE_PREFERENCES),
+            ...(nextPreferences || {}),
+            fontSize: resolveNoteFontSize(nextPreferences?.fontSize),
+          };
           setUser((currentUser) => ({
             ...currentUser,
-            preferences: {
-              ...(currentUser?.preferences || DEFAULT_NOTE_PREFERENCES),
-              ...(nextPreferences || {}),
-              fontSize: resolveNoteFontSize(nextPreferences?.fontSize),
-            },
+            preferences: newPrefs,
           }));
-          import('../features/auth/services/authService').then(m => m.updatePreferences(nextPreferences)).catch(() => { });
+          try {
+            const authUser = JSON.parse(sessionStorage.getItem('auth_user') || '{}');
+            authUser.preferences = newPrefs;
+            sessionStorage.setItem('auth_user', JSON.stringify(authUser));
+          } catch { /* ignore */ }
+          import('../features/auth/services/authService').then(m => m.updatePreferences(newPrefs)).catch(() => { });
         }}
       />
 
