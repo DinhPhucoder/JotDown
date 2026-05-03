@@ -43,5 +43,3 @@ docker-compose up -d --build
 **Bước 3:** Truy cập ứng dụng tại các địa chỉ sau:
 - **Trang web (Frontend):** [http://localhost:5173](http://localhost:5173)
 - **Backend API:** [http://localhost:8000](http://localhost:8000)
-
-> **Nếu cần seed lại thủ công:** `docker-compose exec backend php artisan db:seed --force`
