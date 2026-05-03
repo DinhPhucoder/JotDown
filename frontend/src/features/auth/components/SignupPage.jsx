@@ -63,13 +63,23 @@ const SignupPage = () => {
       });
       
       // Auto-login
-      await loginApi({ email, password });
+      const loginRes = await loginApi({ email, password });
+      // Lưu thông tin user vào sessionStorage (giống LoginPage)
+      if (loginRes.data?.user) {
+        sessionStorage.setItem('auth_user', JSON.stringify(loginRes.data.user));
+      }
 
       // Upload avatar if selected
       const file = fileInputRef.current?.files?.[0];
       if (file) {
         try {
-          await uploadAvatar(file);
+          const avatarRes = await uploadAvatar(file);
+          // Cập nhật avatar URL vào sessionStorage
+          if (avatarRes?.data?.avatar) {
+            const authUser = JSON.parse(sessionStorage.getItem('auth_user') || '{}');
+            authUser.avatar = avatarRes.data.avatar;
+            sessionStorage.setItem('auth_user', JSON.stringify(authUser));
+          }
         } catch {
           toast.error('Đăng ký thành công nhưng tải ảnh đại diện thất bại.');
         }
