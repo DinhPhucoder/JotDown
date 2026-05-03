@@ -415,7 +415,7 @@ function UserProfileModal({ open, onClose, theme, onToggleTheme, preferences, on
                                     <div className="d-flex align-items-center justify-content-between mb-4 p-3 border rounded-3">
                                         <div>
                                             <h6 className="mb-1 fw-semibold">Giao diện hiển thị</h6>
-                                            <p className="text-secondary mb-0 small">Bật chế độ tối sẽ làm dịu mắt hơn.</p>
+                                            <p className="text-secondary mb-0 small">Thay đổi chế sáng / tối</p>
                                         </div>
                                         <div className="form-check form-switch fs-5">
                                             <input
@@ -434,7 +434,7 @@ function UserProfileModal({ open, onClose, theme, onToggleTheme, preferences, on
                                             <PaintBucket size={18} />
                                             <h6 className="mb-0 fw-semibold">Màu note mặc định</h6>
                                         </div>
-                                        <p className="text-secondary small mb-3">Áp dụng đồng bộ cho toàn bộ note trong Notes page.</p>
+                                        <p className="text-secondary small mb-3">Thay đổi màu sắc của ghi chú</p>
                                         <div className="profile-note-colors">
                                             {noteColorOptions.map((option) => (
                                                 <button
@@ -453,9 +453,9 @@ function UserProfileModal({ open, onClose, theme, onToggleTheme, preferences, on
                                     <div className="p-3 border rounded-3">
                                         <div className="d-flex align-items-center gap-2 mb-2">
                                             <Type size={18} />
-                                            <h6 className="mb-0 fw-semibold">Kích cỡ chữ ghi chú</h6>
+                                            <h6 className="mb-0 fw-semibold">Kích cỡ chữ </h6>
                                         </div>
-                                        <p className="text-secondary small mb-3">Chỉ ảnh hưởng đến Notes page, không đổi font các page khác.</p>
+                                        <p className="text-secondary small mb-3">Thay đổi kích cỡ chữ của ghi chú</p>
                                         <div className="profile-font-size-options">
                                             {noteFontSizeOptions.map((option) => (
                                                 <button
