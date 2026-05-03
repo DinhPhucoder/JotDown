@@ -207,6 +207,20 @@ function NotesPage() {
     saveNoteWorkspace({ notes, labels, user, viewMode });
   }, [notes, labels, user, viewMode]);
 
+  // Tự động áp dụng màu mặc định từ preferences cho notes có color='default'
+  useEffect(() => {
+    const prefColor = resolvedNotePreferences.defaultNoteColor;
+    if (!prefColor || prefColor === 'default') return;
+
+    setNotes((currentNotes) => {
+      const hasDefault = currentNotes.some((n) => n.color === 'default');
+      if (!hasDefault) return currentNotes;
+      return currentNotes.map((n) =>
+        n.color === 'default' ? { ...n, color: prefColor } : n,
+      );
+    });
+  }, [resolvedNotePreferences.defaultNoteColor]);
+
   useEffect(() => {
     if (isOffline) {
       reconnectSyncPendingRef.current = false;
@@ -241,6 +255,15 @@ function NotesPage() {
             isVerified: res.data.user.email_verified || false,
             displayName: res.data.user.name,
           }));
+          // Áp dụng lại màu note từ preferences mới nhất của server
+          const prefColor = res.data.user.preferences?.defaultNoteColor;
+          if (prefColor && prefColor !== 'default') {
+            setNotes((currentNotes) =>
+              currentNotes.map((note) =>
+                note.color === 'default' ? { ...note, color: prefColor } : note,
+              ),
+            );
+          }
         }
       }).catch(() => { });
     });
@@ -336,8 +359,17 @@ function NotesPage() {
           ...sharedNotes.filter((n) => !ownedIds.has(String(n.id))),
         ];
 
-        setNotes(sortNotes(merged));
-        await cacheNotes(merged);
+        // Áp dụng màu mặc định từ preferences cho note chưa có màu riêng
+        const authUser = JSON.parse(sessionStorage.getItem('auth_user') || '{}');
+        const preferredColor = authUser?.preferences?.defaultNoteColor || 'default';
+        const coloredMerged = merged.map((note) =>
+          note.color === 'default' && preferredColor !== 'default'
+            ? { ...note, color: preferredColor }
+            : note,
+        );
+
+        setNotes(sortNotes(coloredMerged));
+        await cacheNotes(coloredMerged);
         await setLastSyncCursor(new Date().toISOString());
 
         try {
@@ -1587,6 +1619,13 @@ function NotesPage() {
       ...currentUser,
       preferences: newPreferences,
     }));
+
+    // Đồng bộ sessionStorage để reload trang không mất preferences
+    try {
+      const authUser = JSON.parse(sessionStorage.getItem('auth_user') || '{}');
+      authUser.preferences = newPreferences;
+      sessionStorage.setItem('auth_user', JSON.stringify(authUser));
+    } catch { /* ignore */ }
 
     import('../features/auth/services/authService').then(m => m.updatePreferences(newPreferences)).catch(() => { });
 
