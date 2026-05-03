@@ -1,17 +1,17 @@
 # Kịch bản thuyết trình: Note Management Website
 
 ### PHẦN 1: CÔNG NGHỆ SỬ DỤNG
-Để hiện thực hóa dự án này, nhóm đã chia hệ thống thành các phần tách biệt và lựa chọn những công nghệ phù hợp nhất cho từng mục đích cụ thể:
+Để hiện thực hóa dự án này, nhóm đã chia hệ thống thành các phần riêng biệt và lựa chọn những công nghệ phù hợp nhất cho từng mục đích:
 
 **1. Về phía Frontend:**
 *   **React 19:** Bọn em dùng React làm framework chính để xây dựng giao diện người dùng đẹp mắt và mượt mà.
-*   **Bootstrap 5.3:** Được sử dụng để chia layout, đảm bảo trang web hiển thị chuẩn Responsive trên mọi thiết bị.
+*   **Bootstrap 5.3:** Được sử dụng để styling và chia layout, đảm bảo trang web hiển thị chuẩn Responsive trên mọi thiết bị.
 *   **Laravel Echo & Pusher JS:** Đây là bộ công cụ WebSocket Client ở phía trình duyệt. Mục đích là để tự động lắng nghe các tín hiệu từ server, giúp thực hiện tính năng cộng tác thời gian thực mà không cần phải tải lại trang.
 *   **Fetch API:** Bọn em cấu hình Fetch API để làm nhiệm vụ gửi và nhận dữ liệu từ Backend một cách đồng nhất và dễ quản lý lỗi.
 
 **2. Về phía Backend:**
 *   **Laravel 13:** Nhóm chọn framework này của PHP vì tính bảo mật rất cao và cấu trúc mã nguồn cực kỳ rõ ràng.
-*   **Laravel Sanctum:** Chuyên dùng để xử lý xác thực (Authentication). Nó giúp hệ thống quản lý đăng nhập và cấp phát Token an toàn cho người dùng thay vì dùng session truyền thống.
+*   **Laravel Sanctum:** Công cụ chuyên dùng để xử lý xác thực (Authentication). Nó giúp hệ thống quản lý đăng nhập và cấp phát Token an toàn cho người dùng thay vì dùng session truyền thống.
 *   **Pusher:** Đây là dịch vụ Broadcasting, làm nhiệm vụ phát tín hiệu (WebSockets) xuống Frontend mỗi khi có thay đổi dữ liệu để thực hiện tính năng Real-time.
 *   **Resend:** Email Service. Nó thay thế cho SMTP truyền thống, giúp tự động gửi các email như mã xác nhận OTP hay thông báo chia sẻ ghi chú với tốc độ rất nhanh và chuyên nghiệp, tránh việc thư bị đưa vào hòm thư rác hoặc bị đánh dấu spam.
 *   **Cloudinary:** Thay vì lưu file hình ảnh trực tiếp trên server gây tốn dung lượng ổ cứng, bọn em dùng Cloudinary làm dịch vụ lưu trữ đám mây chuyên dụng để chứa hình ảnh đính kèm của ghi chú và avatar.
