@@ -87,6 +87,7 @@ class AuthController extends Controller
                     'email' => $user->email,
                     'avatar' => $this->resolveAvatarUrl($user->avatar),
                     'email_verified' => !is_null($user->email_verified_at),
+                    'preferences' => $user->preferences,
                 ],
             ],
         ]);

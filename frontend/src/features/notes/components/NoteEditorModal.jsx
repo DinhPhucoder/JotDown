@@ -319,7 +319,7 @@ function NoteEditorModal({
         id,
         title: title.trim(),
         content: content.trim(),
-        color: note?.color || defaultColor || 'default',
+        color: note?.color || 'default',
         isPinned,
         pinnedAt: isPinned ? note?.pinnedAt || now : undefined,
         isLocked: normalizedState.isLocked,
