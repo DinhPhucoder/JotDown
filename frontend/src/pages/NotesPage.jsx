@@ -1801,6 +1801,8 @@ function NotesPage() {
 
           <input
             type="password"
+            name="noteUnlockPassword"
+            autoComplete="off"
             className="note-editor__panel-input"
             placeholder="Mật khẩu ghi chú"
             value={unlockPassword}

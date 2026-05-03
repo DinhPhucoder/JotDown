@@ -1061,6 +1061,8 @@ function NoteEditorModal({
           {isLocked ? (
             <input
               type="password"
+              name="noteLockCurrentPassword"
+              autoComplete="off"
               className="note-editor__panel-input"
               placeholder="Nhập mật khẩu cũ"
               value={lockDraftOldPassword}
@@ -1072,6 +1074,8 @@ function NoteEditorModal({
           ) : null}
           <input
             type="password"
+            name={isLocked ? 'noteLockNewPassword' : 'noteLockPassword'}
+            autoComplete="new-password"
             className="note-editor__panel-input"
             placeholder={isLocked ? 'Nhập mật khẩu mới' : 'Nhập mật khẩu'}
             value={lockDraftPassword}
@@ -1082,6 +1086,8 @@ function NoteEditorModal({
           />
           <input
             type="password"
+            name="noteLockConfirmPassword"
+            autoComplete="new-password"
             className="note-editor__panel-input"
             placeholder="Nhập lại mật khẩu"
             value={lockDraftConfirm}
