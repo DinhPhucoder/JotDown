@@ -404,11 +404,11 @@ function UserProfileModal({ open, onClose, theme, onToggleTheme, preferences, on
                                             )}
                                         </Form.Group>
 
-                                        {/* Nút lưu đã được gỡ bỏ để sử dụng auto-save */}
+                                        {}
                                     </Form>
                                 </Tab.Pane>
 
-                                {/* ---- Tab: Tuỳ chỉnh ---- */}
+                                {}
                                 <Tab.Pane eventKey="settings">
                                     <h6 className="fw-bold mb-4">Giao diện & Trải nghiệm</h6>
 
