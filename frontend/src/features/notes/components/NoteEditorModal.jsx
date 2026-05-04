@@ -150,7 +150,6 @@ function formatLastEditedText(value) {
 function NoteEditorModal({
   note,
   open,
-  defaultColor,
   currentUserEmail,
   isOffline = false,
   availableLabels = [],
@@ -162,21 +161,19 @@ function NoteEditorModal({
     if (!note || !currentUserEmail) return null;
     return resolveNoteShareMeta(note, currentUserEmail);
   }, [note, currentUserEmail]);
-  // Nếu shareMeta không có (ví dụ currentUserEmail không truyền),
-  // fallback kiểm tra trực tiếp trong danh sách shares của note.
-  const computedIsReadOnlyFromMeta = shareMeta ? (shareMeta.isReceivedShared && shareMeta.myPermission === 'read') : false;
 
-  const isRecipientRead = useMemo(() => {
-    if (!currentUserEmail || !note || !Array.isArray(note.shares)) return false;
+  const isReadOnly = useMemo(() => {
+    if (shareMeta) {
+      return shareMeta.isReceivedShared && shareMeta.myPermission === 'read';
+    }
     const lowerEmail = String(currentUserEmail || '').trim().toLowerCase();
-    return note.shares.some((s) => {
+    return (Array.isArray(note?.shares) ? note.shares : []).some((s) => {
       const receiverEmail = String(s?.receiver?.email || s?.receiver_email || s?.email || '').trim().toLowerCase();
       const permission = String(s?.permission || s?.accessPermission || '').trim().toLowerCase();
       return receiverEmail === lowerEmail && permission === 'read';
     });
-  }, [note?.shares, currentUserEmail]);
+  }, [shareMeta, note, currentUserEmail]);
 
-  const isReadOnly = computedIsReadOnlyFromMeta || isRecipientRead;
   const canModifySecurity = !shareMeta || shareMeta.isOwnedByMe;
 
   const initialTitle = note?.title || '';
@@ -336,7 +333,6 @@ function NoteEditorModal({
       title,
       content,
       note,
-      defaultColor,
       isPinned,
       isLocked,
       lockPassword,
@@ -362,7 +358,7 @@ function NoteEditorModal({
   }
 
   function handleOpenLockSetup() {
-    if (!canManageLock) {
+    if (!canManageLock || isReadOnly) {
       return;
     }
 
@@ -495,6 +491,10 @@ function NoteEditorModal({
   }
 
   async function handleImageSelect(event) {
+    if (isReadOnly) {
+      event.target.value = '';
+      return;
+    }
     const files = Array.from(event.target.files || []);
 
     if (files.length === 0 || remainingImageSlots <= 0) {
@@ -596,7 +596,7 @@ function NoteEditorModal({
   }
 
   async function handleRemoveImage(index) {
-    if (index < 0 || index >= images.length) {
+    if (isReadOnly || index < 0 || index >= images.length) {
       return;
     }
 
@@ -725,7 +725,7 @@ function NoteEditorModal({
     return () => {
       window.clearTimeout(timeoutId);
     };
-  }, [open, isDirty, buildDraft, onSave]);
+  }, [open, isDirty, buildDraft, onSave, isReadOnly]);
 
   // Subscribe to realtime note updates
   useEffect(() => {
@@ -779,7 +779,7 @@ function NoteEditorModal({
           setIsLocked(Boolean(updatedNote.is_protected));
         }
       }
-    })
+    }, isReadOnly)
       .then((unsubscribeFn) => {
         unsubscribe = unsubscribeFn;
       })
@@ -790,7 +790,7 @@ function NoteEditorModal({
     return () => {
       unsubscribe();
     };
-  }, [open, note?.id]);
+  }, [open, note?.id, note.isLocked, isReadOnly]);
 
   function handleHide() {
     if (open && isDirty) {
@@ -928,21 +928,23 @@ function NoteEditorModal({
                 <FontAwesomeIcon icon={faTag} />
               </button>
 
-              <button
-                type="button"
-                className="notes-icon-btn"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={isReadOnly || remainingImageSlots <= 0 || isUploadingImage}
-                title={
-                  isOffline
-                    ? `Thêm ảnh offline (${images.length}/3)`
-                    : remainingImageSlots > 0
-                    ? `Thêm ảnh (${images.length}/3)`
-                    : 'Đã đạt tối đa 3 ảnh'
-                }
-              >
-                <FontAwesomeIcon icon={faImage} />
-              </button>
+              {!isReadOnly && (
+                <button
+                  type="button"
+                  className="notes-icon-btn"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={remainingImageSlots <= 0 || isUploadingImage}
+                  title={
+                    isOffline
+                      ? `Thêm ảnh offline (${images.length}/3)`
+                      : remainingImageSlots > 0
+                      ? `Thêm ảnh (${images.length}/3)`
+                      : 'Đã đạt tối đa 3 ảnh'
+                  }
+                >
+                  <FontAwesomeIcon icon={faImage} />
+                </button>
+              )}
 
               {canManageLock ? (
                 <button

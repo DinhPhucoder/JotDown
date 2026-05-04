@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState, useDeferredValue } from 'react';
 import { Button, Modal, Offcanvas } from 'react-bootstrap';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faPlus, faStickyNote, faTrash } from '@fortawesome/free-solid-svg-icons';
+import { faPlus, faStickyNote } from '@fortawesome/free-solid-svg-icons';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
 import NoteCard from '../features/notes/components/NoteCard';
 import NoteEditorModal from '../features/notes/components/NoteEditorModal';
 import NoteSettingsModal from '../features/notes/components/NoteSettingsModal';
@@ -1137,19 +1138,36 @@ function NotesPage() {
     };
     let previousLabels = [];
 
+    const originalNote = notes.find((n) => n.id === nextNote.id);
+    const shareMeta = originalNote && user?.email ? resolveNoteShareMeta(originalNote, user.email) : null;
+    const isReadOnly = shareMeta ? (shareMeta.isReceivedShared && shareMeta.myPermission === 'read') : false;
+
     setNotes((currentNotes) => {
       const index = currentNotes.findIndex((item) => item.id === nextNote.id);
 
       if (index === -1) {
+        // If it's a new note, it shouldn't be read-only anyway, but let's be safe
         return sortNotes([noteWithVersion, ...currentNotes]);
       }
 
-      const currentVersion = Math.max(Number(currentNotes[index]?.version || 1), 1);
-      previousLabels = normalizeLabelNames(currentNotes[index]?.labels);
-      noteWithVersion = {
-        ...noteWithVersion,
-        version: Math.max(currentVersion, Number(noteWithVersion.version || 1)),
-      };
+      const existingNote = currentNotes[index];
+      const currentVersion = Math.max(Number(existingNote?.version || 1), 1);
+      previousLabels = normalizeLabelNames(existingNote?.labels);
+
+      if (isReadOnly) {
+        // IMPORTANT: For read-only notes, preserve original content/title, only update labels
+        noteWithVersion = {
+          ...existingNote,
+          labels: normalizeLabelNames(nextNote.labels),
+          version: currentVersion, // Keep version for read-only metadata updates
+          updatedAt: now,
+        };
+      } else {
+        noteWithVersion = {
+          ...noteWithVersion,
+          version: Math.max(currentVersion, Number(noteWithVersion.version || 1)),
+        };
+      }
 
       const nextNotes = [...currentNotes];
       nextNotes[index] = noteWithVersion;
@@ -1261,10 +1279,7 @@ function NotesPage() {
       return;
     }
 
-    const originalNote = notes.find((n) => n.id === noteWithVersion.id);
-    const shareMeta = originalNote && user?.email ? resolveNoteShareMeta(originalNote, user.email) : null;
-    const isReadOnly = shareMeta ? (shareMeta.isReceivedShared && shareMeta.myPermission === 'read') : false;
-
+    // This block is now handled earlier for local state, but we still need it for server sync
     if (isReadOnly) {
       void syncNoteLabels(noteWithVersion.id);
       return;
