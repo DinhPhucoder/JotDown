@@ -144,6 +144,9 @@ class AuthController extends Controller
 
     /**
      * Xác thực OTP — dùng cho cả verify email và reset password.
+     *
+     * Khi purpose=reset: chỉ kiểm tra tính hợp lệ, KHÔNG xóa OTP và
+     * KHÔNG mark email_verified (vì resetPassword() sẽ clearOtp() sau).
      */
     public function verifyOtp(VerifyOtpRequest $request): JsonResponse
     {
@@ -157,7 +160,16 @@ class AuthController extends Controller
             ], 400);
         }
 
-        // Nếu email chưa verified → xác thực email
+        // Reset flow: chỉ xác nhận OTP hợp lệ, giữ nguyên OTP để resetPassword dùng
+        if ($request->purpose === 'reset') {
+            return response()->json([
+                'success' => true,
+                'message' => 'Mã OTP hợp lệ!',
+                'data' => null,
+            ]);
+        }
+
+        // Verify email flow: mark verified + clear OTP
         if (!$user->email_verified_at) {
             $user->email_verified_at = now();
             $user->save();

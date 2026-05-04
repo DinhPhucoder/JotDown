@@ -77,14 +77,16 @@ const OtpVerificationPage = () => {
 
     setLoading(true);
     try {
+      // Gọi API verify OTP cho cả 2 flow, truyền purpose để backend xử lý đúng
+      const res = await verifyOtpApi({ email, otp: otpValue, purpose });
+
       if (purpose === 'reset') {
-        // Lưu OTP để trang reset-password sử dụng, không verify ở đây
+        // Lưu OTP để trang reset-password sử dụng
         localStorage.setItem('reset_otp', otpValue);
         toast.success('Mã OTP hợp lệ!');
         navigate('/reset-password');
       } else {
         // Verify email flow
-        const res = await verifyOtpApi({ email, otp: otpValue });
         toast.success(res.message);
         localStorage.removeItem('reset_email');
         navigate('/login');

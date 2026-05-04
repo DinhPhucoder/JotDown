@@ -69,10 +69,10 @@ export async function login({ email, password }) {
   return data;
 }
 
-export async function verifyOtp({ email, otp }) {
+export async function verifyOtp({ email, otp, purpose }) {
   return request('/v1/auth/verify-otp', {
     method: 'POST',
-    body: JSON.stringify({ email, otp }),
+    body: JSON.stringify({ email, otp, ...(purpose && { purpose }) }),
   });
 }
 
