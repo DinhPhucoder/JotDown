@@ -67,6 +67,22 @@ const OtpVerificationPage = () => {
     }
   };
 
+  const handlePaste = (e) => {
+    e.preventDefault();
+    const pastedText = e.clipboardData.getData('text').replace(/\D/g, '');
+    
+    if (pastedText.length >= 6) {
+      const newOtp = pastedText.slice(0, 6).split('');
+      setOtp(newOtp);
+      
+      // Focus vào input cuối cùng
+      setTimeout(() => {
+        const lastInput = document.getElementById('otp-input-5');
+        if (lastInput) lastInput.focus();
+      }, 0);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     const otpValue = otp.join('');
@@ -143,6 +159,7 @@ const OtpVerificationPage = () => {
                     value={digit}
                     onChange={(e) => handleOtpChange(index, e.target.value)}
                     onKeyDown={(e) => handleKeyDown(index, e)}
+                    onPaste={index === 0 ? handlePaste : null}
                     disabled={loading}
                     autoComplete="off"
                   />
