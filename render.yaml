@@ -47,7 +47,7 @@ services:
       - key: CACHE_STORE
         value: database
       - key: QUEUE_CONNECTION
-        value: database
+        sync: false
       - key: BROADCAST_CONNECTION
         value: pusher
       - key: PUSHER_APP_ID
@@ -58,6 +58,10 @@ services:
         sync: false
       - key: PUSHER_APP_CLUSTER
         value: ap1
+      - key: PUSHER_PORT
+        sync: false
+      - key: PUSHER_SCHEME
+        sync: false
       - key: MAIL_MAILER
         value: resend
       - key: RESEND_API_KEY
