@@ -4,7 +4,7 @@
 ## 1. Thông tin Deploy Online 
 Nếu giám khảo muốn trải nghiệm trực tiếp hệ thống đã được triển khai, vui lòng truy cập: [https://www.jotdown.space](https://www.jotdown.space)
 
-> **Lưu ý:** Ở những lần request đầu tiên cần đợi 30s - 1 phút để đánh thức server.
+> **Lưu ý:** Ở những lần request đầu tiên cần đợi 30s - 1 phút để đánh thức server. 
 
 
 ## 2. Tài khoản Test (Pre-loaded Data)
@@ -40,7 +40,7 @@ docker-compose up -d --build
 ```
 *(Hệ thống sẽ tự động build image, cài đặt Composer packages, NPM packages, và chạy migrate database. Vui lòng chờ 1-5 phút cho lần chạy đầu tiên).*
 
-*(Seeder dữ liệu mẫu cũng sẽ tự động chạy trong môi trường local ngay sau migrate.)*
+*(Seeder dữ liệu mẫu với 2 tài khoản trên cũng sẽ tự động chạy trong môi trường local ngay sau migrate.)*
 
 **Bước 3:** Truy cập ứng dụng tại các địa chỉ sau:
 - **Trang web (Frontend):** [http://localhost:5173](http://localhost:5173)
