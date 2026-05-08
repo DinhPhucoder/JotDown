@@ -2,7 +2,7 @@
 
 
 ## 1. Thông tin Deploy Online 
-Nếu giám khảo muốn trải nghiệm trực tiếp hệ thống đã được triển khai, vui lòng truy cập: `https://www.jotdown.space`
+Nếu giám khảo muốn trải nghiệm trực tiếp hệ thống đã được triển khai, vui lòng truy cập: [https://www.jotdown.space](https://www.jotdown.space)`https://www.jotdown.space`
 
 > **Lưu ý:** Ở những lần request đầu tiên cần đợi 30s - 1 phút để đánh thức server.
 
