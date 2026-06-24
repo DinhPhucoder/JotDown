@@ -1,0 +1,15 @@
+-- Flyway Baseline Migration
+-- This file is intentionally empty.
+--
+-- PURPOSE:
+-- The existing MySQL database was created and managed by Laravel Eloquent migrations.
+-- Flyway is configured with baseline-on-migrate=true and baseline-version=0,
+-- which marks the existing database state as "already at version 0" without
+-- running any scripts.
+--
+-- RULE: Never add ALTER TABLE or CREATE TABLE statements here that touch
+-- existing tables. The schema is owned by the existing Laravel migrations.
+-- Only add new Spring Boot-specific tables (if any) in future versioned scripts.
+--
+-- If you need to add new tables for Spring Boot (e.g., for scheduled job tracking),
+-- create V2__description.sql, V3__description.sql, etc.

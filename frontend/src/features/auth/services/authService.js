@@ -99,15 +99,19 @@ export async function resendOtp({ email, purpose }) {
 
 // ─── Protected Auth ──────────────────────────────────────────
 
-export async function logout() {
-  const data = await request('/v1/auth/logout', { method: 'POST' });
+export async function logout(token) {
+  const headers = token ? { Authorization: `Bearer ${token}` } : {};
+  const data = await request('/v1/auth/logout', {
+    method: 'POST',
+    headers,
+  });
   sessionStorage.removeItem('auth_token');
   return data;
 }
 
 export async function changePassword({ current_password, password, password_confirmation }) {
   return request('/v1/auth/change-password', {
-    method: 'POST',
+    method: 'PUT',
     body: JSON.stringify({ current_password, password, password_confirmation }),
   });
 }
@@ -125,14 +129,14 @@ export async function getUser() {
 }
 
 export async function updateProfile({ name }) {
-  return request('/v1/auth/update-profile', {
+  return request('/v1/auth/profile', {
     method: 'PUT',
     body: JSON.stringify({ name }),
   });
 }
 
 export async function updatePreferences(preferences) {
-  return request('/v1/auth/update-preferences', {
+  return request('/v1/auth/preferences', {
     method: 'PUT',
     body: JSON.stringify({ preferences }),
   });

@@ -18,7 +18,15 @@ function resolveBackendOrigin() {
 
   if (proxyTarget) {
     try {
-      return new URL(proxyTarget, window.location.origin).origin;
+      const url = new URL(proxyTarget, window.location.origin);
+      // Docker-internal hostnames are not resolvable by the browser.
+      // For local development, routing requests through the dev server proxy (window.location.origin)
+      // also avoids potential CORS issues.
+      const internalHosts = ['backend-spring', 'backend', 'db', 'nginx', 'localhost', '127.0.0.1'];
+      if (internalHosts.includes(url.hostname)) {
+        return window.location.origin;
+      }
+      return url.origin;
     } catch {
       return window.location.origin;
     }
@@ -27,7 +35,7 @@ function resolveBackendOrigin() {
   return window.location.origin;
 }
 
-const BROADCAST_AUTH_ENDPOINT = `${resolveBackendOrigin()}/broadcasting/auth`;
+const BROADCAST_AUTH_ENDPOINT = `${resolveBackendOrigin()}/api/broadcasting/auth`;
 const REALTIME_DEBUG_ENABLED = import.meta.env.VITE_REALTIME_DEBUG !== 'false';
 
 function realtimeLog(...args) {
@@ -215,23 +223,38 @@ export async function subscribeToNoteChannel(noteId, onEvent) {
       });
     };
 
-    channel.listen('.NoteUpdated', handler);
+    const deleteHandler = (payload) => {
+      const startedAt = performance.now();
+      realtimeLog('[Realtime] Note channel delete event received', {
+        channel: channelName,
+        event: 'NoteDeleted',
+        payload,
+      });
+      if (typeof onEvent === 'function') {
+        onEvent({ isDeleted: true, note: { id: noteId } });
+      }
+      realtimeLog('[Realtime] NoteDeleted callback finished', {
+        channel: channelName,
+        durationMs: Number((performance.now() - startedAt).toFixed(2)),
+      });
+    };
 
-    realtimeLog('[Realtime] Listening for NoteUpdated', {
+    channel.listen('.NoteUpdated', handler);
+    channel.listen('.NoteDeleted', deleteHandler);
+
+    realtimeLog('[Realtime] Listening for NoteUpdated and NoteDeleted', {
       channel: `note.${noteId}`,
-      event: '.NoteUpdated',
     });
 
     return () => {
       realtimeLog('[Realtime] Unsubscribing from note channel', {
         channel: channelName,
-        event: '.NoteUpdated',
         socketId: getSocketId(),
       });
       channel.stopListening('.NoteUpdated', handler);
-      realtimeLog('[Realtime] Note channel listener removed', {
+      channel.stopListening('.NoteDeleted', deleteHandler);
+      realtimeLog('[Realtime] Note channel listeners removed', {
         channel: channelName,
-        event: '.NoteUpdated',
       });
       // We shouldn't leave the channel immediately if there are other listeners,
       // but Laravel Echo's leave() doesn't do reference counting. 

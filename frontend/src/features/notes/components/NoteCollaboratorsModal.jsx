@@ -26,9 +26,10 @@ function isEmailNotFoundShareError(error) {
     return false;
   }
 
-  const emailErrors = Array.isArray(error?.payload?.errors?.email)
-    ? error.payload.errors.email
-    : [];
+  const emailField = error?.payload?.errors?.email;
+  const emailErrors = Array.isArray(emailField)
+    ? emailField
+    : (typeof emailField === 'string' ? [emailField] : []);
 
   if (emailErrors.length === 0) {
     return false;
@@ -41,6 +42,7 @@ function isEmailNotFoundShareError(error) {
     || normalizedMessage.includes('invalid')
     || normalizedMessage.includes('khong ton tai')
     || normalizedMessage.includes('không tồn tại')
+    || normalizedMessage.includes('chưa đăng ký')
   );
 }
 
@@ -125,7 +127,8 @@ function NoteCollaboratorsModal({
         return;
       }
 
-      toast.error(err?.message || 'Không thể chia sẻ. Vui lòng thử lại.');
+      const firstError = err?.payload?.errors ? Object.values(err.payload.errors)[0] : null;
+      toast.error(firstError || err?.message || 'Không thể chia sẻ. Vui lòng thử lại.');
     } finally {
       setIsAdding(false);
     }

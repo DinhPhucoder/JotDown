@@ -3,35 +3,21 @@ services:
     name: jotdown-backend
     runtime: docker
     plan: free
-    dockerContext: backend
-    dockerfilePath: backend/Dockerfile
+    dockerContext: backend-spring
+    dockerfilePath: backend-spring/Dockerfile
     healthCheckPath: /up
     autoDeployTrigger: commit
     buildFilter:
       paths:
-        - backend/**
+        - backend-spring/**
         - render.yaml
     envVars:
-      - key: APP_NAME
-        value: "JotDown"
-      - key: APP_ENV
-        value: production
-      - key: APP_DEBUG
-        value: "false"
-      - key: APP_KEY
-        sync: false
-      - key: APP_URL
+      - key: SPRING_PROFILES_ACTIVE
+        value: prod
+      - key: JWT_SECRET
         sync: false
       - key: FRONTEND_URL
         sync: false
-      - key: SANCTUM_STATEFUL_DOMAINS
-        sync: false
-      - key: LOG_CHANNEL
-        value: stack
-      - key: LOG_LEVEL
-        value: info
-      - key: DB_CONNECTION
-        value: mysql
       - key: DB_HOST
         sync: false
       - key: DB_PORT
@@ -42,14 +28,6 @@ services:
         sync: false
       - key: DB_PASSWORD
         sync: false
-      - key: SESSION_DRIVER
-        value: database
-      - key: CACHE_STORE
-        value: database
-      - key: QUEUE_CONNECTION
-        sync: false
-      - key: BROADCAST_CONNECTION
-        value: pusher
       - key: PUSHER_APP_ID
         sync: false
       - key: PUSHER_APP_KEY
@@ -58,12 +36,6 @@ services:
         sync: false
       - key: PUSHER_APP_CLUSTER
         value: ap1
-      - key: PUSHER_PORT
-        sync: false
-      - key: PUSHER_SCHEME
-        sync: false
-      - key: MAIL_MAILER
-        value: resend
       - key: RESEND_API_KEY
         sync: false
       - key: MAIL_FROM_ADDRESS
@@ -76,5 +48,3 @@ services:
         sync: false
       - key: CLOUDINARY_FOLDER
         value: note-attachments
-      - key: MYSQL_ATTR_SSL_CA
-        sync: false

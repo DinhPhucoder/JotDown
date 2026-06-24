@@ -244,6 +244,32 @@ function NoteEditorModal({
     }
   }, [note?.id]);
 
+  // Sync attachments and images when the parent note's attachments change (e.g., after offline sync or Pusher event)
+  useEffect(() => {
+    if (note?.attachments) {
+      const serverAttachments = note.attachments.filter(Boolean);
+      // We only want to update if the set of attachments actually changed (e.g., local attachments replaced by server ones)
+      // or if we transitioned from local to server-backed IDs.
+      const hasLocalInState = attachmentItems.some(item => item?.local_file_id || String(item?.id || '').startsWith('local-'));
+      const hasLocalInProp = serverAttachments.some(item => item?.local_file_id || String(item?.id || '').startsWith('local-'));
+      
+      // If parent has fewer local items or more server items, or if lengths differ, let's sync them
+      if (hasLocalInState && !hasLocalInProp) {
+        setAttachmentItems(serverAttachments.slice(0, 3));
+        setImages(serverAttachments.map(att => String(att?.file_url || '')).filter(Boolean).slice(0, 3));
+        setImageMetas(serverAttachments.map(att => ({ file_size: Number(att?.file_size || 0) })).slice(0, 3));
+      } else if (serverAttachments.length !== attachmentItems.length) {
+        // Also sync if the total number of attachments changed (e.g. added/deleted by someone else)
+        // but only if we don't have local attachments in state (to avoid overwriting user's active offline additions)
+        if (!hasLocalInState) {
+          setAttachmentItems(serverAttachments.slice(0, 3));
+          setImages(serverAttachments.map(att => String(att?.file_url || '')).filter(Boolean).slice(0, 3));
+          setImageMetas(serverAttachments.map(att => ({ file_size: Number(att?.file_size || 0) })).slice(0, 3));
+        }
+      }
+    }
+  }, [note?.attachments]);
+
   const normalizedAvailableLabels = useMemo(() => normalizeLabels(availableLabels), [availableLabels]);
   const normalizedLabelQuery = labelQuery.trim().toLowerCase();
   const filteredLabelOptions = normalizedAvailableLabels.filter((label) =>
@@ -572,9 +598,23 @@ function NoteEditorModal({
         }
       }
 
-      setImages((currentImages) => [...currentImages, ...uploadedUrls].slice(0, 3));
-      setImageMetas((currentMetas) => [...currentMetas, ...uploadedMetas].slice(0, 3));
-      setAttachmentItems((currentAttachments) => [...currentAttachments, ...uploadedAttachments].slice(0, 3));
+      setAttachmentItems((currentAttachments) => {
+        const next = [...currentAttachments];
+        uploadedAttachments.forEach(att => {
+          const isDuplicate = next.some(
+            existing => String(existing?.id || '') === String(att?.id || '') || existing?.file_url === att?.file_url
+          );
+          if (!isDuplicate) {
+            next.push(att);
+          }
+        });
+        const finalAttachments = next.slice(0, 3);
+        
+        setImages(finalAttachments.map(att => String(att?.file_url || '')).filter(Boolean));
+        setImageMetas(finalAttachments.map(att => ({ file_size: Number(att?.file_size || 0) })));
+        
+        return finalAttachments;
+      });
     } catch (error) {
       if (!isOffline && isNetworkUploadFailure(error)) {
         try {
@@ -790,7 +830,7 @@ function NoteEditorModal({
     return () => {
       unsubscribe();
     };
-  }, [open, note?.id, note.isLocked, isReadOnly]);
+  }, [open, note?.id, note?.isLocked, isReadOnly]);
 
   function handleHide() {
     if (open && isDirty) {

@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('sync_queue', function (Blueprint $table) {
-            //
+            $table->string('action', 50)->change();
         });
     }
 
@@ -22,7 +22,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('sync_queue', function (Blueprint $table) {
-            //
+            $table->enum('action', ['CREATE', 'UPDATE', 'DELETE'])->change();
         });
     }
 };

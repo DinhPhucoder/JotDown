@@ -1,0 +1,54 @@
+spring:
+  datasource:
+    # Render.com (Aiven MySQL) requires SSL
+    url: jdbc:mysql://${DB_HOST}:${DB_PORT}/${DB_DATABASE}?useSSL=true&serverTimezone=UTC&requireSSL=true
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      maximum-pool-size: 5
+      connection-timeout: 30000
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    baseline-version: 0
+    locations: classpath:db/migration
+
+  mail:
+    host: smtp.resend.com
+    port: 465
+    username: resend
+    password: ${RESEND_API_KEY}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          ssl:
+            enable: true
+
+app:
+  jwt:
+    secret: ${JWT_SECRET}
+    expiration-ms: 86400000
+  frontend-url: ${FRONTEND_URL}
+  cloudinary:
+    cloud-name: ${CLOUDINARY_CLOUD_NAME}
+    api-key: ${CLOUDINARY_API_KEY}
+    api-secret: ${CLOUDINARY_API_SECRET}
+    folder: ${CLOUDINARY_FOLDER:note-attachments}
+  pusher:
+    app-id: ${PUSHER_APP_ID}
+    key: ${PUSHER_APP_KEY}
+    secret: ${PUSHER_APP_SECRET}
+    cluster: ${PUSHER_APP_CLUSTER:ap1}
+
+logging:
+  level:
+    root: WARN
+    com.jotdown: INFO
