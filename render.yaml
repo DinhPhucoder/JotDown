@@ -3,13 +3,13 @@ services:
     name: jotdown-backend
     runtime: docker
     plan: free
-    dockerContext: backend-spring
-    dockerfilePath: backend-spring/Dockerfile
+    dockerContext: backend
+    dockerfilePath: backend/Dockerfile
     healthCheckPath: /up
     autoDeployTrigger: commit
     buildFilter:
       paths:
-        - backend-spring/**
+        - backend/**
         - render.yaml
     envVars:
       - key: SPRING_PROFILES_ACTIVE
