@@ -5,3 +5,5 @@ spring:
     name: jotdown-api
   jackson:
     property-naming-strategy: SNAKE_CASE
+  jpa:
+    open-in-view: false
