@@ -2,19 +2,33 @@ package com.jotdown.api.service;
 
 import com.jotdown.api.entity.Note;
 import com.jotdown.api.entity.User;
-import jakarta.mail.internet.MimeMessage;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.mail.javamail.MimeMessageHelper;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.HttpStatusCodeException;
+import org.springframework.web.client.RestClient;
+
+import java.util.HashMap;
+import java.util.Map;
 
 @Service
-@RequiredArgsConstructor
 @Slf4j
 public class MailService {
 
-    private final JavaMailSender mailSender;
+    private final RestClient restClient;
+    private final String fromAddress;
+
+    public MailService(
+            @Value("${app.resend.api-key}") String apiKey,
+            @Value("${app.resend.from-address}") String fromAddress) {
+        this.fromAddress = fromAddress;
+        this.restClient = RestClient.builder()
+                .baseUrl("https://api.resend.com")
+                .defaultHeader("Authorization", "Bearer " + apiKey)
+                .defaultHeader("Content-Type", MediaType.APPLICATION_JSON_VALUE)
+                .build();
+    }
 
     public void sendOtpMail(String toEmail, String otp, String purpose) {
         String subject = "Mã xác thực JotDown";
@@ -51,17 +65,25 @@ public class MailService {
 
     private void sendEmail(String to, String subject, String htmlContent) {
         try {
-            MimeMessage message = mailSender.createMimeMessage();
-            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
-            
-            helper.setTo(to);
-            helper.setSubject(subject);
-            helper.setText(htmlContent, true);
-            
-            mailSender.send(message);
+            Map<String, Object> requestBody = new HashMap<>();
+            requestBody.put("from", fromAddress);
+            requestBody.put("to", new String[]{to});
+            requestBody.put("subject", subject);
+            requestBody.put("html", htmlContent);
+
+            restClient.post()
+                    .uri("/emails")
+                    .body(requestBody)
+                    .retrieve()
+                    .toBodilessEntity();
+                    
             log.info("Sent email to: {} with subject: {}", to, subject);
+        } catch (HttpStatusCodeException e) {
+            log.error("Resend API returned error status: {}. Response body: {}", e.getStatusCode(), e.getResponseBodyAsString());
+            throw new RuntimeException("Không thể gửi email qua Resend API: " + e.getResponseBodyAsString(), e);
         } catch (Exception e) {
-            log.error("Failed to send email to {}. Fallback to log. Subject: {}. Content: {}", to, subject, htmlContent, e);
+            log.error("Failed to send email to {} via Resend HTTP API. Subject: {}. Error: {}", to, subject, e.getMessage(), e);
+            throw new RuntimeException("Gửi email thất bại: " + e.getMessage(), e);
         }
     }
 }
