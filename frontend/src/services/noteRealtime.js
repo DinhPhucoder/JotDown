@@ -74,8 +74,7 @@ function summarizeRealtimePayload(eventName, payload) {
   };
 }
 
-function bindPusherDebugListeners(echoInstance) {
-  const pusher = echoInstance?.connector?.pusher;
+function bindPusherDebugListeners(pusher) {
   const connection = pusher?.connection;
 
   if (!pusher || !connection) {
@@ -87,34 +86,34 @@ function bindPusherDebugListeners(echoInstance) {
     realtimeLog('[Realtime] Pusher state change', {
       previous: states?.previous || null,
       current: states?.current || null,
-      socketId: getSocketId(),
+      socketId: connection.socket_id,
     });
   });
 
   connection.bind('connected', () => {
     realtimeLog('[Realtime] Pusher connected', {
-      socketId: getSocketId(),
+      socketId: connection.socket_id,
     });
   });
 
   connection.bind('disconnected', () => {
     realtimeLog('[Realtime] Pusher disconnected', {
-      socketId: getSocketId(),
+      socketId: connection.socket_id,
     });
   });
 
   connection.bind('error', (error) => {
     realtimeLog('[Realtime] Pusher connection error', {
-      socketId: getSocketId(),
+      socketId: connection.socket_id,
       error,
     });
   });
 }
 
-let echoInstancePromise = null;
+let pusherInstancePromise = null;
 
-async function createEchoInstance() {
-  realtimeLog('[Realtime] Creating Echo instance with:', {
+async function createPusherInstance() {
+  realtimeLog('[Realtime] Creating Pusher instance with:', {
     key: import.meta.env.VITE_PUSHER_APP_KEY,
     cluster: import.meta.env.VITE_PUSHER_APP_CLUSTER,
     authEndpoint: BROADCAST_AUTH_ENDPOINT,
@@ -122,23 +121,15 @@ async function createEchoInstance() {
     realtimeDebugEnabled: REALTIME_DEBUG_ENABLED,
   });
 
-  const [{ default: Echo }, { default: Pusher }] = await Promise.all([
-    import('laravel-echo'),
-    import('pusher-js'),
-  ]);
+  const { default: Pusher } = await import('pusher-js');
 
   window.Pusher = Pusher;
 
-  const echoInstance = new Echo({
-    broadcaster: 'pusher',
-    key: import.meta.env.VITE_PUSHER_APP_KEY,
+  const pusherInstance = new Pusher(import.meta.env.VITE_PUSHER_APP_KEY, {
     cluster: import.meta.env.VITE_PUSHER_APP_CLUSTER,
     forceTLS: true,
-    authEndpoint: BROADCAST_AUTH_ENDPOINT,
-    // Dùng authorizer thay vì auth.headers để token được đọc
-    // fresh mỗi lần Pusher reconnect (tránh 403 sau khi offline)
-    authorizer: (channel) => ({
-      authorize: (socketId, callback) => {
+    channelAuthorization: {
+      customHandler: (params, callback) => {
         fetch(BROADCAST_AUTH_ENDPOINT, {
           method: 'POST',
           headers: {
@@ -147,60 +138,65 @@ async function createEchoInstance() {
             Authorization: `Bearer ${sessionStorage.getItem('auth_token') || ''}`,
           },
           body: JSON.stringify({
-            socket_id: socketId,
-            channel_name: channel.name,
+            socket_id: params.socketId,
+            channel_name: params.channelName,
           }),
         })
-          .then((res) => res.json())
+          .then((res) => {
+            if (!res.ok) {
+              throw new Error(`HTTP error! status: ${res.status}`);
+            }
+            return res.json();
+          })
           .then((data) => callback(null, data))
-          .catch((err) => callback(err, null));
+          .catch((err) => callback(new Error(err.message), null));
       },
-    }),
+    },
   });
 
-  bindPusherDebugListeners(echoInstance);
+  bindPusherDebugListeners(pusherInstance);
 
-  realtimeLog('[Realtime] Echo auth bootstrap complete', {
+  realtimeLog('[Realtime] Pusher auth bootstrap complete', {
     authEndpoint: BROADCAST_AUTH_ENDPOINT,
     hasAuthToken: Boolean(sessionStorage.getItem('auth_token')),
   });
-  realtimeLog('[Realtime] Echo instance created successfully');
-  return echoInstance;
+  realtimeLog('[Realtime] Pusher instance created successfully');
+  return pusherInstance;
 }
 
-async function getEchoInstance() {
-  if (!echoInstancePromise) {
-    echoInstancePromise = createEchoInstance().catch((error) => {
-      console.error('[Realtime] Failed to create Echo instance:', error);
-      echoInstancePromise = null;
+async function getPusherInstance() {
+  if (!pusherInstancePromise) {
+    pusherInstancePromise = createPusherInstance().catch((error) => {
+      console.error('[Realtime] Failed to create Pusher instance:', error);
+      pusherInstancePromise = null;
       throw error;
     });
   }
 
-  return echoInstancePromise;
+  return pusherInstancePromise;
 }
 
 export function getSocketId() {
-  return echoInstancePromise?.socketId ? echoInstancePromise.socketId() : null;
+  return null; // Used externally? Since it's synchronous and we use Promises, it's better to avoid if possible.
 }
 
 export async function subscribeToNoteChannel(noteId, onEvent) {
   try {
-    const echo = await getEchoInstance();
-    const channel = echo.private(`note.${noteId}`);
-    const channelName = `note.${noteId}`;
+    const pusher = await getPusherInstance();
+    const channelName = `private-note.${noteId}`;
+    const channel = pusher.subscribe(channelName);
     
     realtimeLog('[Realtime] Subscribing to note channel', {
       channel: channelName,
-      socketId: getSocketId(),
+      socketId: pusher.connection.socket_id,
       hasHandler: typeof onEvent === 'function',
       authEndpoint: BROADCAST_AUTH_ENDPOINT,
     });
     realtimeLog('[Realtime] Channel object created for note subscription', {
       channel: channelName,
       methods: {
-        listen: typeof channel.listen === 'function',
-        stopListening: typeof channel.stopListening === 'function',
+        bind: typeof channel.bind === 'function',
+        unbind: typeof channel.unbind === 'function',
       },
     });
     
@@ -239,52 +235,39 @@ export async function subscribeToNoteChannel(noteId, onEvent) {
       });
     };
 
-    channel.listen('.NoteUpdated', handler);
-    channel.listen('.NoteDeleted', deleteHandler);
+    channel.bind('NoteUpdated', handler);
+    channel.bind('NoteDeleted', deleteHandler);
 
     realtimeLog('[Realtime] Listening for NoteUpdated and NoteDeleted', {
-      channel: `note.${noteId}`,
+      channel: channelName,
     });
 
     return () => {
       realtimeLog('[Realtime] Unsubscribing from note channel', {
         channel: channelName,
-        socketId: getSocketId(),
+        socketId: pusher.connection.socket_id,
       });
-      channel.stopListening('.NoteUpdated', handler);
-      channel.stopListening('.NoteDeleted', deleteHandler);
+      channel.unbind('NoteUpdated', handler);
+      channel.unbind('NoteDeleted', deleteHandler);
       realtimeLog('[Realtime] Note channel listeners removed', {
         channel: channelName,
       });
-      // We shouldn't leave the channel immediately if there are other listeners,
-      // but Laravel Echo's leave() doesn't do reference counting. 
-      // If we leave the channel, no one gets events. 
-      // Actually, NotesPage.jsx re-subscribes immediately. But if we leave, we drop connection temporarily.
-      // Better yet, just remove the listener. 
     };
   } catch (err) {
-    console.error(`[Realtime] Failed to subscribe to note.${noteId}:`, err);
+    console.error(`[Realtime] Failed to subscribe to private-note.${noteId}:`, err);
     return () => {};
   }
 }
 
-/**
- * Subscribe vào channel cá nhân của user để nhận các event:
- *   - NoteShared: khi có người share note mới cho mình
- *
- * @param {string|number} userId
- * @param {{ onNoteShared?: Function, onNoteRevoked?: Function }} handlers
- * @returns {Promise<Function>} unsubscribe
- */
 export async function subscribeToUserChannel(userId, { onNoteShared, onNoteRevoked } = {}) {
   try {
-    const echo = await getEchoInstance();
-    const channelName = `user.${userId}`;
-    const channel = echo.private(channelName);
+    const pusher = await getPusherInstance();
+    const channelName = `private-user.${userId}`;
+    const channel = pusher.subscribe(channelName);
 
     realtimeLog('[Realtime] Subscribing to user channel', {
       channel: channelName,
-      socketId: getSocketId(),
+      socketId: pusher.connection.socket_id,
       listenNoteShared: typeof onNoteShared === 'function',
       listenNoteRevoked: typeof onNoteRevoked === 'function',
       authEndpoint: BROADCAST_AUTH_ENDPOINT,
@@ -292,13 +275,13 @@ export async function subscribeToUserChannel(userId, { onNoteShared, onNoteRevok
     realtimeLog('[Realtime] Channel object created for user subscription', {
       channel: channelName,
       methods: {
-        listen: typeof channel.listen === 'function',
-        stopListening: typeof channel.stopListening === 'function',
+        bind: typeof channel.bind === 'function',
+        unbind: typeof channel.unbind === 'function',
       },
     });
 
     if (typeof onNoteShared === 'function') {
-      channel.listen('.NoteShared', (payload) => {
+      channel.bind('NoteShared', (payload) => {
         const startedAt = performance.now();
         realtimeLog('[Realtime] User channel event received', {
           channel: channelName,
@@ -316,12 +299,12 @@ export async function subscribeToUserChannel(userId, { onNoteShared, onNoteRevok
       });
       realtimeLog('[Realtime] Listening for NoteShared', {
         channel: channelName,
-        event: '.NoteShared',
+        event: 'NoteShared',
       });
     }
 
     if (typeof onNoteRevoked === 'function') {
-      channel.listen('.NoteRevoked', (payload) => {
+      channel.bind('NoteRevoked', (payload) => {
         const startedAt = performance.now();
         realtimeLog('[Realtime] User channel event received', {
           channel: channelName,
@@ -341,27 +324,27 @@ export async function subscribeToUserChannel(userId, { onNoteShared, onNoteRevok
       });
       realtimeLog('[Realtime] Listening for NoteRevoked', {
         channel: channelName,
-        event: '.NoteRevoked',
+        event: 'NoteRevoked',
       });
     }
 
     return () => {
       realtimeLog('[Realtime] Unsubscribing from user channel', {
         channel: channelName,
-        socketId: getSocketId(),
+        socketId: pusher.connection.socket_id,
       });
       if (typeof onNoteShared === 'function') {
-        channel.stopListening('.NoteShared');
+        channel.unbind('NoteShared');
         realtimeLog('[Realtime] User channel listener removed', {
           channel: channelName,
-          event: '.NoteShared',
+          event: 'NoteShared',
         });
       }
       if (typeof onNoteRevoked === 'function') {
-        channel.stopListening('.NoteRevoked');
+        channel.unbind('NoteRevoked');
         realtimeLog('[Realtime] User channel listener removed', {
           channel: channelName,
-          event: '.NoteRevoked',
+          event: 'NoteRevoked',
         });
       }
     };
