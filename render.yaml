@@ -12,6 +12,8 @@ services:
         - backend/**
         - render.yaml
     envVars:
+      - key: BACKEND_URL
+        value: https://jotdown-8pwv.onrender.com
       - key: SPRING_PROFILES_ACTIVE
         value: prod
       - key: JWT_SECRET

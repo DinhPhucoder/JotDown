@@ -30,6 +30,7 @@ app:
   resend:
     api-key: ${RESEND_API_KEY:}
     from-address: ${MAIL_FROM_ADDRESS:onboarding@resend.dev}
+  backend-url: http://localhost:8080
   jwt:
     secret: dev-secret-key-change-in-production-must-be-at-least-256-bits-long-xxxxx
     expiration-ms: 86400000  # 24 hours
