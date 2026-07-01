@@ -62,7 +62,7 @@ public class MailService {
 
     // ─────────────────────────────────────────────────────────────
     // HTML Template Builders — CSS inlined for email client compat
-    // ─────────────────────────────────────────────────────────────
+    //
 
     private String buildOtpTemplate(String otp, String actionText) {
         String body = "<p style=\"font-size:1.3rem;font-weight:700;color:#0f172a;margin:0 0 12px 0;\">Mã xác thực của bạn</p>"

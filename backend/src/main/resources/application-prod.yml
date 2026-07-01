@@ -24,7 +24,7 @@ app:
   resend:
     api-key: ${RESEND_API_KEY}
     from-address: ${MAIL_FROM_ADDRESS:onboarding@resend.dev}
-  backend-url: ${BACKEND_URL}
+  backend-url: ${BACKEND_URL:https://jotdown-8pwv.onrender.com}
   jwt:
     secret: ${JWT_SECRET}
     expiration-ms: 86400000
