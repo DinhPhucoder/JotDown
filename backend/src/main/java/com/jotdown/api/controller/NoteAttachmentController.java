@@ -21,6 +21,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
@@ -69,6 +70,7 @@ public class NoteAttachmentController {
     }
 
     @PostMapping
+    @Transactional
     public ResponseEntity<Map<String, Object>> store(
             @CurrentUser User currentUser,
             @PathVariable("noteId") Long noteId,
@@ -117,6 +119,7 @@ public class NoteAttachmentController {
     }
 
     @DeleteMapping("/{attachmentId}")
+    @Transactional
     public ResponseEntity<Map<String, Object>> destroy(
             @CurrentUser User currentUser,
             @PathVariable("noteId") Long noteId,
